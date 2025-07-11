@@ -1,0 +1,19 @@
+{
+  "name": "pong",
+  "version": "1.0.0",
+  "description": "A simple pong game built with p5.js and TypeScript",
+  "scripts": {
+    "start": "parcel index.html",
+    "build": "parcel build index.html"
+  },
+  "devDependencies": {
+    "@parcel/transformer-sass": "^2.15.2",
+    "@types/p5": "^1.7.6",
+    "parcel": "^2.12.0",
+    "sass": "^1.77.8",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "p5": "^1.9.4"
+  }
+}
