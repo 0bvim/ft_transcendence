@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  username String  @unique
+  password String? // Optional: for Google-only sign-ups
+  googleId String? @unique // Optional: for email/password sign-ups
+
+  // 2FA fields
+  twoFactorEnabled Boolean @default(false)
+  totpSecret       String? // TOTP secret for authenticator apps
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // for soft deletes
+
+  refreshTokens    RefreshToken[]
+  webAuthnCredentials WebAuthnCredential[]
+  backupCodes      BackupCode[]
+}
+
+// RefreshToken model
+model RefreshToken {
+  id          String   @id @default(cuid())
+  hashedToken String   @unique
+  userId      String
+  revoked     Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// WebAuthn Credential model
+model WebAuthnCredential {
+  id            String  @id @default(cuid())
+  userId        String
+  credentialID  String  @unique
+  publicKey     String  // Base64 encoded public key
+  counter       Int     @default(0)
+  name          String? // User-friendly name for the credential
+  transports    String? // JSON array of supported transports
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastUsed  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Backup codes for 2FA recovery
+model BackupCode {
+  id     String  @id @default(cuid())
+  userId String
+  code   String  @unique
+  used   Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

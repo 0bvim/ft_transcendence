@@ -1,0 +1,5 @@
+services:
+  ms-auth:
+    build:
+      dockerfile: Dockerfile
+      target: development

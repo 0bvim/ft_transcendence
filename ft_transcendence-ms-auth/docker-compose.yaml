@@ -1,0 +1,12 @@
+name: ft_transcendence
+
+services:
+  ms-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+    volumes:
+      - ./prisma/auth.db:/app/prisma/auth.db
+      - ./src:/app/src
