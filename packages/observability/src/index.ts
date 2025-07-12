@@ -38,52 +38,93 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
     const net = require("net");
     let logstashStream: any = null;
     let connectionAttempted = false;
+    let logQueue: string[] = [];
+
+    const flushQueuedLogs = () => {
+      if (logstashStream && logstashStream.writable && logQueue.length > 0) {
+        console.log(`📤 Flushing ${logQueue.length} queued logs to Logstash`);
+        logQueue.forEach((logEntry) => {
+          logstashStream.write(logEntry + "\n");
+        });
+        logQueue = [];
+      }
+    };
 
     const connectToLogstash = () => {
       if (connectionAttempted) return;
       connectionAttempted = true;
 
-      try {
-        logstashStream = new net.Socket();
-        logstashStream.setKeepAlive(true, 30000); // Keep alive for 30 seconds
+      const attemptConnection = (retryCount = 0) => {
+        try {
+          logstashStream = new net.Socket();
+          logstashStream.setKeepAlive(true, 30000); // Keep alive for 30 seconds
 
-        logstashStream.connect(logstashPort, logstashHost, () => {
-          console.log(
-            `✅ Connected to Logstash at ${logstashHost}:${logstashPort}`,
-          );
-        });
+          logstashStream.connect(logstashPort, logstashHost, () => {
+            console.log(
+              `✅ Connected to Logstash at ${logstashHost}:${logstashPort}`,
+            );
+            flushQueuedLogs();
+          });
 
-        logstashStream.on("error", (err: Error) => {
+          logstashStream.on("error", (err: Error) => {
+            console.log(
+              `⚠️  Logstash connection error: ${err.message} (continuing with console logging)`,
+            );
+            logstashStream = null;
+
+            // Retry connection after 5 seconds if under 3 attempts
+            if (retryCount < 3) {
+              setTimeout(() => {
+                connectionAttempted = false;
+                attemptConnection(retryCount + 1);
+              }, 5000);
+            }
+          });
+
+          logstashStream.on("close", () => {
+            console.log(`🔌 Logstash connection closed`);
+            logstashStream = null;
+
+            // Retry connection after 10 seconds if under 3 attempts
+            if (retryCount < 3) {
+              setTimeout(() => {
+                connectionAttempted = false;
+                attemptConnection(retryCount + 1);
+              }, 10000);
+            }
+          });
+        } catch (error) {
           console.log(
-            `⚠️  Logstash connection error: ${err.message} (continuing with console logging)`,
+            `⚠️  Could not connect to Logstash (continuing with console logging)`,
           );
           logstashStream = null;
-        });
+        }
+      };
 
-        logstashStream.on("close", () => {
-          console.log(`🔌 Logstash connection closed`);
-          logstashStream = null;
-        });
-      } catch (error) {
-        console.log(
-          `⚠️  Could not connect to Logstash (continuing with console logging)`,
-        );
-        logstashStream = null;
-      }
+      attemptConnection();
     };
 
-    // Try to connect after services are more likely to be ready
-    setTimeout(connectToLogstash, 10000); // 10 seconds instead of 2
+    // Try to connect immediately, then retry if needed
+    setTimeout(connectToLogstash, 500); // 500ms initial delay to allow other services to start
 
     streams.push({
       stream: {
         write: (msg: string) => {
           try {
+            const logEntry = JSON.parse(msg);
+            logEntry.timestamp = logEntry.time || new Date().toISOString();
+            logEntry.service = logEntry.name || serviceName;
+            const formattedLog = JSON.stringify(logEntry);
+
             if (logstashStream && logstashStream.writable) {
-              const logEntry = JSON.parse(msg);
-              logEntry.timestamp = logEntry.time || new Date().toISOString();
-              logEntry.service = logEntry.name || serviceName;
-              logstashStream.write(JSON.stringify(logEntry) + "\n");
+              logstashStream.write(formattedLog + "\n");
+            } else {
+              // Queue the log if Logstash is not connected yet
+              logQueue.push(formattedLog);
+              // Limit queue size to prevent memory issues
+              if (logQueue.length > 1000) {
+                logQueue.shift(); // Remove oldest log
+              }
             }
           } catch (error) {
             console.log(`⚠️  Error writing to Logstash:`, error);
@@ -189,6 +230,58 @@ const setupMetrics = (
   return register;
 };
 
+const setupRequestLogging = (
+  fastify: FastifyInstance,
+  serviceName: string,
+): void => {
+  console.log(
+    `🔧 Setting up request logging hooks for service: ${serviceName}`,
+  );
+
+  // Add request logging hook
+  fastify.addHook(
+    "onRequest",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      console.log(
+        `📥 onRequest hook triggered: ${request.method} ${request.url}`,
+      );
+      fastify.log.info(
+        {
+          method: request.method,
+          url: request.url,
+          userAgent: request.headers["user-agent"],
+          ip: request.ip,
+          service: serviceName,
+        },
+        `Incoming request: ${request.method} ${request.url}`,
+      );
+    },
+  );
+
+  fastify.addHook(
+    "onResponse",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      console.log(
+        `📤 onResponse hook triggered: ${request.method} ${request.url} - ${reply.statusCode}`,
+      );
+      fastify.log.info(
+        {
+          method: request.method,
+          url: request.url,
+          statusCode: reply.statusCode,
+          responseTime: reply.elapsedTime,
+          service: serviceName,
+        },
+        `Request completed: ${request.method} ${request.url} - ${reply.statusCode} (${reply.elapsedTime}ms)`,
+      );
+    },
+  );
+
+  console.log(
+    `✅ Request logging hooks registered for service: ${serviceName}`,
+  );
+};
+
 const setupHealthCheck = (
   fastify: FastifyInstance,
   serviceName: string,
@@ -247,6 +340,9 @@ export const setupObservability = (
 
   // Set up Fastify logger
   fastify.log = logger;
+
+  // Set up request logging
+  setupRequestLogging(fastify, serviceName);
 
   let metricsRegistry: promClient.Registry;
   if (enableMetrics) {

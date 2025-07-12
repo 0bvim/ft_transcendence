@@ -31,7 +31,7 @@ groups:
   - name: frontend_alerts
     rules:
       - alert: FrontendDown
-        expr: up{job="frontend:3010"} == 0
+        expr: up{job="ms-frontend:3010"} == 0
         for: 1m
         labels:
           severity: critical

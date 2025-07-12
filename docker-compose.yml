@@ -5,8 +5,8 @@ services:
   ms-frontend:
     container_name: frontend
     build:
-      context: ./packages/ms-frontend
-      dockerfile: Dockerfile
+      context: ./packages/
+      dockerfile: ./ms-frontend/Dockerfile
       target: development
     ports:
       - "${FRONTEND_PORT:-3010}:3010"
@@ -18,8 +18,8 @@ services:
   ms-auth:
     container_name: authentication
     build:
-      context: ./packages/ms-auth
-      dockerfile: Dockerfile
+      context: ./packages
+      dockerfile: ./ms-auth/Dockerfile
       target: development
     ports:
       - "3001:3001"
@@ -37,20 +37,22 @@ services:
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
-      - logstash
+      logstash:
+        condition: service_healthy
 
   ms-game:
     container_name: game
     build:
-      context: .
-      dockerfile: ./packages/ms-game/Dockerfile
+      context: ./packages
+      dockerfile: ./ms-game/Dockerfile
     env_file: ./packages/ms-game/.env
     ports:
       - "${GAME_PORT:-3003}:3003"
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
-      - logstash
+      logstash:
+        condition: service_healthy
 
   elasticsearch:
     container_name: elasticsearch
@@ -103,6 +105,12 @@ services:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   prometheus:
     container_name: prometheus
