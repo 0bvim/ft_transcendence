@@ -5,7 +5,6 @@ RUN apk add --no-cache make
 WORKDIR /app
 COPY ./prisma ./prisma
 COPY ./src ./src
-COPY ./public ./public
 COPY ./package.json ./package.json
 COPY ./package-lock.json ./package-lock.json
 COPY ./tsconfig.json ./tsconfig.json
