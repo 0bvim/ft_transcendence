@@ -46,7 +46,9 @@ export default function GoogleCallback(): HTMLElement {
       }
 
       // Make request to our backend to complete the OAuth flow
-      const response = await fetch('http://localhost:3001/auth/google/callback?' + urlParams.toString(), {
+      const hostname = window.location.hostname;
+      const authServiceUrl = `http://${hostname}:3001`;
+      const response = await fetch(`${authServiceUrl}/auth/google/callback?` + urlParams.toString(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

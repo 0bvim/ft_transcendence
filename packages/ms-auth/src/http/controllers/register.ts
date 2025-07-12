@@ -12,10 +12,17 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     password: z.string().min(8),
   });
 
-  // NOTE: Parse and validate the request body against the schema
-  const { username, email, password } = registerBodySchema.parse(request.body);
-
   try {
+    console.log('Registration attempt received:', { 
+      body: request.body, 
+      headers: request.headers 
+    });
+
+    // NOTE: Parse and validate the request body against the schema
+    const { username, email, password } = registerBodySchema.parse(request.body);
+
+    console.log('Registration request parsed successfully:', { username, email });
+
     const usersRepository = new PrismaUsersRepository();
     const registerUseCase = new RegisterUseCase(usersRepository);
 
@@ -24,11 +31,22 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
       email,
       password,
     });
+
+    console.log('User registered successfully:', { username, email });
   } catch (err) {
+    console.error('Registration error:', err);
+    
     if (err instanceof UserAlreadyExistsError) {
       return reply
         .status(409)
         .send({ error: "Email or username already in use." });
+    }
+
+    if (err instanceof z.ZodError) {
+      console.error('Validation error:', err.format());
+      return reply
+        .status(400)
+        .send({ error: "Invalid input data", details: err.format() });
     }
 
     throw err; // Re-throw the error if it's not a UserAlreadyExistsError

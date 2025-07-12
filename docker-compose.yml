@@ -32,7 +32,7 @@ services:
       - WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-ft_transcendence}
       - WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-http://localhost:3010}
     volumes:
-      - ./packages/ms-auth/prisma/auth.db:/app/prisma/auth.db
+      - ./packages/ms-auth/prisma:/app/prisma
       - ./packages/ms-auth/src:/app/src
     networks:
       - ${NETWORK_NAME:-ft-net}

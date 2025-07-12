@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3001";
+// Dynamic API base URL - use current hostname with auth service port
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const port = 3001; // Auth service port
+  return `http://${hostname}:${port}`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -30,7 +37,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/refresh`, {
+          const response = await axios.post(`${getApiBaseUrl()}/refresh`, {
             token: refreshToken,
           });
 

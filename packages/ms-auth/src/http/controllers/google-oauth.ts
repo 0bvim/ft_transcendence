@@ -14,6 +14,10 @@ const oauth2Client = new google.auth.OAuth2(
   env.GOOGLE_REDIRECT_URI
 );
 
+console.log('Google OAuth2 Client initialized with:');
+console.log('- Redirect URI:', env.GOOGLE_REDIRECT_URI);
+console.log('- Client ID:', env.GOOGLE_CLIENT_ID ? `${env.GOOGLE_CLIENT_ID.substring(0, 20)}...` : 'NOT SET');
+
 export async function googleOAuthInitiate(request: FastifyRequest, reply: FastifyReply) {
   try {
     // Generate the authorization URL
@@ -26,10 +30,13 @@ export async function googleOAuthInitiate(request: FastifyRequest, reply: Fastif
       include_granted_scopes: true,
     });
 
+    console.log('Generated Google OAuth URL:', authUrl);
+
     return reply.status(200).send({
       authUrl,
     });
   } catch (err) {
+    console.error('Google OAuth initiate error:', err);
     return reply.status(500).send({ error: "Failed to initiate OAuth" });
   }
 }
@@ -41,17 +48,26 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
   });
 
   try {
+    console.log('Google OAuth callback received query:', request.query);
+    
     const { code } = callbackQuerySchema.parse(request.query);
 
+    console.log('Exchanging authorization code for tokens...');
+    
     // Exchange authorization code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
+
+    console.log('Tokens received, fetching user info...');
 
     // Get user info from Google
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
+    console.log('User info received:', { email: userInfo.email, id: userInfo.id });
+
     if (!userInfo.email || !userInfo.id) {
+      console.error('Missing user information from Google:', userInfo);
       return reply.status(400).send({ error: "Failed to get user information from Google" });
     }
 

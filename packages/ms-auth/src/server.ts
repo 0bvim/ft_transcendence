@@ -6,17 +6,9 @@ import { env } from "./env";
 
 const app = fastify({ logger: true });
 
-// Register CORS plugin
-
+// Register CORS plugin - Accept all origins for development
 app.register(fastifyCors, {
-  origin: [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "http://localhost:3010",
-    "http://127.0.0.1:3010",
-  ],
+  origin: true, // Accept all origins
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 });
