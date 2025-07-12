@@ -1,7 +1,0 @@
-{
-  "player1": "",
-  "player2": "",
-  "player1IsAI": false,
-  "player2IsAI": true,
-  "aiUpdateInterval": 1000
-}
