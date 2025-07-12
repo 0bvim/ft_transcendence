@@ -3,6 +3,7 @@ name: ${PROJECT_NAME:-ft_transcendence}
 services:
   # Core application services
   ms-frontend:
+    container_name: frontend
     build:
       context: ./packages/ms-frontend
       dockerfile: Dockerfile
@@ -15,6 +16,7 @@ services:
       - logstash
 
   ms-auth:
+    container_name: authentication
     build:
       context: ./packages/ms-auth
       dockerfile: Dockerfile
@@ -26,6 +28,7 @@ services:
       - ./packages/ms-auth/src:/app/src
 
   ms-game:
+    container_name: game
     build:
       context: .
       dockerfile: ./packages/ms-game/Dockerfile
@@ -38,6 +41,7 @@ services:
       - logstash
 
   elasticsearch:
+    container_name: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-9.0.2}
     environment:
       - discovery.type=${ELASTICSEARCH_DISCOVERY_TYPE:-single-node}
@@ -58,6 +62,7 @@ services:
       retries: ${ELASTICSEARCH_HEALTH_CHECK_RETRIES:-5}
 
   kibana:
+    container_name: kibana
     image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION:-9.0.2}
     depends_on:
       elasticsearch:
@@ -72,6 +77,7 @@ services:
       - ${NETWORK_NAME:-ft-net}
 
   logstash:
+    container_name: logstash
     image: docker.elastic.co/logstash/logstash:${LOGSTASH_VERSION:-9.0.2}
     depends_on:
       elasticsearch:
@@ -87,6 +93,7 @@ services:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
 
   prometheus:
+    container_name: prometheus
     image: prom/prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
@@ -97,6 +104,7 @@ services:
       - ${NETWORK_NAME:-ft-net}
 
   grafana:
+    container_name: grafana
     image: grafana/grafana:latest
     ports:
       - "${GRAFANA_PORT:-3002}:3002"
