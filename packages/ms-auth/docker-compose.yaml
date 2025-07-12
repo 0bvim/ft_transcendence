@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - '3001:3001'
+      - "3001:3001"
     volumes:
-      - ./prisma/auth.db:/app/prisma/auth.db
+      - ./prisma:/app/prisma
       - ./src:/app/src

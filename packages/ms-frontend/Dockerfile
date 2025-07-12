@@ -3,10 +3,8 @@ FROM node:20-alpine AS build
 RUN apk add --no-cache make
 
 WORKDIR /app
-COPY ./prisma ./prisma
 COPY ./src ./src
 COPY ./package.json ./package.json
-COPY ./package-lock.json ./package-lock.json
 COPY ./tsconfig.json ./tsconfig.json
 COPY ./vite.config.ts ./vite.config.ts
 COPY ./tailwind.config.js ./tailwind.config.js

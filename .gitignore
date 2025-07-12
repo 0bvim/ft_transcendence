@@ -129,15 +129,6 @@ temp/
 *.log
 .dockerignore
 
-# Observability specific
-# ELK Stack data (if running locally)
-elasticsearch/
-logstash/
-kibana/
-
-# Prometheus data
-prometheus/
-
 # Test artifacts
 junit.xml
 test-results/

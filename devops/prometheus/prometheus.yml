@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "frontend:3005"
+    static_configs:
+      - targets: ["frontend:3005"]
+    metrics_path: "/metrics"
+  - job_name: "game-service"
+    static_configs:
+      - targets: ["game:3002"]
+    metrics_path: "/metrics"

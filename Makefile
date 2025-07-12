@@ -1,14 +1,14 @@
 up:
 	@echo "Starting services in detached mode..."
-	docker-compose up -d --build
+	docker compose up -d --build
 
 down:
 	@echo "Stopping services... "
-	docker-compose down
+	docker compose down
 
 restart:
 	@echo "Restarting services..."
-	docker-compose restart
+	docker compose restart
 
 run:
 	@echo "Opening application services..."
@@ -26,7 +26,7 @@ run:
 
 clean:
 	@echo "Removing all Docker resources..."
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 	docker system prune -af
 	docker volume prune -f
 
