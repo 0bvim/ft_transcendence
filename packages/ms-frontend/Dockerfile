@@ -1,16 +1,22 @@
 FROM node:20-alpine AS build
 
+WORKDIR /app
+
+COPY ./observability ./observability
+RUN cd observability && npm install && npm run build && npm pack
+
 RUN apk add --no-cache make
 
-WORKDIR /app
-COPY ./src ./src
-COPY ./package.json ./package.json
-COPY ./tsconfig.json ./tsconfig.json
-COPY ./vite.config.ts ./vite.config.ts
-COPY ./tailwind.config.js ./tailwind.config.js
-COPY ./postcss.config.js ./postcss.config.js
-COPY ./index.html ./index.html
-COPY Makefile Makefile
+COPY ./ms-frontend/src ./src
+COPY ./ms-frontend/package.json ./package.json
+COPY ./ms-frontend/tsconfig.json ./tsconfig.json
+COPY ./ms-frontend/vite.config.ts ./vite.config.ts
+COPY ./ms-frontend/tailwind.config.js ./tailwind.config.js
+COPY ./ms-frontend/postcss.config.js ./postcss.config.js
+COPY ./ms-frontend/index.html ./index.html
+COPY ./ms-frontend/Makefile Makefile
+
+RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
 
 FROM build AS development
 

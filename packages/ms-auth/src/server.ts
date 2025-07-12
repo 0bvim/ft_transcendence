@@ -1,10 +1,21 @@
 import fastify from "fastify";
 import fastifyCors from "@fastify/cors";
 import { appRoutes } from "./http/routes";
+import { setupObservability } from "@ft-transcendence/observability";
 import { ZodError } from "zod";
 import { env } from "./env";
 
-const app = fastify({ logger: true });
+const app = fastify();
+
+//Setup Observability
+setupObservability(app, {
+  serviceName: "authentication",
+  logLevel: process.env["LOG_LEVEL"] || "info",
+  enableMetrics: true,
+  enableHealthCheck: true,
+  healthPath: "/health",
+  metricsPath: "/metrics",
+});
 
 // Register CORS plugin - Accept all origins for development
 app.register(fastifyCors, {
@@ -30,6 +41,7 @@ app.setErrorHandler((error, request, reply) => {
 });
 
 const start = async () => {
+  app.log.info("Auth service starting up");
   try {
     await app.listen({
       port: env.PORT ? Number(process.env.PORT) : 4242,
