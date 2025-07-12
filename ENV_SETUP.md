@@ -11,12 +11,21 @@
    cp packages/ms-game/env_example packages/ms-game/.env
    ```
 
-2. **Start all services:**
+2. **Configure Google OAuth (Required for login):**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
+   - Enable Google+ API
+   - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
+   - Set Application type to "Web application"
+   - Add authorized redirect URI: `http://localhost:3010/auth/google/callback`
+   - Copy Client ID and Client Secret to your `.env` file
+
+3. **Start all services:**
    ```bash
    make up
    ```
 
-3. **Access your services:**
+4. **Access your services:**
    - Frontend: http://localhost:3010
    - Authentication: http://localhost:3001
    - Game: http://localhost:3003
@@ -47,9 +56,17 @@ Built with Fastify + Prisma + JWT
 
 Features:
 - JWT-based authentication
-- Google OAuth integration
+- Google OAuth integration (requires Google Cloud setup)
 - WebAuthn support
 - SQLite database with Prisma ORM
+
+**Required Environment Variables:**
+```bash
+JWT_SECRET=your-super-secret-jwt-key-here
+GOOGLE_CLIENT_ID=your-google-client-id-here
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+GOOGLE_REDIRECT_URI=http://localhost:3010/auth/google/callback
+```
 
 ### Game Service (ms-game) - Port 3003
 Built with Fastify + p5.js
@@ -128,6 +145,16 @@ LOGSTASH_TCP_PORT=5001
 
 # Network
 NETWORK_NAME=ft-net
+
+# Google OAuth (Required for login)
+GOOGLE_CLIENT_ID=your-google-client-id-here
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+GOOGLE_REDIRECT_URI=http://localhost:3010/auth/google/callback
+
+# WebAuthn
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_RP_NAME=ft_transcendence
+WEBAUTHN_ORIGIN=http://localhost:3010
 ```
 
 ### Game Service (packages/ms-game/.env)
@@ -197,6 +224,22 @@ elasticsearch:
     - ES_JAVA_OPTS=-Xms256m -Xmx256m  # Reduce from 512m
 ```
 
+### Google OAuth Issues
+Common OAuth problems and solutions:
+
+```bash
+# Error: redirect_uri_mismatch
+# Solution: Update Google Cloud Console with correct redirect URI
+# Go to Google Cloud Console → APIs & Services → Credentials
+# Add: http://localhost:3010/auth/google/callback
+
+# Error: invalid_client
+# Solution: Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
+
+# Error: access_denied
+# Solution: User denied permission or OAuth app not verified
+```
+
 ### Database Issues (Auth Service)
 The auth service uses SQLite with Prisma:
 
@@ -244,6 +287,7 @@ Frontend (3010) ←→ Auth Service (3001) ←→ Game Service (3003)
 
 ### Security
 - JWT tokens for authentication
+- Google OAuth 2.0 integration
 - CORS configured for microservices
 - Environment-based secrets
 - Health checks for reliability

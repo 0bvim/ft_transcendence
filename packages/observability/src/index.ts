@@ -32,7 +32,7 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
 
   // Add Logstash output for ELK stack (simplified)
   const logstashHost = process.env.LOGSTASH_HOST || "logstash";
-  const logstashPort = parseInt(process.env.LOGSTASH_PORT || "5000", 10);
+  const logstashPort = parseInt(process.env.LOGSTASH_PORT || "5001", 10);
 
   if (logstashHost && logstashPort) {
     const net = require("net");
@@ -42,17 +42,21 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
     const connectToLogstash = () => {
       if (connectionAttempted) return;
       connectionAttempted = true;
-      
+
       try {
         logstashStream = new net.Socket();
         logstashStream.setKeepAlive(true, 30000); // Keep alive for 30 seconds
-        
+
         logstashStream.connect(logstashPort, logstashHost, () => {
-          console.log(`✅ Connected to Logstash at ${logstashHost}:${logstashPort}`);
+          console.log(
+            `✅ Connected to Logstash at ${logstashHost}:${logstashPort}`,
+          );
         });
 
         logstashStream.on("error", (err: Error) => {
-          console.log(`⚠️  Logstash connection error: ${err.message} (continuing with console logging)`);
+          console.log(
+            `⚠️  Logstash connection error: ${err.message} (continuing with console logging)`,
+          );
           logstashStream = null;
         });
 
@@ -61,7 +65,9 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
           logstashStream = null;
         });
       } catch (error) {
-        console.log(`⚠️  Could not connect to Logstash (continuing with console logging)`);
+        console.log(
+          `⚠️  Could not connect to Logstash (continuing with console logging)`,
+        );
         logstashStream = null;
       }
     };
@@ -238,7 +244,7 @@ export const setupObservability = (
   } = observabilityConfig;
 
   const logger = setupLogging(serviceName, logLevel);
-  
+
   // Set up Fastify logger
   fastify.log = logger;
 

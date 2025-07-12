@@ -1,17 +1,17 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = "http://localhost:3001";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,35 +23,35 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = localStorage.getItem("refreshToken");
         if (refreshToken) {
           const response = await axios.post(`${API_BASE_URL}/refresh`, {
             token: refreshToken,
           });
-          
+
           const { accessToken, refreshToken: newRefreshToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
-          localStorage.setItem('refreshToken', newRefreshToken);
-          
+          localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("refreshToken", newRefreshToken);
+
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
         // Refresh failed, redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 export interface User {
@@ -93,17 +93,17 @@ export interface RefreshTokenResponse {
 export const authApi = {
   // Standard authentication
   register: async (data: RegisterRequest): Promise<void> => {
-    const response = await api.post('/register', data);
+    const response = await api.post("/register", data);
     return response.data;
   },
 
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post('/login', data);
+    const response = await api.post("/login", data);
     return response.data;
   },
 
   refresh: async (data: RefreshTokenRequest): Promise<RefreshTokenResponse> => {
-    const response = await api.post('/refresh', data);
+    const response = await api.post("/refresh", data);
     return response.data;
   },
 
@@ -114,7 +114,7 @@ export const authApi = {
 
   // Google OAuth
   getGoogleAuthUrl: async (): Promise<{ authUrl: string }> => {
-    const response = await api.get('/auth/google');
+    const response = await api.get("/auth/google");
     return response.data;
   },
 
@@ -127,7 +127,7 @@ export const authApi = {
     name?: string;
     transports?: string[];
   }) => {
-    const response = await api.post('/2fa/webauthn/register', data);
+    const response = await api.post("/2fa/webauthn/register", data);
     return response.data;
   },
 
@@ -135,29 +135,29 @@ export const authApi = {
     credentialId: string;
     counter: number;
   }) => {
-    const response = await api.post('/2fa/webauthn/verify', data);
+    const response = await api.post("/2fa/webauthn/verify", data);
     return response.data;
   },
 
   enableTwoFactor: async (userId: string) => {
-    const response = await api.post('/2fa/enable', { userId });
+    const response = await api.post("/2fa/enable", { userId });
     return response.data;
   },
 
   disableTwoFactor: async (userId: string) => {
-    const response = await api.post('/2fa/disable', { userId });
+    const response = await api.post("/2fa/disable", { userId });
     return response.data;
   },
 
   generateBackupCodes: async (userId: string) => {
-    const response = await api.post('/2fa/backup-codes/generate', { userId });
+    const response = await api.post("/2fa/backup-codes/generate", { userId });
     return response.data;
   },
 
   verifyBackupCode: async (data: { userId: string; code: string }) => {
-    const response = await api.post('/2fa/backup-codes/verify', data);
+    const response = await api.post("/2fa/backup-codes/verify", data);
     return response.data;
   },
 };
 
-export default api; 
+export default api;
