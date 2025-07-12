@@ -13,16 +13,16 @@ restart:
 run:
 	@echo "Opening application services..."
 	@if command -v xdg-open > /dev/null; then \
-				xdg-open http://localhost:3005 & \
-				xdg-open http://localhost:3002; \
-			elif command -v open > /dev/null; then \
-				open http://localhost:3005 & \
-				open http://localhost:3002; \
-			else \
-				echo "Could not detect browser opener. Please manually open:"; \
-				echo "  Frontend: http://localhost:3005"; \
-				echo "  Game: http://localhost:3002"; \
-			fi
+			xdg-open http://localhost:3010 & \
+			xdg-open http://localhost:3003; \
+		elif command -v open > /dev/null; then \
+			open http://localhost:3010 & \
+			open http://localhost:3003; \
+		else \
+			echo "Could not detect browser opener. Please manually open:"; \
+			echo "  Frontend: http://localhost:3010"; \
+			echo "  Game: http://localhost:3003"; \
+		fi
 
 clean:
 	@echo "Removing all Docker resources..."
@@ -33,19 +33,23 @@ clean:
 metrics:
 	@echo "Opening monitoring dashboards..."
 	@if command -v xdg-open > /dev/null; then \
-			xdg-open http://localhost:3001; \
-		elif command -v open > /dev/null; then \
-			open http://localhost:3001; \
-		else \
-			echo "Could not detect browser opener. Please manually open the URLs above."; \
-		fi
+		xdg-open http://localhost:3002 & \
+		xdg-open http://localhost:5601; \
+	elif command -v open > /dev/null; then \
+		open http://localhost:3002 & \
+		open http://localhost:5601; \
+	else \
+		echo "Could not detect browser opener. Please manually open:"; \
+		echo "  Grafana: http://localhost:3002"; \
+		echo "  Kibana: http://localhost:5601"; \
+	fi
 
 help:
 	@echo "ft_transcendence Commands:"
-	@echo "make up          - Start all services (frontend, game, ELK stack)"
+	@echo "make up          - Start all services (frontend, auth, game, monitoring stack)"
 	@echo "make down        - Stop all services"
 	@echo "make run         - Open application URLs in browser"
 	@echo "make clean       - Full cleanup (remove containers, volumes, images)"
-	@echo "make metrics     - Open monitoring dashboards (Grafana)"
+	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
 .PHONY: up down restart logs clean metrics
