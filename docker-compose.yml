@@ -8,11 +8,21 @@ services:
       dockerfile: ./packages/ms-frontend/Dockerfile
     env_file: ./packages/ms-frontend/.env
     ports:
-      - "${FRONTEND_PORT:-3005}:3005"
+      - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
       - logstash
+
+  ms-auth:
+    build:
+      context: .
+      dockerfile: ./packages/ms-auth/Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/ms-auth/prisma/auth.db:/app/prisma/auth.db
+      - ./packages/ms-auth/src:/app/src
 
   game:
     build:
