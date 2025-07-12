@@ -31,6 +31,12 @@ router.addRoute({
 });
 
 router.addRoute({
+  path: '/verify-2fa',
+  component: () => import('./pages/Verify2FA'),
+  title: '2FA Verification'
+});
+
+router.addRoute({
   path: '/dashboard',
   component: () => import('./pages/Dashboard'),
   requiresAuth: true,

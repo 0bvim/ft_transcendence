@@ -132,7 +132,17 @@ export default function Login(): HTMLElement {
 
       const response = await authApi.login({ login, password });
 
-      // Store tokens
+      // Check if 2FA is required
+      if (response.requiresTwoFactor) {
+        // Store pending user data for 2FA verification
+        sessionStorage.setItem("pendingUser", JSON.stringify(response.user));
+        
+        // Redirect to 2FA verification
+        window.location.href = "/verify-2fa";
+        return;
+      }
+
+      // Store tokens for non-2FA users
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
       localStorage.setItem("user", JSON.stringify(response.user));

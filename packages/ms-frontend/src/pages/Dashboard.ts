@@ -234,12 +234,51 @@ export default function Dashboard(): HTMLElement {
   if (addWebAuthnButton) {
     addWebAuthnButton.addEventListener('click', async () => {
       try {
-        // This would typically involve WebAuthn API calls
-        // For now, show a placeholder message
-        showMessage('WebAuthn setup would be implemented here', 'info');
+        addWebAuthnButton.disabled = true;
+        addWebAuthnButton.textContent = 'Preparing...';
+
+        // Check if WebAuthn is supported
+        if (!navigator.credentials || !navigator.credentials.create) {
+          showMessage('WebAuthn is not supported in this browser', 'error');
+          return;
+        }
+
+        // Import WebAuthn utilities
+        const { createWebAuthnCredential } = await import('../utils/webauthn');
+
+        // Get registration options
+        const optionsResponse = await authApi.generateWebAuthnRegistrationOptions({
+          userId: user!.id,
+          userDisplayName: user!.username,
+        });
+
+        addWebAuthnButton.textContent = 'Touch your security key...';
+
+        // Create WebAuthn credential
+        const credential = await createWebAuthnCredential(optionsResponse.options);
+
+        addWebAuthnButton.textContent = 'Registering...';
+
+        // Register with backend
+        const registrationResponse = await authApi.verifyWebAuthnRegistration({
+          sessionId: optionsResponse.sessionId,
+          registrationResponse: credential,
+          name: `Security Key ${new Date().toLocaleDateString()}`,
+        });
+
+        showMessage('Security key registered successfully!', 'success');
+        
+        // Refresh page to update UI
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } catch (error: any) {
         console.error('WebAuthn setup error:', error);
-        showMessage('Failed to set up security key', 'error');
+        const message = error.response?.data?.error || error.message || 'Failed to set up security key';
+        showMessage(message, 'error');
+      } finally {
+        addWebAuthnButton.disabled = false;
+        addWebAuthnButton.textContent = 'Add Security Key';
       }
     });
   }

@@ -139,6 +139,51 @@ export const authApi = {
     return response.data;
   },
 
+  // New WebAuthn endpoints with proper challenge handling
+  generateWebAuthnRegistrationOptions: async (data: {
+    userId: string;
+    userDisplayName?: string;
+  }) => {
+    const response = await api.post("/2fa/webauthn/registration-options", data);
+    return response.data;
+  },
+
+  verifyWebAuthnRegistration: async (data: {
+    sessionId: string;
+    registrationResponse: any;
+    name?: string;
+  }) => {
+    const response = await api.post("/2fa/webauthn/verify-registration", data);
+    return response.data;
+  },
+
+  generateWebAuthnAuthenticationOptions: async (data: {
+    userId: string;
+  }) => {
+    const response = await api.post("/2fa/webauthn/authentication-options", data);
+    return response.data;
+  },
+
+  verifyWebAuthnAuthentication: async (data: {
+    sessionId: string;
+    authenticationResponse: any;
+  }) => {
+    const response = await api.post("/2fa/webauthn/verify-authentication", data);
+    return response.data;
+  },
+
+  // 2FA verification for login flow
+  verify2FA: async (data: {
+    userId: string;
+    method: "webauthn" | "backup_code";
+    sessionId?: string;
+    authenticationResponse?: any;
+    backupCode?: string;
+  }) => {
+    const response = await api.post("/verify-2fa", data);
+    return response.data;
+  },
+
   enableTwoFactor: async (userId: string) => {
     const response = await api.post("/2fa/enable", { userId });
     return response.data;
