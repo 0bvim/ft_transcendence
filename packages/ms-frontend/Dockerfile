@@ -1,31 +1,25 @@
-# Build stage
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
+
+RUN apk add --no-cache make
 
 WORKDIR /app
+COPY ./prisma ./prisma
+COPY ./src ./src
+COPY ./public ./public
+COPY ./package.json ./package.json
+COPY ./package-lock.json ./package-lock.json
+COPY ./tsconfig.json ./tsconfig.json
+COPY ./vite.config.ts ./vite.config.ts
+COPY ./tailwind.config.js ./tailwind.config.js
+COPY ./postcss.config.js ./postcss.config.js
+COPY ./index.html ./index.html
+COPY Makefile Makefile
 
-# Copy package files
-COPY package*.json ./
+FROM build AS development
 
-# Install dependencies
-RUN npm ci
+# CMD ["tail", "-f", "/dev/null"]
+CMD ["make", "dev"]
 
-# Copy source code
-COPY . .
+FROM build AS prod
 
-# Build the application
-RUN npm run build
-
-# Production stage
-FROM nginx:alpine
-
-# Copy built application to nginx
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Expose port
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["make", "build"]

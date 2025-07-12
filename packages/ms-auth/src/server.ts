@@ -1,4 +1,5 @@
 import fastify from "fastify";
+import fastifyCors from "@fastify/cors";
 import { appRoutes } from "./http/routes";
 import { ZodError } from "zod";
 import { env } from "./env";
@@ -6,15 +7,18 @@ import { env } from "./env";
 const app = fastify({ logger: true });
 
 // Register CORS plugin
-app.register(require('@fastify/cors'), {
+
+app.register(fastifyCors, {
   origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001'
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:3010",
+    "http://127.0.0.1:3010",
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 });
 
 app.register(appRoutes);
@@ -37,7 +41,7 @@ const start = async () => {
   try {
     await app.listen({
       port: env.PORT ? Number(process.env.PORT) : 4242,
-      host: '0.0.0.0'
+      host: "0.0.0.0",
     });
   } catch (err) {
     app.log.error(err);

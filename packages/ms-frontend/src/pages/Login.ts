@@ -1,9 +1,9 @@
-import { authApi } from '../api/auth';
-import { createLink } from '../router/index';
+import { authApi } from "../api/auth";
 
 export default function Login(): HTMLElement {
-  const container = document.createElement('div');
-  container.className = 'min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8';
+  const container = document.createElement("div");
+  container.className =
+    "min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8";
 
   container.innerHTML = `
     <div class="max-w-md w-full space-y-8">
@@ -15,7 +15,7 @@ export default function Login(): HTMLElement {
           Welcome back to ft_transcendence
         </p>
       </div>
-      
+
       <div class="mt-8 space-y-6">
         <div class="card">
           <form id="loginForm" class="space-y-6">
@@ -32,7 +32,7 @@ export default function Login(): HTMLElement {
                 placeholder="Enter your email or username"
               />
             </div>
-            
+
             <div>
               <label for="password" class="form-label">
                 Password
@@ -46,9 +46,9 @@ export default function Login(): HTMLElement {
                 placeholder="Enter your password"
               />
             </div>
-            
+
             <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
-            
+
             <div>
               <button
                 type="submit"
@@ -59,7 +59,7 @@ export default function Login(): HTMLElement {
               </button>
             </div>
           </form>
-          
+
           <div class="mt-6">
             <div class="relative">
               <div class="absolute inset-0 flex items-center">
@@ -69,7 +69,7 @@ export default function Login(): HTMLElement {
                 <span class="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
-            
+
             <div class="mt-6">
               <button
                 id="googleLoginButton"
@@ -87,7 +87,7 @@ export default function Login(): HTMLElement {
             </div>
           </div>
         </div>
-        
+
         <div class="text-center">
           <p class="text-sm text-gray-600">
             Don't have an account?
@@ -101,72 +101,79 @@ export default function Login(): HTMLElement {
   `;
 
   // Add event listeners
-  const form = container.querySelector('#loginForm') as HTMLFormElement;
-  const loginButton = container.querySelector('#loginButton') as HTMLButtonElement;
-  const googleLoginButton = container.querySelector('#googleLoginButton') as HTMLButtonElement;
-  const errorMessage = container.querySelector('#errorMessage') as HTMLDivElement;
+  const form = container.querySelector("#loginForm") as HTMLFormElement;
+  const loginButton = container.querySelector(
+    "#loginButton",
+  ) as HTMLButtonElement;
+  const googleLoginButton = container.querySelector(
+    "#googleLoginButton",
+  ) as HTMLButtonElement;
+  const errorMessage = container.querySelector(
+    "#errorMessage",
+  ) as HTMLDivElement;
 
   // Handle form submission
-  form.addEventListener('submit', async (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    
+
     const formData = new FormData(form);
-    const login = formData.get('login') as string;
-    const password = formData.get('password') as string;
+    const login = formData.get("login") as string;
+    const password = formData.get("password") as string;
 
     if (!login || !password) {
-      showError('Please fill in all fields');
+      showError("Please fill in all fields");
       return;
     }
 
     try {
       loginButton.disabled = true;
-      loginButton.textContent = 'Signing in...';
+      loginButton.textContent = "Signing in...";
       hideError();
 
       const response = await authApi.login({ login, password });
-      
+
       // Store tokens
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("user", JSON.stringify(response.user));
 
       // Redirect to dashboard
-      window.location.href = '/dashboard';
+      window.location.href = "/dashboard";
     } catch (error: any) {
-      console.error('Login error:', error);
-      const message = error.response?.data?.error || 'Login failed. Please try again.';
+      console.error("Login error:", error);
+      const message =
+        error.response?.data?.error || "Login failed. Please try again.";
       showError(message);
     } finally {
       loginButton.disabled = false;
-      loginButton.textContent = 'Sign In';
+      loginButton.textContent = "Sign In";
     }
   });
 
   // Handle Google login
-  googleLoginButton.addEventListener('click', async () => {
+  googleLoginButton.addEventListener("click", async () => {
     try {
       googleLoginButton.disabled = true;
-      googleLoginButton.textContent = 'Redirecting...';
-      
+      googleLoginButton.textContent = "Redirecting...";
+
       const response = await authApi.getGoogleAuthUrl();
       window.location.href = response.authUrl;
     } catch (error: any) {
-      console.error('Google login error:', error);
-      showError('Google login failed. Please try again.');
+      console.error("Google login error:", error);
+      showError("Google login failed. Please try again.");
       googleLoginButton.disabled = false;
-      googleLoginButton.textContent = 'Sign in with Google';
+      googleLoginButton.textContent = "Sign in with Google";
     }
   });
 
   function showError(message: string) {
     errorMessage.textContent = message;
-    errorMessage.classList.remove('hidden');
+    errorMessage.classList.remove("hidden");
   }
 
   function hideError() {
-    errorMessage.classList.add('hidden');
+    errorMessage.classList.add("hidden");
   }
 
   return container;
-} 
+}

@@ -2,7 +2,7 @@
 # Successful registration
 curl -X POST -H "Content-Type: application/json" \
 -d '{"username":"johndoe","email":"john.doe@email.com","password":"password1234"}' \
-http://localhost:3000/register
+http://localhost:3001/register
 # try register again with the same email to see if it fails
 ```
 
@@ -10,7 +10,7 @@ http://localhost:3000/register
 # login with valid credentials
 curl -X POST -H "Content-Type: application/json" \
 -d '{"login":"john.doe@email.com","password":"password1234"}' \
-http://localhost:3000/login
+http://localhost:3001/login
 ```
 
 ```bash

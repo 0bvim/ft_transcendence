@@ -2,13 +2,13 @@ name: ${PROJECT_NAME:-ft_transcendence}
 
 services:
   # Core application services
-  frontend:
+  ms-frontend:
     build:
-      context: .
-      dockerfile: ./packages/ms-frontend/Dockerfile
-    env_file: ./packages/ms-frontend/.env
+      context: ./packages/ms-frontend
+      dockerfile: Dockerfile
+      target: development
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3010}:3010"
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
@@ -16,21 +16,22 @@ services:
 
   ms-auth:
     build:
-      context: .
-      dockerfile: ./packages/ms-auth/Dockerfile
+      context: ./packages/ms-auth
+      dockerfile: Dockerfile
+      target: development
     ports:
       - "3001:3001"
     volumes:
       - ./packages/ms-auth/prisma/auth.db:/app/prisma/auth.db
       - ./packages/ms-auth/src:/app/src
 
-  game:
+  ms-game:
     build:
       context: .
-      dockerfile: ./packages/game/Dockerfile
-    env_file: ./packages/game/.env
+      dockerfile: ./packages/ms-game/Dockerfile
+    env_file: ./packages/ms-game/.env
     ports:
-      - "${GAME_PORT:-3002}:3002"
+      - "${GAME_PORT:-3003}:3003"
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
@@ -76,7 +77,7 @@ services:
       elasticsearch:
         condition: service_healthy
     ports:
-      - "${LOGSTASH_TCP_PORT:-5000}:5000"
+      - "${LOGSTASH_TCP_PORT:-5001}:5001"
       - "${LOGSTASH_HTTP_PORT:-9600}:9600"
     environment:
       - LS_JAVA_OPTS=${LOGSTASH_JAVA_OPTS:--Xmx256m -Xms256m}
@@ -98,7 +99,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "${GRAFANA_PORT:-3001}:3000"
+      - "${GRAFANA_PORT:-3002}:3002"
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana

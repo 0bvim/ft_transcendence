@@ -12,7 +12,7 @@ const app = Fastify();
 // Setup observability for ELK stack
 setupObservability(app, {
   serviceName: "game-service",
-  logLevel: process.env['LOG_LEVEL'] || "info",
+  logLevel: process.env["LOG_LEVEL"] || "info",
   enableMetrics: true,
   enableHealthCheck: true,
   healthPath: "/health",
@@ -25,27 +25,29 @@ const initializeApp = async () => {
   app.log.info("Game service starting up");
 
   // Register static file serving (much simpler!)
-  await app.register(require('@fastify/static'), {
-    root: path.join(__dirname, '../dist/game'),
-    prefix: '/',
+  await app.register(require("@fastify/static"), {
+    root: path.join(__dirname, "../dist/game"),
+    prefix: "/",
   });
 
   // SPA fallback route - serve index.html for unknown routes
-  app.setNotFoundHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-    app.log.info(
-      {
-        action: "spa_fallback",
-        path: request.url,
-        ip: request.ip,
-        userAgent: request.headers["user-agent"],
-      },
-      "SPA fallback to index.html",
-    );
-    
-    const indexPath = path.join(__dirname, '../dist/game/index.html');
-    const content = fs.readFileSync(indexPath);
-    return reply.type('text/html').send(content);
-  });
+  app.setNotFoundHandler(
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      app.log.info(
+        {
+          action: "spa_fallback",
+          path: request.url,
+          ip: request.ip,
+          userAgent: request.headers["user-agent"],
+        },
+        "SPA fallback to index.html",
+      );
+
+      const indexPath = path.join(__dirname, "../dist/game/index.html");
+      const content = fs.readFileSync(indexPath);
+      return reply.type("text/html").send(content);
+    },
+  );
 };
 
 // Graceful shutdown
@@ -69,20 +71,20 @@ const start = async () => {
   try {
     // Initialize the app first
     await initializeApp();
-    
-    const port = parseInt(process.env['PORT'] || "3002");
+
+    const port = parseInt(process.env["PORT"] || "3003");
     const address = await app.listen({
       port: port,
-      host: "0.0.0.0"
+      host: "0.0.0.0",
     });
-    
+
     app.log.info(
       {
         service: "game-service",
         address: address,
         port: port,
       },
-      "Game service started successfully"
+      "Game service started successfully",
     );
   } catch (err) {
     app.log.error(err, "Error starting game service");
@@ -90,4 +92,4 @@ const start = async () => {
   }
 };
 
-start(); 
+start();

@@ -10,7 +10,7 @@ COPY packages/observability ./packages/observability
 RUN cd packages/observability && npm install && npm run build && npm pack
 
 # Copy game service files
-COPY packages/game/package*.json ./
+COPY packages/ms-game/package*.json ./
 
 # Install the packed observability package
 RUN npm install ./packages/observability/ft-transcendence-observability-1.0.0.tgz
@@ -19,12 +19,12 @@ RUN npm install ./packages/observability/ft-transcendence-observability-1.0.0.tg
 RUN npm install
 
 # Copy TypeScript config, source code and game files
-COPY packages/game/tsconfig.json ./
-COPY packages/game/tsconfig.server.json ./
-COPY packages/game/src ./src
-COPY packages/game/index.html ./
-COPY packages/game/public ./public
-COPY packages/game/env_example ./.env
+COPY packages/ms-game/tsconfig.json ./
+COPY packages/ms-game/tsconfig.server.json ./
+COPY packages/ms-game/src ./src
+COPY packages/ms-game/public ./public
+COPY packages/ms-game/index.html ./
+COPY packages/ms-game/env_example ./.env
 
 # Build the game and server
 RUN npm run build
@@ -33,6 +33,6 @@ RUN npm run build
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3002/health || exit 1
 
-EXPOSE 3002
+EXPOSE 3003
 
-CMD ["npm", "start"] 
+CMD ["npm", "start"]

@@ -7,7 +7,6 @@ export interface Route {
 
 export class Router {
   private routes: Route[] = [];
-  private currentRoute: Route | null = null;
   private appContainer: HTMLElement;
 
   constructor(appContainer: HTMLElement) {
@@ -21,18 +20,18 @@ export class Router {
 
   private setupEventListeners() {
     // Handle browser back/forward buttons
-    window.addEventListener('popstate', () => {
+    window.addEventListener("popstate", () => {
       this.handleRouteChange();
     });
 
     // Handle link clicks
-    document.addEventListener('click', (event) => {
+    document.addEventListener("click", (event) => {
       const target = event.target as HTMLElement;
-      const link = target.closest('a[data-link]');
-      
+      const link = target.closest("a[data-link]");
+
       if (link) {
         event.preventDefault();
-        const href = link.getAttribute('href');
+        const href = link.getAttribute("href");
         if (href) {
           this.navigateTo(href);
         }
@@ -41,7 +40,7 @@ export class Router {
   }
 
   navigateTo(path: string) {
-    window.history.pushState({}, '', path);
+    window.history.pushState({}, "", path);
     this.handleRouteChange();
   }
 
@@ -50,13 +49,13 @@ export class Router {
     const route = this.findRoute(path);
 
     if (!route) {
-      this.navigateTo('/');
+      this.navigateTo("/");
       return;
     }
 
     // Check authentication
     if (route.requiresAuth && !this.isAuthenticated()) {
-      this.navigateTo('/login');
+      this.navigateTo("/login");
       return;
     }
 
@@ -65,43 +64,46 @@ export class Router {
       document.title = `${route.title} - ft_transcendence`;
     }
 
-    this.currentRoute = route;
     await this.renderRoute(route);
   }
 
   private findRoute(path: string): Route | null {
-    return this.routes.find(route => {
-      if (route.path === path) return true;
-      
-      // Simple pattern matching for dynamic routes
-      const routeParts = route.path.split('/');
-      const pathParts = path.split('/');
-      
-      if (routeParts.length !== pathParts.length) return false;
-      
-      return routeParts.every((part, index) => {
-        return part.startsWith(':') || part === pathParts[index];
-      });
-    }) || null;
+    return (
+      this.routes.find((route) => {
+        if (route.path === path) return true;
+
+        // Simple pattern matching for dynamic routes
+        const routeParts = route.path.split("/");
+        const pathParts = path.split("/");
+
+        if (routeParts.length !== pathParts.length) return false;
+
+        return routeParts.every((part, index) => {
+          return part.startsWith(":") || part === pathParts[index];
+        });
+      }) || null
+    );
   }
 
   private async renderRoute(route: Route) {
     try {
-      this.appContainer.innerHTML = '<div class="flex items-center justify-center min-h-screen"><div class="text-lg">Loading...</div></div>';
-      
+      this.appContainer.innerHTML =
+        '<div class="flex items-center justify-center min-h-screen"><div class="text-lg">Loading...</div></div>';
+
       const module = await route.component();
       const component = module.default();
-      
-      this.appContainer.innerHTML = '';
+
+      this.appContainer.innerHTML = "";
       this.appContainer.appendChild(component);
     } catch (error) {
-      console.error('Error rendering route:', error);
-      this.appContainer.innerHTML = '<div class="flex items-center justify-center min-h-screen text-red-500"><div>Error loading page</div></div>';
+      console.error("Error rendering route:", error);
+      this.appContainer.innerHTML =
+        '<div class="flex items-center justify-center min-h-screen text-red-500"><div>Error loading page</div></div>';
     }
   }
 
   private isAuthenticated(): boolean {
-    return !!localStorage.getItem('accessToken');
+    return !!localStorage.getItem("accessToken");
   }
 
   async start() {
@@ -110,11 +112,15 @@ export class Router {
 }
 
 // Helper function to create navigation links
-export function createLink(href: string, text: string, className: string = ''): HTMLAnchorElement {
-  const link = document.createElement('a');
+export function createLink(
+  href: string,
+  text: string,
+  className: string = "",
+): HTMLAnchorElement {
+  const link = document.createElement("a");
   link.href = href;
   link.textContent = text;
   link.className = className;
-  link.setAttribute('data-link', 'true');
+  link.setAttribute("data-link", "true");
   return link;
-} 
+}
