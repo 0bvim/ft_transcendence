@@ -2,7 +2,7 @@
 # Copy this file to .env and customize values for your environment
 
 # Service Configuration
-PORT=3002
+PORT=3003
 NODE_ENV=production
 HOST=0.0.0.0
 
@@ -11,4 +11,4 @@ LOG_LEVEL=info
 
 # Game Configuration
 GAME_MODE=pong
-ENABLE_AI=true 
+ENABLE_AI=true
