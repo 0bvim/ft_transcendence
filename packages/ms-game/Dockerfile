@@ -24,7 +24,7 @@ COPY packages/ms-game/tsconfig.server.json ./
 COPY packages/ms-game/src ./src
 COPY packages/ms-game/public ./public
 COPY packages/ms-game/index.html ./
-COPY packages/ms-game/env_example ./.env
+COPY packages/ms-game/.env ./.env
 
 # Build the game and server
 RUN npm run build

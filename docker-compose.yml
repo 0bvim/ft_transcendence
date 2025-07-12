@@ -119,7 +119,7 @@ services:
     container_name: grafana
     image: grafana/grafana:latest
     ports:
-      - "${GRAFANA_PORT:-3002}:3002"
+      - "${GRAFANA_PORT:-3002}:3000"
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana

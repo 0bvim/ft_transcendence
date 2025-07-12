@@ -9,11 +9,15 @@ scrape_configs:
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
-  - job_name: "frontend:3005"
+  - job_name: "frontend:3010"
     static_configs:
-      - targets: ["frontend:3005"]
+      - targets: ["frontend:3010"]
     metrics_path: "/metrics"
   - job_name: "game-service"
     static_configs:
-      - targets: ["game:3002"]
+      - targets: ["game:3003"]
+    metrics_path: "/metrics"
+  - job_name: "ms-auth"
+    static_configs:
+      - targets: ["authentication:3001"]
     metrics_path: "/metrics"
