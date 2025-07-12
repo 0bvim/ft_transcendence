@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PONG GAME - Retro Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'retro-green': '#4ade80',
+                        'retro-blue': '#60a5fa',
+                        'retro-orange': '#fb923c',
+                        'retro-yellow': '#fbbf24',
+                        'retro-purple': '#a78bfa',
+                        'retro-gray': '#374151',
+                        'retro-light': '#f3f4f6',
+                        'pixel-dark': '#1f2937',
+                        'pixel-border': '#6b7280'
+                    },
+                    fontFamily: {
+                        'pixel': ['Orbitron', 'monospace'],
+                        'mono': ['Share Tech Mono', 'monospace']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .retro-card {
+            background: linear-gradient(145deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 3px solid #374151;
+            box-shadow: 
+                8px 8px 0px #6b7280,
+                0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .retro-input {
+            background: #ffffff;
+            border: 2px solid #6b7280;
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .retro-input:focus {
+            border-color: #4ade80;
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(74, 222, 128, 0.1);
+        }
+        
+        .retro-button {
+            background: linear-gradient(145deg, #4ade80 0%, #22c55e 100%);
+            border: 3px solid #16a34a;
+            box-shadow: 
+                0 4px 0px #15803d,
+                0 8px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.1s ease;
+        }
+        
+        .retro-button:hover {
+            transform: translateY(1px);
+            box-shadow: 
+                0 3px 0px #15803d,
+                0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .retro-button:active {
+            transform: translateY(2px);
+            box-shadow: 
+                0 2px 0px #15803d,
+                0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .pixel-text {
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center font-pixel">
+    <div id="app" class="animate-fade-in">
+        <!-- Login Page -->
+        <div id="login-page" class="retro-card rounded-lg p-8 w-full max-w-md animate-slide-up">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-black text-pixel-dark mb-4 pixel-text tracking-wider">
+                    PONG GAME
+                </h1>
+                <div class="w-20 h-1 bg-retro-green mx-auto mb-4"></div>
+                <p class="text-retro-gray font-mono text-lg">
+                    Classic Arcade Experience
+                </p>
+                <div class="text-sm text-pixel-border mt-2 font-mono">
+                    Ready Player One
+                </div>
+            </div>
+            
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-bold text-pixel-dark mb-2 font-mono">
+                        Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        required 
+                        class="w-full px-4 py-3 retro-input font-mono text-lg text-pixel-dark placeholder-gray-400"
+                        placeholder="Enter username"
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-bold text-pixel-dark mb-2 font-mono">
+                        Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        class="w-full px-4 py-3 retro-input font-mono text-lg text-pixel-dark placeholder-gray-400"
+                        placeholder="Enter password"
+                    >
+                </div>
+                
+                <button 
+                    type="submit"
+                    class="w-full retro-button text-white py-4 px-6 font-bold text-lg tracking-wide font-pixel"
+                >
+                    START GAME
+                </button>
+            </form>
+            
+            <div class="mt-8 text-center border-t-2 border-pixel-border pt-6">
+                <p class="text-sm text-retro-gray font-mono">
+                    New player? 
+                    <a href="#" id="signup-link" class="text-retro-blue hover:text-retro-green font-bold transition-colors duration-200">
+                        Register here
+                    </a>
+                </p>
+                <div class="mt-4 text-xs text-gray-500 font-mono">
+                    High Score: 999,999
+                </div>
+            </div>
+        </div>
+        
+        <!-- Welcome Page (hidden initially) -->
+        <div id="welcome-page" class="retro-card rounded-lg p-8 w-full max-w-lg hidden animate-fade-in">
+            <div class="text-center">
+                <!-- Simple Pong Game Representation -->
+                <div class="mb-6 relative h-20 bg-gray-50 border-2 border-pixel-border rounded overflow-hidden">
+                    <div class="absolute inset-0 flex justify-between items-center px-4">
+                        <div class="w-2 h-12 bg-retro-green rounded"></div>
+                        <div class="flex-1 text-center">
+                            <div class="w-3 h-3 bg-retro-blue rounded-full mx-auto mb-2"></div>
+                            <div class="text-xs text-retro-gray font-mono">Game Ready</div>
+                        </div>
+                        <div class="w-2 h-12 bg-retro-green rounded"></div>
+                    </div>
+                </div>
+                
+                <h2 class="text-3xl font-black text-pixel-dark mb-4 pixel-text">
+                    Welcome Back!
+                </h2>
+                <div class="w-24 h-1 bg-retro-blue mx-auto mb-6"></div>
+                
+                <div class="bg-white border-2 border-pixel-border rounded-lg p-6 mb-6">
+                    <div class="text-retro-gray font-mono space-y-2">
+                        <div class="flex justify-between">
+                            <span>Status:</span>
+                            <span class="text-retro-green font-bold">Online</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Games Won:</span>
+                            <span class="text-pixel-dark font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>High Score:</span>
+                            <span class="text-retro-orange font-bold">---</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Level:</span>
+                            <span class="text-retro-purple font-bold">Rookie</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button 
+                    id="play-game-btn"
+                    class="w-full retro-button text-white py-4 px-6 font-bold text-lg tracking-wide font-pixel mb-4"
+                    onclick="window.open('http://localhost:3002', '_blank')"
+                >
+                    PLAY PONG
+                </button>
+                
+                <button 
+                    id="logout-btn"
+                    class="bg-white border-3 border-retro-gray text-retro-gray py-3 px-8 font-bold text-lg hover:bg-retro-gray hover:text-white focus:outline-none transition-all duration-200 rounded font-pixel mb-6"
+                >
+                    Logout
+                </button>
+                
+                <div class="border-t-2 border-pixel-border pt-4">
+                    <div class="text-sm text-retro-blue font-mono mb-2">
+                        Ready to play some Pong?
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono">
+                        © 2024 Classic Arcade Games
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Compiled TypeScript frontend app -->
+    <script src="app.js"></script>
+</body>
+</html>

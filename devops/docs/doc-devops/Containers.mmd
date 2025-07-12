@@ -1,0 +1,23 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    A[Fastify Application] -->|Logs via pino TCP| B[Logstash]
+    A -->|Metrics endpoint| C[Prometheus]
+    B -->|Processed Logs| D[(Elasticsearch)]
+    D -->|Indexed Data| E[Kibana]
+    C -->|Scraped Metrics| F[Grafana]
+
+    subgraph Docker Containers
+        A
+        B
+        C
+        D
+        E
+        F
+    end
+
+    style A fill:#90caf9,stroke:#333
+    style B fill:#80cbc4,stroke:#333
+    style C fill:#ffab91,stroke:#333
+    style D fill:#f48fb1,stroke:#333
+    style E fill:#ce93d8,stroke:#333
+    style F fill:#a5d6a7,stroke:#333

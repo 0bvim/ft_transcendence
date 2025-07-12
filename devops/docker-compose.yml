@@ -1,0 +1,111 @@
+name: ${PROJECT_NAME:-ft_transcendence}
+
+services:
+  # Core application services
+  frontend:
+    build:
+      context: .
+      dockerfile: ./packages/frontend/Dockerfile
+    env_file: ./packages/frontend/.env
+    ports:
+      - "${FRONTEND_PORT:-3005}:3005"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    depends_on:
+      - logstash
+
+  game:
+    build:
+      context: .
+      dockerfile: ./packages/game/Dockerfile
+    env_file: ./packages/game/.env
+    ports:
+      - "${GAME_PORT:-3002}:3002"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    depends_on:
+      - logstash
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-9.0.2}
+    environment:
+      - discovery.type=${ELASTICSEARCH_DISCOVERY_TYPE:-single-node}
+      - ES_JAVA_OPTS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
+      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
+      - "_JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTIONS:--XX:UseSVE=0}"
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    volumes:
+      - ${ELASTICSEARCH_DATA_VOLUME:-esdata}:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: ${ELASTICSEARCH_HEALTH_CHECK_INTERVAL:-30s}
+      timeout: ${ELASTICSEARCH_HEALTH_CHECK_TIMEOUT:-10s}
+      retries: ${ELASTICSEARCH_HEALTH_CHECK_RETRIES:-5}
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION:-9.0.2}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=${KIBANA_ELASTICSEARCH_HOSTS:-http://elasticsearch:9200}
+      - xpack.security.enabled=${KIBANA_SECURITY_ENABLED:-false}
+      - "_JAVA_OPTIONS=${KIBANA_JAVA_OPTIONS:--XX:UseSVE=0}"
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${LOGSTASH_VERSION:-9.0.2}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "${LOGSTASH_TCP_PORT:-5000}:5000"
+      - "${LOGSTASH_HTTP_PORT:-9600}:9600"
+    environment:
+      - LS_JAVA_OPTS=${LOGSTASH_JAVA_OPTS:--Xmx256m -Xms256m}
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    volumes:
+      - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ${PROMETHEUS_CONFIG_PATH:-./devops/prometheus/prometheus.yml}:/etc/prometheus/prometheus.yml
+      - ${PROMETHEUS_ALERTS_PATH:-./devops/prometheus/alerts.yml}:/etc/prometheus/alerts.yml
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
+      - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGN_UP:-false}
+    depends_on:
+      - prometheus
+      - elasticsearch
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+
+volumes:
+  esdata:
+  grafana-data:
+
+networks:
+  ft-net:
+    driver: bridge

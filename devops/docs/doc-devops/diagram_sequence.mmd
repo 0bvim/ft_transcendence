@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Fastify
+    participant Logstash
+    participant Elasticsearch
+    participant Kibana
+    participant Prometheus
+    participant Grafana
+
+    Fastify->>Logstash: POST JSON logs (via TCP 5044)
+    Logstash->>Elasticsearch: Index processed logs
+    Fastify->>Prometheus: Expose /metrics endpoint
+    Prometheus->>Fastify: Scrape every 15s
+    Elasticsearch->>Kibana: Serve log data
+    Prometheus->>Grafana: Serve metric data

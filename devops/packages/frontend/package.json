@@ -1,0 +1,26 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "ft_transcendence frontend service",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "tsc --build --verbose",
+    "build:client": "tsc --project tsconfig.client.json",
+    "start": "node dist/index.js",
+    "dev": "npm run build && node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["ft_transcendence", "frontend", "spa"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ft-transcendence/observability": "file:../observability",
+    "dotenv": "^16.5.0",
+    "fastify": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.7",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "@ft-transcendence/observability",
+  "version": "1.0.0",
+  "description": "A comprehensive observability library providing logging, metrics, and monitoring for Node.js applications using Fastify, Pino, and Prometheus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npx tsc",
+    "dev": "npx tsc -w",
+    "prepublishOnly": "npm run build",
+    "test": "jest"
+  },
+  "keywords": [
+    "observability",
+    "logging",
+    "metrics",
+    "monitoring",
+    "fastify",
+    "pino",
+    "prometheus",
+    "typescript"
+  ],
+  "author": "ft-transcendence",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/transcendence-devops.git",
+    "directory": "packages/observability"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  },
+  "dependencies": {
+    "pino": "^8.19.0",
+    "pino-pretty": "^11.0.0",
+    "prom-client": "^15.1.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "fastify": "^5.4.0",
+    "typescript": "^5.4.5"
+  }
+}
