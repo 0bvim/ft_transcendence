@@ -53,7 +53,7 @@ start: first_setup migrations
 	npm run start
 
 .PHONY: dev
-dev: first_setup db_generate
+dev: first_setup db_generate migrations
 	npm run dev
 
 .PHONY: container
