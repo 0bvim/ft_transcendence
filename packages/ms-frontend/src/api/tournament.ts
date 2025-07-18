@@ -76,7 +76,13 @@ interface SubmitMatchResultRequest {
 }
 
 class TournamentApi {
-  private baseUrl = '/api/tournament';
+  private baseUrl: string;
+
+  constructor() {
+    // Use tournament service URL directly
+    const hostname = window.location.hostname;
+    this.baseUrl = `http://${hostname}:4243`;
+  }
 
   private async request<T>(
     endpoint: string,

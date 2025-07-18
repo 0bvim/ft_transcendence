@@ -88,11 +88,11 @@ export async function uploadAvatar(
     }
 
     // Generate unique filename
-    const fileName = generateFileName(data.filename, userId);
+    const fileName = generateFileName(data.originalname, userId);
     const filePath = path.join(UPLOAD_DIR, fileName);
 
     // Save file to disk
-    await pipeline(data.file, createWriteStream(filePath));
+    await pipeline(data.buffer, createWriteStream(filePath));
 
     // Generate avatar URL
     const avatarUrl = `/uploads/avatars/${fileName}`;

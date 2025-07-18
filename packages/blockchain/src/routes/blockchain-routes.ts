@@ -179,23 +179,46 @@ export async function blockchainRoutes(
   // Network and status endpoints
   fastify.get('/network', {
     schema: {
-      description: 'Get blockchain network information',
-      tags: ['blockchain', 'network']
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            chainId: { type: 'number' },
+            networkName: { type: 'string' },
+            blockNumber: { type: 'number' }
+          }
+        }
+      }
     }
   }, controller.getNetworkInfo.bind(controller));
 
   fastify.get('/stats', {
     schema: {
-      description: 'Get blockchain statistics',
-      tags: ['blockchain', 'stats']
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            totalTournaments: { type: 'number' },
+            totalMatches: { type: 'number' },
+            totalParticipants: { type: 'number' }
+          }
+        }
+      }
     }
   }, controller.getStats.bind(controller));
 
   // Health check endpoint
   fastify.get('/health', {
     schema: {
-      description: 'Check blockchain service health',
-      tags: ['health']
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+            timestamp: { type: 'string' }
+          }
+        }
+      }
     }
   }, async (request, reply) => {
     try {

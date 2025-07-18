@@ -4,7 +4,9 @@ import { BlockchainService } from './services/blockchain-service';
 import { blockchainRoutes } from './routes/blockchain-routes';
 import * as dotenv from 'dotenv';
 
+// Load environment variables
 dotenv.config();
+dotenv.config({ path: '.env.development' });
 
 // Environment variables
 const PORT = parseInt(process.env.PORT || '3003');

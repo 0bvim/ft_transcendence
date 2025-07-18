@@ -29,10 +29,10 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@fastify/cors": "^8.0.0",
+    "@fastify/cors": "^11.0.0",
     "@ft-transcendence/observability": "workspace:*",
     "@prisma/client": "^5.0.0",
-    "fastify": "^4.0.0",
+    "fastify": "^5.0.0",
     "zod": "^3.22.0"
   },
   "engines": {

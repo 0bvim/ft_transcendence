@@ -77,7 +77,9 @@ class BlockchainApi {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = '/api/blockchain';
+    // Use blockchain service URL directly
+    const hostname = window.location.hostname;
+    this.baseUrl = `http://${hostname}:3004`;
   }
 
   private async request<T>(

@@ -60,9 +60,9 @@ export class BlockchainService {
     
     this.contract = new ethers.Contract(
       contractAddress,
-      TournamentScoringABI,
+      TournamentScoringABI.abi,
       this.signer
-    ) as TournamentScoring;
+    ) as any;
   }
 
   /**
@@ -235,9 +235,9 @@ export class BlockchainService {
         creator: result.creator,
         createdAt: Number(result.createdAt),
         completedAt: Number(result.completedAt),
-        maxParticipants: result.maxParticipants,
-        currentParticipants: result.currentParticipants,
-        status: this.mapTournamentStatus(result.status),
+        maxParticipants: Number(result.maxParticipants),
+        currentParticipants: Number(result.currentParticipants),
+        status: this.mapTournamentStatus(Number(result.status)),
         isVerified: result.isVerified
       };
     } catch (error) {
@@ -256,14 +256,14 @@ export class BlockchainService {
       return {
         id: Number(result.id),
         tournamentId: Number(result.tournamentId),
-        round: result.round,
+        round: Number(result.round),
         player1Id: result.player1Id,
         player2Id: result.player2Id,
         winnerId: result.winnerId,
         player1Score: Number(result.player1Score),
         player2Score: Number(result.player2Score),
         completedAt: Number(result.completedAt),
-        status: this.mapMatchStatus(result.status),
+        status: this.mapMatchStatus(Number(result.status)),
         resultHash: result.resultHash
       };
     } catch (error) {

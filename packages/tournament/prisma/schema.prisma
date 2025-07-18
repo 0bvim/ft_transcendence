@@ -17,9 +17,9 @@ model Tournament {
   description   String?
   maxPlayers    Int      @default(8)
   currentPlayers Int     @default(0)
-  status        TournamentStatus @default(WAITING)
-  tournamentType TournamentType @default(MIXED)
-  aiDifficulty  AIDifficulty @default(MEDIUM)
+  status        String @default("WAITING")
+  tournamentType String @default("MIXED")
+  aiDifficulty  String @default("MEDIUM")
   autoStart     Boolean  @default(true)
   
   // Tournament metadata
@@ -43,8 +43,8 @@ model TournamentParticipant {
   tournamentId  String
   userId        String?  // Null for AI participants
   displayName   String   // Persistent display name as specified
-  participantType ParticipantType @default(HUMAN)
-  status        ParticipantStatus @default(ACTIVE)
+  participantType String @default("HUMAN")
+  status        String @default("ACTIVE")
   
   // Tournament placement
   eliminated    Boolean  @default(false)
@@ -68,7 +68,7 @@ model Match {
   tournamentId  String
   round         Int      // 1 = first round, 2 = second round, etc.
   matchNumber   Int      // Match number within the round
-  status        MatchStatus @default(WAITING)
+  status        String @default("WAITING")
   
   // Match participants
   player1Id     String?
@@ -117,38 +117,10 @@ model UserStats {
 }
 
 // Enums
-enum TournamentStatus {
-  WAITING     // Waiting for players to join
-  ACTIVE      // Tournament in progress
-  COMPLETED   // Tournament finished
-  CANCELLED   // Tournament cancelled
-}
-
-enum TournamentType {
-  HUMANS_ONLY // Only human players
-  MIXED       // Humans + AI opponents
-}
-
-enum AIDifficulty {
-  EASY
-  MEDIUM
-  HARD
-}
-
-enum ParticipantType {
-  HUMAN
-  AI
-}
-
-enum ParticipantStatus {
-  ACTIVE
-  ELIMINATED
-  WINNER
-}
-
-enum MatchStatus {
-  WAITING     // Waiting for players
-  IN_PROGRESS // Match currently being played
-  COMPLETED   // Match finished
-  CANCELLED   // Match cancelled
-}
+// Enum constants as strings for SQLite compatibility
+// TournamentStatus: "WAITING" | "ACTIVE" | "COMPLETED" | "CANCELLED"
+// TournamentType: "HUMANS_ONLY" | "MIXED"
+// AIDifficulty: "EASY" | "MEDIUM" | "HARD"
+// ParticipantType: "HUMAN" | "AI"
+// ParticipantStatus: "ACTIVE" | "ELIMINATED" | "WINNER"
+// MatchStatus: "WAITING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
