@@ -21,6 +21,9 @@ import {
   generateWebAuthnAuthenticationOptions,
   verifyWebAuthnAuthentication,
 } from "./controllers/webauthn-2fa";
+import { getProfile } from "./controllers/get-profile";
+import { updateProfile } from "./controllers/update-profile";
+import { uploadAvatar } from './controllers/upload-avatar';
 import { env } from "../env";
 
 export async function appRoutes(app: FastifyInstance) {
@@ -55,6 +58,11 @@ export async function appRoutes(app: FastifyInstance) {
   app.post("/refresh", refreshToken);
   app.delete("/delete/:id", deleteUser);
   app.post("/verify-2fa", verify2FA);
+
+  // Profile management routes
+  app.get("/profile", getProfile);
+  app.put("/profile", updateProfile);
+  app.post("/profile/avatar", uploadAvatar);
 
   // Google OAuth routes
   app.get("/auth/google", googleOAuthInitiate);

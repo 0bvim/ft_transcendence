@@ -5,7 +5,7 @@ services:
   ms-frontend:
     container_name: frontend
     build:
-      context: ./packages/
+      context: ./packages
       dockerfile: ./ms-frontend/Dockerfile
       target: development
     ports:

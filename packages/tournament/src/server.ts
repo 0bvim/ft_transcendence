@@ -9,8 +9,8 @@ const app = fastify();
 
 //Setup Observability
 setupObservability(app, {
-  serviceName: "authentication",
-  logLevel: process.env["LOG_LEVEL"] || "info",
+  serviceName: "tournament",
+  logLevel: env.LOG_LEVEL,
   enableMetrics: true,
   enableHealthCheck: true,
   healthPath: "/health",
@@ -41,12 +41,13 @@ app.setErrorHandler((error, request, reply) => {
 });
 
 const start = async () => {
-  app.log.info("Auth service starting up");
+  app.log.info("Tournament service starting up");
   try {
     await app.listen({
-      port: env.PORT ? Number(process.env.PORT) : 3001,
+      port: env.PORT,
       host: "0.0.0.0",
     });
+    app.log.info(`Tournament service running on port ${env.PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
