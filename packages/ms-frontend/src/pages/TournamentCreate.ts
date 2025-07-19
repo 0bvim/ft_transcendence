@@ -196,21 +196,21 @@ export default function TournamentCreate(): HTMLElement {
             </label>
           </div>
 
-          <!-- Submit Button -->
-          <div class="flex space-x-4">
-            <button
-              type="submit"
-              id="create-tournament-submit"
-              class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
-            >
-              Create Tournament
-            </button>
+          <!-- Form Actions -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-end">
             <button
               type="button"
               id="cancel-btn"
-              class="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors duration-200"
+              class="order-2 sm:order-1 px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors duration-200"
             >
               Cancel
+            </button>
+            <button
+              type="submit"
+              id="create-tournament-submit"
+              class="order-1 sm:order-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+            >
+              Create Tournament
             </button>
           </div>
         </form>
@@ -257,14 +257,12 @@ function setupEventListeners(container: HTMLElement) {
 
   // Back button
   backBtn?.addEventListener('click', () => {
-    window.history.pushState({}, '', '/tournament');
-    window.dispatchEvent(new Event('popstate'));
+    window.location.href = '/tournament';
   });
 
   // Cancel button
   cancelBtn?.addEventListener('click', () => {
-    window.history.pushState({}, '', '/tournament');
-    window.dispatchEvent(new Event('popstate'));
+    window.location.href = '/tournament';
   });
 
   // Form submission

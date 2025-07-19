@@ -126,8 +126,7 @@ function setupEventListeners(container: HTMLElement) {
   const watchBtn = container.querySelector('#watch-match-btn');
 
   backBtn?.addEventListener('click', () => {
-    window.history.pushState({}, '', '/tournament');
-    window.dispatchEvent(new Event('popstate'));
+    window.location.href = '/tournament';
   });
 
   joinBtn?.addEventListener('click', () => {
