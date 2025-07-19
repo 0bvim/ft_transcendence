@@ -1,5 +1,6 @@
 import fastify from "fastify";
 import fastifyCors from "@fastify/cors";
+import fastifyMultipart from "@fastify/multipart";
 import { appRoutes } from "./http/routes";
 import { setupObservability } from "@ft-transcendence/observability";
 import { ZodError } from "zod";
@@ -22,6 +23,14 @@ app.register(fastifyCors, {
   origin: true, // Accept all origins
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+});
+
+// Register multipart plugin for file uploads
+app.register(fastifyMultipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB instead of 5MB
+    files: 1
+  }
 });
 
 app.register(appRoutes);

@@ -25,8 +25,15 @@ import { getProfile } from "./controllers/get-profile";
 import { updateProfile } from "./controllers/update-profile";
 import { uploadAvatar } from './controllers/upload-avatar';
 import { env } from "../env";
+import path from "path";
 
 export async function appRoutes(app: FastifyInstance) {
+  // Serve static files for uploaded avatars
+  app.register(require('@fastify/static'), {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
+  });
+
   // Debug endpoint - remove in production
   app.get("/debug/config", async (request, reply) => {
     return reply.status(200).send({
