@@ -48,9 +48,15 @@ export async function uploadAvatar(
   reply: FastifyReply
 ) {
   try {
-    // For now, skip authentication - we'll add proper JWT middleware later
-    const userId = 'test-user-id'; // TODO: Get from authenticated user
+    const userId = request.user?.id;
     
+    if (!userId) {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'User not authenticated'
+      });
+    }
+
     // Ensure upload directory exists
     await ensureUploadDir();
 
@@ -84,21 +90,40 @@ export async function uploadAvatar(
     // Generate avatar URL
     const avatarUrl = `/uploads/avatars/${fileName}`;
 
-    // For testing, we'll create a mock user response instead of database update
-    const mockUser = {
-      id: userId,
-      email: 'test@example.com',
-      username: 'testuser',
-      displayName: 'Test User',
-      avatarUrl: avatarUrl,
-      bio: 'Test user bio',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    // Update user's avatar URL in database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarUrl: avatarUrl,
+        updatedAt: new Date()
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        bio: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    // Delete old avatar file if it exists and it's different from the new one
+    try {
+      if (request.user?.avatarUrl && request.user.avatarUrl !== avatarUrl && request.user.avatarUrl.startsWith('/uploads/avatars/')) {
+        const oldFileName = path.basename(request.user.avatarUrl);
+        const oldFilePath = path.join(UPLOAD_DIR, oldFileName);
+        await fs.unlink(oldFilePath);
+      }
+    } catch (error) {
+      // Ignore errors when deleting old avatar
+      console.warn('Failed to delete old avatar:', error);
+    }
 
     return reply.status(200).send({
       message: 'Avatar uploaded successfully',
-      user: mockUser,
+      user: updatedUser,
       avatarUrl: avatarUrl
     });
 
