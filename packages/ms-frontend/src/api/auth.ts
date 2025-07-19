@@ -220,12 +220,21 @@ export const authApi = {
 
   // 2FA Authentication APIs
   enableTwoFactor: async (userId: string): Promise<{ 
-    enabled: boolean; 
+    setup: boolean; 
     backupCodes: string[];
     totpSecret: string;
     qrCodeUrl: string;
   }> => {
     const response = await api.post("/2fa/enable", { userId });
+    return response.data;
+  },
+
+  completeTwoFactorSetup: async (userId: string, code: string): Promise<{
+    enabled: boolean;
+    user: User;
+    message: string;
+  }> => {
+    const response = await api.post("/2fa/complete-setup", { userId, code });
     return response.data;
   },
 

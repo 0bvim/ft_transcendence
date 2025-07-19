@@ -49,7 +49,7 @@ export class VerifyTotpCodeUseCase {
       encoding: 'base32',
       token: cleanCode,
       step: 30, // 30-second time step (standard)
-      window: 4, // Allow 4 time steps (2 minutes) before/after for time sync issues
+      window: 6, // Allow 6 time steps (3 minutes) before/after for time sync issues
     });
 
     if (!verified) {

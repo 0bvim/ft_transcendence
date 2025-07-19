@@ -22,6 +22,7 @@ import {
   verifyWebAuthnAuthentication,
 } from "./controllers/webauthn-2fa";
 import { verifyTotpCode } from "./controllers/verify-totp-code";
+import { completeTwoFactorSetup } from "./controllers/complete-2fa-setup";
 import { getProfile } from "./controllers/get-profile";
 import { updateProfile } from "./controllers/update-profile";
 import { uploadAvatar } from './controllers/upload-avatar';
@@ -71,6 +72,7 @@ export async function appRoutes(app: FastifyInstance) {
     protectedRoutes.post("/2fa/enable", enableTwoFactor);
     protectedRoutes.post("/2fa/disable", disableTwoFactor);
     protectedRoutes.post("/2fa/verify-totp", verifyTotpCode);
+    protectedRoutes.post("/2fa/complete-setup", completeTwoFactorSetup);
     
     // WebAuthn 2FA routes
     protectedRoutes.post("/2fa/webauthn/register", registerWebAuthnCredential);

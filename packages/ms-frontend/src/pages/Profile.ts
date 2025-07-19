@@ -660,28 +660,21 @@ async function setupTOTP(container: HTMLElement, user: any) {
   try {
     setLoading(container, true);
     
-    // Enable TOTP 2FA
+    // Start TOTP 2FA setup (without enabling yet)
     const response = await authApi.enableTwoFactor(user.id);
     
-    // Update user in localStorage
-    const updatedUser = { ...user, twoFactorEnabled: true };
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    
-    // Update display
-    updateProfileDisplay(container, updatedUser);
-    
-    // Show TOTP setup modal with QR code
-    showTOTPSetupModal(response, container);
+    // Show TOTP setup modal with QR code (don't update user status yet)
+    showTOTPSetupModal(response, container, user);
     
   } catch (error) {
-    console.error('Failed to enable TOTP:', error);
-    showError(container, 'Failed to enable TOTP authentication');
+    console.error('Failed to setup TOTP:', error);
+    showError(container, 'Failed to setup TOTP authentication');
   } finally {
     setLoading(container, false);
   }
 }
 
-function showTOTPSetupModal(response: any, container: HTMLElement) {
+function showTOTPSetupModal(response: any, container: HTMLElement, user: any) {
   const modalOverlay = document.createElement('div');
   modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
   
@@ -757,13 +750,30 @@ function showTOTPSetupModal(response: any, container: HTMLElement) {
     }
     
     try {
-      await authApi.verifyTotpCode(user.id, code);
+      console.log('🔐 Attempting 2FA verification with code:', code);
+      console.log('🔐 User ID:', user.id);
+      console.log('🔐 Code length:', code.length);
+      console.log('🔐 Time:', new Date().toISOString());
+      
+      // Complete the 2FA setup (this will enable 2FA after verification)
+      const result = await authApi.completeTwoFactorSetup(user.id, code);
+      
+      console.log('✅ 2FA setup successful:', result);
+      
+      // Update user in localStorage with the updated user data
+      localStorage.setItem('user', JSON.stringify(result.user));
+      
+      // Update display with the new user data
+      updateProfileDisplay(container, result.user);
+      
       alert('2FA setup completed successfully!');
       closeModal();
       showSuccess(container);
     } catch (error) {
-      console.error('TOTP verification failed:', error);
-      alert('Invalid code. Please try again.');
+      console.error('❌ TOTP verification failed:', error);
+      console.log('❌ Failed code:', code);
+      console.log('❌ Time:', new Date().toISOString());
+      alert(`Invalid code. Please try again. Error: ${(error as any)?.message || 'Unknown error'}`);
     }
   });
 }
