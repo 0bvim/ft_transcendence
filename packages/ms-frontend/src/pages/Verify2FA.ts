@@ -13,140 +13,131 @@ export default function Verify2FA(): HTMLElement {
       <div class="absolute top-1/3 right-1/3 w-60 h-60 bg-warning-200/20 rounded-full blur-3xl animate-float" style="animation-delay: -1.5s;"></div>
     </div>
 
-    <div class="w-full max-w-md space-y-8 animate-fade-in">
-      <!-- Header -->
-      <div class="text-center">
-        <div class="mb-4">
-          <button id="backButton" class="btn btn-ghost text-secondary-600 hover:text-primary-600 mb-4">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Login
-          </button>
+    <div class="card-gradient p-8 w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="bg-primary-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622C17.176 19.29 21 14.591 21 9a12.02 12.02 0 00-.382-3.016z"></path>
+          </svg>
         </div>
-        <div class="mb-6">
-          <div class="w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-700 rounded-2xl mx-auto flex items-center justify-center shadow-glow">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-            </svg>
-          </div>
-        </div>
-        <h2 class="text-3xl font-bold text-gradient mb-2">
-          Two-Factor Authentication
-        </h2>
-        <p class="text-secondary-600 mb-6">
-          Complete your login with two-factor authentication
-        </p>
+        <h1 class="text-2xl font-bold text-secondary-900 mb-2">Two-Factor Authentication</h1>
+        <p class="text-secondary-600">Please complete your authentication to continue</p>
       </div>
 
-      <!-- 2FA Options Card -->
-      <div class="card-gradient p-8 space-y-6 animate-slide-up">
-        <!-- WebAuthn Section -->
-        <div id="webauthnSection" class="space-y-4">
-          <div class="text-center">
-            <h3 class="text-lg font-semibold text-secondary-900 mb-2">Security Key / Biometric</h3>
-            <p class="text-sm text-secondary-600 mb-4">Use your security key, fingerprint, or face recognition</p>
-          </div>
-          
-          <button
-            id="webauthnButton"
-            type="button"
-            class="btn btn-primary btn-lg w-full group"
-          >
-            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-            </svg>
-            <span id="webauthnButtonText">Use Security Key</span>
-            <svg id="webauthnButtonIcon" class="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-            </svg>
-            <svg id="webauthnSpinner" class="w-5 h-5 ml-2 spinner hidden" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+      <!-- 2FA Method Tabs -->
+      <div class="mb-6">
+        <div class="flex border-b border-secondary-200">
+          <button id="totp-tab" class="flex-1 py-2 px-4 text-sm font-medium text-center border-b-2 border-primary-600 text-primary-600">
+            Authenticator App
+          </button>
+          <button id="webauthn-tab" class="flex-1 py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-500 hover:text-secondary-700">
+            Security Key
+          </button>
+          <button id="backup-tab" class="flex-1 py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-500 hover:text-secondary-700">
+            Backup Code
           </button>
         </div>
+      </div>
 
-        <!-- Divider -->
-        <div class="relative">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-secondary-200"></div>
+      <!-- TOTP Method -->
+      <div id="totp-method" class="2fa-method">
+        <div class="text-center mb-6">
+          <svg class="w-12 h-12 text-primary-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          <h3 class="text-lg font-medium text-secondary-900 mb-2">Enter Authenticator Code</h3>
+          <p class="text-secondary-600">Open your authenticator app and enter the 6-digit code</p>
+        </div>
+        
+        <form id="totp-form" class="space-y-4">
+          <div>
+            <label for="totp-code" class="block text-sm font-medium text-secondary-700 mb-2">
+              Authentication Code
+            </label>
+            <input 
+              type="text" 
+              id="totp-code"
+              name="totpCode"
+              placeholder="123456"
+              maxlength="6"
+              pattern="[0-9]{6}"
+              class="block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-center text-lg font-mono"
+              required
+            />
           </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-secondary-500">Or use backup code</span>
+          
+          <button type="submit" id="verify-totp-btn" class="w-full btn btn-primary">
+            Verify Code
+          </button>
+        </form>
+      </div>
+
+      <!-- WebAuthn Method -->
+      <div id="webauthn-method" class="2fa-method hidden">
+        <div class="text-center mb-6">
+          <svg class="w-12 h-12 text-primary-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          <h3 class="text-lg font-medium text-secondary-900 mb-2">Use Security Key</h3>
+          <p class="text-secondary-600">Touch your security key or use biometric authentication</p>
+        </div>
+        
+        <button id="webauthn-btn" class="w-full btn btn-primary">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          Authenticate with Security Key
+        </button>
+      </div>
+
+      <!-- Backup Code Method -->
+      <div id="backup-method" class="2fa-method hidden">
+        <div class="text-center mb-6">
+          <svg class="w-12 h-12 text-primary-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <h3 class="text-lg font-medium text-secondary-900 mb-2">Use Backup Code</h3>
+          <p class="text-secondary-600">Enter one of your saved backup codes</p>
+        </div>
+        
+        <form id="backup-form" class="space-y-4">
+          <div>
+            <label for="backup-code" class="block text-sm font-medium text-secondary-700 mb-2">
+              Backup Code
+            </label>
+            <input 
+              type="text" 
+              id="backup-code"
+              name="backupCode"
+              placeholder="Enter backup code"
+              class="block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              required
+            />
+          </div>
+          
+          <button type="submit" id="verify-backup-btn" class="w-full btn btn-primary">
+            Verify Backup Code
+          </button>
+        </form>
+      </div>
+
+      <!-- Error Message -->
+      <div id="error-message" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md hidden">
+        <div class="flex">
+          <svg class="flex-shrink-0 h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          <div class="ml-3">
+            <p class="text-sm text-red-800" id="error-text"></p>
           </div>
         </div>
+      </div>
 
-        <!-- Backup Code Section -->
-        <div id="backupCodeSection" class="space-y-4">
-          <div class="text-center">
-            <h3 class="text-lg font-semibold text-secondary-900 mb-2">Backup Code</h3>
-            <p class="text-sm text-secondary-600 mb-4">Enter one of your backup codes</p>
-          </div>
-
-          <form id="backupCodeForm" class="space-y-4">
-            <div class="floating-input">
-              <input
-                id="backupCode"
-                name="backupCode"
-                type="text"
-                required
-                placeholder="Enter backup code"
-                maxlength="8"
-                class="peer w-full px-4 pt-6 pb-2 border border-secondary-200 rounded-xl bg-white/50 backdrop-blur-sm placeholder-transparent focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 text-center font-mono"
-              />
-              <label for="backupCode" class="absolute left-4 top-2 text-xs text-secondary-500 transition-all duration-200 peer-placeholder-shown:text-base peer-placeholder-shown:text-secondary-400 peer-placeholder-shown:top-4 peer-focus:top-2 peer-focus:text-xs peer-focus:text-primary-600">
-                Backup Code
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              id="backupCodeButton"
-              class="btn btn-secondary btn-lg w-full group"
-            >
-              <span id="backupCodeButtonText">Verify Code</span>
-              <svg id="backupCodeButtonIcon" class="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <svg id="backupCodeSpinner" class="w-5 h-5 ml-2 spinner hidden" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </button>
-          </form>
-        </div>
-
-        <!-- Error Message -->
-        <div id="errorMessage" class="hidden">
-          <div class="alert alert-danger">
-            <div class="flex">
-              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-              </svg>
-              <span id="errorText"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Success Message -->
-        <div id="successMessage" class="hidden">
-          <div class="alert alert-success">
-            <div class="flex">
-              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-              </svg>
-              <span>Verification successful! Redirecting...</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Back to Login -->
-        <div class="text-center">
-          <a href="/login" data-link class="text-sm text-secondary-600 hover:text-primary-600 transition-colors">
-            ← Back to login
-          </a>
-        </div>
+      <!-- Login Link -->
+      <div class="mt-6 text-center">
+        <a href="/login" class="text-sm text-primary-600 hover:text-primary-500">
+          ← Back to Login
+        </a>
       </div>
     </div>
   `;
@@ -158,12 +149,17 @@ export default function Verify2FA(): HTMLElement {
 }
 
 function setupEventListeners(container: HTMLElement) {
-  const webauthnButton = container.querySelector("#webauthnButton") as HTMLButtonElement;
-  const backupCodeForm = container.querySelector("#backupCodeForm") as HTMLFormElement;
-  const backupCodeButton = container.querySelector("#backupCodeButton") as HTMLButtonElement;
-  const errorMessage = container.querySelector("#errorMessage") as HTMLElement;
-  const successMessage = container.querySelector("#successMessage") as HTMLElement;
-  const errorText = container.querySelector("#errorText") as HTMLElement;
+  const totpTab = container.querySelector("#totp-tab") as HTMLButtonElement;
+  const webauthnTab = container.querySelector("#webauthn-tab") as HTMLButtonElement;
+  const backupTab = container.querySelector("#backup-tab") as HTMLButtonElement;
+  const totpMethod = container.querySelector("#totp-method") as HTMLElement;
+  const webauthnMethod = container.querySelector("#webauthn-method") as HTMLElement;
+  const backupMethod = container.querySelector("#backup-method") as HTMLElement;
+  const verifyTotpBtn = container.querySelector("#verify-totp-btn") as HTMLButtonElement;
+  const webauthnBtn = container.querySelector("#webauthn-btn") as HTMLButtonElement;
+  const verifyBackupBtn = container.querySelector("#verify-backup-btn") as HTMLButtonElement;
+  const errorMessage = container.querySelector("#error-message") as HTMLElement;
+  const errorText = container.querySelector("#error-text") as HTMLElement;
   const backButton = container.querySelector("#backButton") as HTMLButtonElement;
 
   // Get user data from session storage
@@ -185,8 +181,78 @@ function setupEventListeners(container: HTMLElement) {
     window.location.href = "/login";
   });
 
+  // Tab listeners
+  totpTab.addEventListener("click", () => {
+    totpTab.classList.add("border-primary-600");
+    webauthnTab.classList.remove("border-primary-600");
+    backupTab.classList.remove("border-primary-600");
+    totpMethod.classList.remove("hidden");
+    webauthnMethod.classList.add("hidden");
+    backupMethod.classList.add("hidden");
+  });
+
+  webauthnTab.addEventListener("click", () => {
+    webauthnTab.classList.add("border-primary-600");
+    totpTab.classList.remove("border-primary-600");
+    backupTab.classList.remove("border-primary-600");
+    webauthnMethod.classList.remove("hidden");
+    totpMethod.classList.add("hidden");
+    backupMethod.classList.add("hidden");
+  });
+
+  backupTab.addEventListener("click", () => {
+    backupTab.classList.add("border-primary-600");
+    totpTab.classList.remove("border-primary-600");
+    webauthnTab.classList.remove("border-primary-600");
+    backupMethod.classList.remove("hidden");
+    totpMethod.classList.add("hidden");
+    webauthnMethod.classList.add("hidden");
+  });
+
+  // TOTP verification
+  verifyTotpBtn.addEventListener("click", async () => {
+    const totpCode = container.querySelector("#totp-code") as HTMLInputElement;
+    const totpForm = container.querySelector("#totp-form") as HTMLFormElement;
+
+    if (!totpCode.value.trim()) {
+      showError("Please enter an authentication code.");
+      return;
+    }
+
+    try {
+      setTotpLoading(true);
+
+      // Complete 2FA verification with TOTP code
+      const response = await authApi.verify2FA({
+        userId: tempUserId,
+        method: "totp",
+        totpCode: totpCode.value.trim(),
+      });
+
+      // Store tokens and redirect
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // Clear temporary data
+      sessionStorage.removeItem("tempUserId");
+      sessionStorage.removeItem("tempUserData");
+
+      showSuccess();
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1500);
+    } catch (error: any) {
+      console.error("TOTP error:", error);
+      const message = error.response?.data?.message || "Invalid authentication code";
+      showError(message);
+    } finally {
+      setTotpLoading(false);
+    }
+  });
+
   // WebAuthn authentication
-  webauthnButton.addEventListener("click", async () => {
+  webauthnBtn.addEventListener("click", async () => {
     try {
       setWebAuthnLoading(true);
 
@@ -239,14 +305,14 @@ function setupEventListeners(container: HTMLElement) {
   });
 
   // Backup code form submission
-  backupCodeForm.addEventListener("submit", async (e) => {
+  verifyBackupBtn.addEventListener("click", async (e) => {
     e.preventDefault();
 
-    const formData = new FormData(backupCodeForm);
-    const backupCode = formData.get("backupCode") as string;
+    const backupCode = container.querySelector("#backup-code") as HTMLInputElement;
+    const backupForm = container.querySelector("#backup-form") as HTMLFormElement;
 
-    if (!backupCode.trim()) {
-      showError("Please enter a backup code");
+    if (!backupCode.value.trim()) {
+      showError("Please enter a backup code.");
       return;
     }
 
@@ -257,7 +323,7 @@ function setupEventListeners(container: HTMLElement) {
       const response = await authApi.verify2FA({
         userId: tempUserId,
         method: "backup_code",
-        backupCode: backupCode.trim(),
+        backupCode: backupCode.value.trim(),
       });
 
       // Store tokens and redirect
@@ -282,62 +348,50 @@ function setupEventListeners(container: HTMLElement) {
     }
   });
 
-  function setWebAuthnLoading(loading: boolean) {
-    const buttonText = container.querySelector("#webauthnButtonText") as HTMLElement;
-    const buttonIcon = container.querySelector("#webauthnButtonIcon") as HTMLElement;
-    const spinner = container.querySelector("#webauthnSpinner") as HTMLElement;
-
-    webauthnButton.disabled = loading;
-
+  function setTotpLoading(loading: boolean) {
+    const button = container.querySelector("#verify-totp-btn") as HTMLButtonElement;
+    button.disabled = loading;
     if (loading) {
-      buttonText.textContent = "Waiting for device...";
-      buttonIcon.classList.add("hidden");
-      spinner.classList.remove("hidden");
-      webauthnButton.classList.add("opacity-75");
+      button.textContent = "Verifying...";
+      button.classList.add("opacity-75");
     } else {
-      buttonText.textContent = "Use Security Key";
-      buttonIcon.classList.remove("hidden");
-      spinner.classList.add("hidden");
-      webauthnButton.classList.remove("opacity-75");
+      button.textContent = "Verify Code";
+      button.classList.remove("opacity-75");
+    }
+  }
+
+  function setWebAuthnLoading(loading: boolean) {
+    const button = container.querySelector("#webauthn-btn") as HTMLButtonElement;
+    button.disabled = loading;
+    if (loading) {
+      button.textContent = "Waiting for device...";
+      button.classList.add("opacity-75");
+    } else {
+      button.textContent = "Authenticate with Security Key";
+      button.classList.remove("opacity-75");
     }
   }
 
   function setBackupCodeLoading(loading: boolean) {
-    const buttonText = container.querySelector("#backupCodeButtonText") as HTMLElement;
-    const buttonIcon = container.querySelector("#backupCodeButtonIcon") as HTMLElement;
-    const spinner = container.querySelector("#backupCodeSpinner") as HTMLElement;
-
-    backupCodeButton.disabled = loading;
-
+    const button = container.querySelector("#verify-backup-btn") as HTMLButtonElement;
+    button.disabled = loading;
     if (loading) {
-      buttonText.textContent = "Verifying...";
-      buttonIcon.classList.add("hidden");
-      spinner.classList.remove("hidden");
-      backupCodeButton.classList.add("opacity-75");
+      button.textContent = "Verifying...";
+      button.classList.add("opacity-75");
     } else {
-      buttonText.textContent = "Verify Code";
-      buttonIcon.classList.remove("hidden");
-      spinner.classList.add("hidden");
-      backupCodeButton.classList.remove("opacity-75");
+      button.textContent = "Verify Backup Code";
+      button.classList.remove("opacity-75");
     }
   }
 
   function showError(message: string) {
     errorText.textContent = message;
     errorMessage.classList.remove("hidden");
-    successMessage.classList.add("hidden");
-    errorMessage.classList.add("animate-slide-down");
-
-    setTimeout(() => {
-      errorMessage.classList.add("hidden");
-      errorMessage.classList.remove("animate-slide-down");
-    }, 5000);
+    // No success message to show for TOTP/WebAuthn/Backup Code
   }
 
   function showSuccess() {
-    successMessage.classList.remove("hidden");
-    errorMessage.classList.add("hidden");
-    successMessage.classList.add("animate-slide-down");
+    // No specific success message for TOTP/WebAuthn/Backup Code
   }
 
   // Input focus animations
@@ -353,7 +407,7 @@ function setupEventListeners(container: HTMLElement) {
   });
 
   // Auto-format backup code input
-  const backupCodeInput = container.querySelector("#backupCode") as HTMLInputElement;
+  const backupCodeInput = container.querySelector("#backup-code") as HTMLInputElement;
   backupCodeInput.addEventListener("input", (e) => {
     const target = e.target as HTMLInputElement;
     // Remove any non-alphanumeric characters and convert to uppercase

@@ -218,25 +218,41 @@ export const authApi = {
     return response.data;
   },
 
-  // 2FA verification for login flow
-  verify2FA: async (data: {
-    userId: string;
-    method: "webauthn" | "backup_code";
-    sessionId?: string;
-    authenticationResponse?: any;
-    backupCode?: string;
-  }) => {
-    const response = await api.post("/verify-2fa", data);
-    return response.data;
-  },
-
-  enableTwoFactor: async (userId: string) => {
+  // 2FA Authentication APIs
+  enableTwoFactor: async (userId: string): Promise<{ 
+    enabled: boolean; 
+    backupCodes: string[];
+    totpSecret: string;
+    qrCodeUrl: string;
+  }> => {
     const response = await api.post("/2fa/enable", { userId });
     return response.data;
   },
 
-  disableTwoFactor: async (userId: string) => {
+  disableTwoFactor: async (userId: string): Promise<{ disabled: boolean }> => {
     const response = await api.post("/2fa/disable", { userId });
+    return response.data;
+  },
+
+  verify2FA: async (data: {
+    userId: string;
+    method: 'webauthn' | 'backup_code' | 'totp' | 'sms' | 'email';
+    sessionId?: string;
+    authenticationResponse?: any;
+    backupCode?: string;
+    totpCode?: string;
+    smsCode?: string;
+    emailCode?: string;
+  }): Promise<AuthResponse> => {
+    const response = await api.post("/verify-2fa", data);
+    return response.data;
+  },
+
+  verifyTotpCode: async (userId: string, code: string): Promise<{ 
+    verified: boolean; 
+    user: User;
+  }> => {
+    const response = await api.post("/2fa/verify-totp", { userId, code });
     return response.data;
   },
 

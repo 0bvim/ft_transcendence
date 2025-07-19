@@ -533,32 +533,9 @@ function setupEventListeners(container: HTMLElement) {
         }
       }
     } else {
-      // If 2FA is disabled, enable it
-      if (confirm('Enable Two-Factor Authentication? This will add an extra layer of security to your account.')) {
-        try {
-          setLoading(container, true);
-          const response = await authApi.enableTwoFactor(user.id);
-          
-          // Update user in localStorage
-          const updatedUser = { ...user, twoFactorEnabled: true };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          
-          // Update display
-          updateProfileDisplay(container, updatedUser);
-          
-          // Show backup codes
-          if (response.backupCodes && response.backupCodes.length > 0) {
-            const codesDisplay = response.backupCodes.join('\n');
-            alert(`2FA Enabled Successfully!\n\nBackup Codes (save these securely):\n${codesDisplay}\n\nThese codes can be used if you lose access to your device.`);
-          }
-          
-          showSuccess(container);
-        } catch (error) {
-          console.error('Failed to enable 2FA:', error);
-          showError(container, 'Failed to enable 2FA');
-        } finally {
-          setLoading(container, false);
-        }
+      // If 2FA is disabled, directly setup TOTP
+      if (confirm('Enable Two-Factor Authentication with an authenticator app? This will add an extra layer of security to your account.')) {
+        setupTOTP(container, user);
       }
     }
   });
@@ -677,4 +654,132 @@ function showSuccess(container: HTMLElement) {
     successMessage.classList.add('hidden');
     successMessage.classList.remove('animate-slide-down');
   }, 3000);
+}
+
+async function setupTOTP(container: HTMLElement, user: any) {
+  try {
+    setLoading(container, true);
+    
+    // Enable TOTP 2FA
+    const response = await authApi.enableTwoFactor(user.id);
+    
+    // Update user in localStorage
+    const updatedUser = { ...user, twoFactorEnabled: true };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    
+    // Update display
+    updateProfileDisplay(container, updatedUser);
+    
+    // Show TOTP setup modal with QR code
+    showTOTPSetupModal(response, container);
+    
+  } catch (error) {
+    console.error('Failed to enable TOTP:', error);
+    showError(container, 'Failed to enable TOTP authentication');
+  } finally {
+    setLoading(container, false);
+  }
+}
+
+function showTOTPSetupModal(response: any, container: HTMLElement) {
+  const modalOverlay = document.createElement('div');
+  modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  
+  modalOverlay.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+      <div class="p-6">
+        <div class="text-center mb-6">
+          <h3 class="text-xl font-semibold text-secondary-900 mb-2">Setup Authenticator App</h3>
+          <p class="text-secondary-600">Scan the QR code below with your authenticator app</p>
+        </div>
+        
+        <div class="text-center mb-6">
+          <div id="qr-code" class="inline-block p-4 bg-white border rounded-lg"></div>
+          <p class="text-sm text-secondary-600 mt-2">Or manually enter this code:</p>
+          <code class="text-sm bg-secondary-100 px-2 py-1 rounded">${response.totpSecret}</code>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-secondary-700 mb-2">
+            Enter the 6-digit code from your app:
+          </label>
+          <input 
+            type="text" 
+            id="verification-code" 
+            placeholder="123456"
+            maxlength="6"
+            class="block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+          />
+        </div>
+        
+        <div class="mb-6">
+          <h4 class="font-medium text-secondary-900 mb-2">Backup Codes</h4>
+          <p class="text-sm text-secondary-600 mb-3">Save these backup codes in a secure location. You can use them to access your account if you lose your device:</p>
+          <div class="bg-secondary-50 p-3 rounded border">
+            <div class="grid grid-cols-2 gap-2 text-sm font-mono">
+              ${response.backupCodes.map((code: string) => `<div>${code}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex space-x-3">
+          <button id="verify-totp" class="flex-1 btn btn-primary">
+            Verify & Complete Setup
+          </button>
+          <button id="close-totp-modal" class="btn btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modalOverlay);
+  
+  // Generate QR code
+  if (response.qrCodeUrl) {
+    generateQRCode(response.qrCodeUrl, modalOverlay.querySelector('#qr-code') as HTMLElement);
+  }
+  
+  // Event listeners
+  const closeModal = () => {
+    document.body.removeChild(modalOverlay);
+  };
+  
+  modalOverlay.querySelector('#close-totp-modal')?.addEventListener('click', closeModal);
+  
+  modalOverlay.querySelector('#verify-totp')?.addEventListener('click', async () => {
+    const code = (modalOverlay.querySelector('#verification-code') as HTMLInputElement).value;
+    
+    if (!code || code.length !== 6) {
+      alert('Please enter a valid 6-digit code');
+      return;
+    }
+    
+    try {
+      await authApi.verifyTotpCode(user.id, code);
+      alert('2FA setup completed successfully!');
+      closeModal();
+      showSuccess(container);
+    } catch (error) {
+      console.error('TOTP verification failed:', error);
+      alert('Invalid code. Please try again.');
+    }
+  });
+}
+
+function generateQRCode(url: string, container: HTMLElement) {
+  // Create QR code using QR Server API (simple and reliable)
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  
+  container.innerHTML = `
+    <div class="w-48 h-48 bg-white border-2 border-secondary-300 rounded-lg flex items-center justify-center">
+      <img 
+        src="${qrCodeUrl}" 
+        alt="QR Code for 2FA Setup" 
+        class="w-44 h-44 rounded"
+        onerror="this.parentElement.innerHTML='<div class=\\'text-center text-secondary-500\\'>QR Code failed to load<br/>Use manual setup instead</div>'"
+      />
+    </div>
+  `;
 }
