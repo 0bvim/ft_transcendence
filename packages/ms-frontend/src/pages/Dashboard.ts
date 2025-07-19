@@ -18,7 +18,7 @@ export default function Dashboard(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen bg-secondary-50';
 
-  // Get user from localStorage
+  // Get user from localStorage first (for initial render)
   const userStr = localStorage.getItem('user');
   let user: User | null = null;
   
@@ -35,6 +35,34 @@ export default function Dashboard(): HTMLElement {
     return container;
   }
 
+  // Render initial content with localStorage data
+  renderDashboardContent(container, user);
+
+  // Setup event listeners
+  setupEventListeners(container);
+
+  // Refresh user data from API to get latest updates
+  refreshUserData(container);
+
+  return container;
+}
+
+async function refreshUserData(container: HTMLElement) {
+  try {
+    const { user } = await authApi.getProfile();
+    // Update localStorage with fresh data
+    localStorage.setItem('user', JSON.stringify(user));
+    // Re-render with fresh data
+    renderDashboardContent(container, user);
+    // Re-setup event listeners after re-render
+    setupEventListeners(container);
+  } catch (error) {
+    console.error('Failed to refresh user data:', error);
+    // If API call fails, keep using localStorage data
+  }
+}
+
+function renderDashboardContent(container: HTMLElement, user: User) {
   container.innerHTML = `
     <!-- Navigation -->
     <nav class="bg-white/70 backdrop-blur-lg border-b border-white/20 sticky top-0 z-40">
@@ -336,11 +364,6 @@ export default function Dashboard(): HTMLElement {
       </div>
     </main>
   `;
-
-  // Setup event listeners
-  setupEventListeners(container);
-
-  return container;
 }
 
 function setupEventListeners(container: HTMLElement) {

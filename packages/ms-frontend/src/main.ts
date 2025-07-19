@@ -80,6 +80,13 @@ router.addRoute({
 });
 
 router.addRoute({
+  path: '/game',
+  component: () => import('./pages/Game'),
+  requiresAuth: true,
+  title: 'Game'
+});
+
+router.addRoute({
   path: '/blockchain',
   component: () => import('./pages/BlockchainVerification'),
   requiresAuth: false,

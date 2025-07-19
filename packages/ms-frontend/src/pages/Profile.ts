@@ -431,6 +431,9 @@ function setupEventListeners(container: HTMLElement) {
       const avatarImage = container.querySelector('#avatarImage') as HTMLImageElement;
       avatarImage.src = getAvatarUrl(avatarUrl);
       
+      // Update localStorage with new user data
+      localStorage.setItem('user', JSON.stringify(user));
+      
       showSuccess(container);
     } catch (error) {
       console.error('Avatar upload failed:', error);
@@ -466,6 +469,9 @@ function setupEventListeners(container: HTMLElement) {
       const { user } = await authApi.updateProfile(updateData);
       
       updateProfileDisplay(container, user);
+      
+      // Update localStorage with new user data
+      localStorage.setItem('user', JSON.stringify(user));
       
       // Exit edit mode
       isEditing = false;
