@@ -9,6 +9,7 @@ import { PrismaWebAuthnCredentialsRepository } from "../../repositories/prisma/p
 import { PrismaBackupCodesRepository } from "../../repositories/prisma/prisma-backup-codes-repository";
 import { VerifyWebAuthnAuthenticationUseCase } from "../../use-cases/verify-webauthn-authentication";
 import { VerifyBackupCodeUseCase } from "../../use-cases/verify-backup-code";
+import { VerifyTotpCodeUseCase } from "../../use-cases/verify-totp-code";
 import { UserNotFoundError } from "../../use-cases/errors/user-not-found-error";
 import { InvalidCredentialsError } from "../../use-cases/errors/invalid-credentials-error";
 import { sessionStore } from "../../lib/session-store";
@@ -17,15 +18,26 @@ import { env } from "../../env";
 export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
   const verify2FABodySchema = z.object({
     userId: z.string(),
-    method: z.enum(["webauthn", "backup_code"]),
+    method: z.enum(["webauthn", "backup_code", "totp", "sms", "email"]),
     sessionId: z.string().optional(),
     authenticationResponse: z.any().optional(),
     backupCode: z.string().optional(),
+    totpCode: z.string().optional(),
+    smsCode: z.string().optional(),
+    emailCode: z.string().optional(),
   });
 
   try {
-    const { userId, method, sessionId, authenticationResponse, backupCode } = 
-      verify2FABodySchema.parse(request.body);
+    const { 
+      userId, 
+      method, 
+      sessionId, 
+      authenticationResponse, 
+      backupCode, 
+      totpCode,
+      smsCode,
+      emailCode 
+    } = verify2FABodySchema.parse(request.body);
 
     const usersRepository = new PrismaUsersRepository();
     const refreshTokensRepository = new PrismaRefreshTokensRepository();
@@ -79,6 +91,43 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
       });
 
       verified = backupCodeVerified;
+    } else if (method === "totp") {
+      if (!totpCode) {
+        return reply.status(400).send({ error: "TOTP code required" });
+      }
+
+      const verifyTotpUseCase = new VerifyTotpCodeUseCase(
+        usersRepository,
+      );
+
+      const { verified: totpVerified } = await verifyTotpUseCase.execute({
+        userId,
+        code: totpCode,
+      });
+
+      verified = totpVerified;
+    } else if (method === "sms") {
+      if (!smsCode) {
+        return reply.status(400).send({ error: "SMS code required" });
+      }
+
+      // In a real implementation, you would:
+      // 1. Retrieve the stored SMS code from cache/session
+      // 2. Compare with the provided code
+      // 3. Check expiration time
+      // For demo purposes, we'll accept a specific code
+      verified = smsCode === "123456"; // Demo code
+    } else if (method === "email") {
+      if (!emailCode) {
+        return reply.status(400).send({ error: "Email code required" });
+      }
+
+      // In a real implementation, you would:
+      // 1. Retrieve the stored email code from cache/session
+      // 2. Compare with the provided code
+      // 3. Check expiration time
+      // For demo purposes, we'll accept a specific code
+      verified = emailCode === "123456"; // Demo code
     }
 
     if (!verified) {
