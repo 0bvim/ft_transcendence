@@ -65,6 +65,9 @@ export interface User {
   id: string;
   email: string;
   username: string;
+  displayName?: string;
+  avatarUrl?: string;
+  bio?: string;
   googleId?: string;
   twoFactorEnabled: boolean;
   createdAt: string;
@@ -97,6 +100,12 @@ export interface RefreshTokenResponse {
   refreshToken: string;
 }
 
+export interface UpdateProfileRequest {
+  displayName?: string;
+  avatarUrl?: string;
+  bio?: string;
+}
+
 export const authApi = {
   // Standard authentication
   register: async (data: RegisterRequest): Promise<void> => {
@@ -116,6 +125,29 @@ export const authApi = {
 
   deleteUser: async (id: string): Promise<{ user: User }> => {
     const response = await api.delete(`/delete/${id}`);
+    return response.data;
+  },
+
+  // Profile management
+  getProfile: async (): Promise<{ user: User }> => {
+    const response = await api.get("/profile");
+    return response.data;
+  },
+
+  updateProfile: async (data: UpdateProfileRequest): Promise<{ user: User }> => {
+    const response = await api.put("/profile", data);
+    return response.data;
+  },
+
+  uploadAvatar: async (file: File): Promise<{ user: User; avatarUrl: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await api.post("/profile/avatar", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
