@@ -5,17 +5,20 @@ export default function TournamentCreate(): HTMLElement {
   container.className = 'min-h-screen bg-gray-900 text-white p-6';
 
   container.innerHTML = `
-    <div class="max-w-2xl mx-auto">
+    <div class="max-w-4xl mx-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-          Create Tournament
-        </h1>
-        <button id="back-btn" class="text-gray-400 hover:text-white transition-colors duration-200">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-        </button>
+        <div class="flex items-center space-x-4">
+          <button id="backButton" class="btn btn-ghost text-gray-400 hover:text-white">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Tournaments
+          </button>
+          <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">
+            Create Tournament
+          </h1>
+        </div>
       </div>
 
       <!-- Tournament Creation Form -->
@@ -246,7 +249,7 @@ export default function TournamentCreate(): HTMLElement {
 
 function setupEventListeners(container: HTMLElement) {
   const form = container.querySelector('#tournament-form') as HTMLFormElement;
-  const backBtn = container.querySelector('#back-btn');
+  const backBtn = container.querySelector('#backButton');
   const cancelBtn = container.querySelector('#cancel-btn');
   const maxPlayersSelect = container.querySelector('#max-players') as HTMLSelectElement;
   const tournamentTypeInputs = container.querySelectorAll('input[name="tournamentType"]');

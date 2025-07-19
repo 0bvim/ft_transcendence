@@ -1,5 +1,19 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
 
+// Utility function to construct avatar URL
+function getAvatarUrl(avatarUrl: string | null | undefined): string {
+  if (!avatarUrl) {
+    return '/default-avatar.png';
+  }
+  
+  if (avatarUrl.startsWith('http')) {
+    return avatarUrl;
+  }
+  
+  const authServiceUrl = `http://${window.location.hostname}:3001`;
+  return `${authServiceUrl}${avatarUrl}`;
+}
+
 export default function Profile(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen bg-secondary-50 py-8';
@@ -9,9 +23,17 @@ export default function Profile(): HTMLElement {
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-gradient">Profile</h1>
-            <p class="text-secondary-600 mt-1">Manage your account settings and preferences</p>
+          <div class="flex items-center space-x-4">
+            <button id="backButton" class="btn btn-ghost text-secondary-600 hover:text-primary-600">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+              Back to Dashboard
+            </button>
+            <div>
+              <h1 class="text-3xl font-bold text-gradient">Profile</h1>
+              <p class="text-secondary-600 mt-1">Manage your account settings and preferences</p>
+            </div>
           </div>
           <button id="editToggle" class="btn btn-primary">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,9 +297,7 @@ async function loadProfileData(container: HTMLElement) {
 function updateProfileDisplay(container: HTMLElement, user: User) {
   // Update avatar
   const avatarImage = container.querySelector('#avatarImage') as HTMLImageElement;
-  if (user.avatarUrl) {
-    avatarImage.src = user.avatarUrl;
-  }
+  avatarImage.src = getAvatarUrl(user.avatarUrl);
 
   // Update display info
   const displayName = container.querySelector('#displayName') as HTMLElement;
@@ -344,6 +364,7 @@ function setupEventListeners(container: HTMLElement) {
   const bioInput = container.querySelector('#bioInput') as HTMLTextAreaElement;
   const saveButton = container.querySelector('#saveButton') as HTMLButtonElement;
   const cancelButton = container.querySelector('#cancelButton') as HTMLButtonElement;
+  const backButton = container.querySelector('#backButton') as HTMLButtonElement;
 
   let isEditing = false;
   let originalData: any = {};
@@ -406,9 +427,9 @@ function setupEventListeners(container: HTMLElement) {
       setLoading(container, true);
       const { user, avatarUrl } = await authApi.uploadAvatar(file);
       
-      // Update avatar display
+      // Update avatar display with correct URL
       const avatarImage = container.querySelector('#avatarImage') as HTMLImageElement;
-      avatarImage.src = avatarUrl;
+      avatarImage.src = getAvatarUrl(avatarUrl);
       
       showSuccess(container);
     } catch (error) {
@@ -479,6 +500,11 @@ function setupEventListeners(container: HTMLElement) {
         console.log('Account deletion would be implemented here');
       }
     }
+  });
+
+  // Back button
+  backButton.addEventListener('click', () => {
+    window.location.href = '/dashboard';
   });
 }
 

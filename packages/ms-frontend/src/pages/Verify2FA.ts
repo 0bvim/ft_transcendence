@@ -16,6 +16,14 @@ export default function Verify2FA(): HTMLElement {
     <div class="w-full max-w-md space-y-8 animate-fade-in">
       <!-- Header -->
       <div class="text-center">
+        <div class="mb-4">
+          <button id="backButton" class="btn btn-ghost text-secondary-600 hover:text-primary-600 mb-4">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Login
+          </button>
+        </div>
         <div class="mb-6">
           <div class="w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-700 rounded-2xl mx-auto flex items-center justify-center shadow-glow">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,10 +32,10 @@ export default function Verify2FA(): HTMLElement {
           </div>
         </div>
         <h2 class="text-3xl font-bold text-gradient mb-2">
-          Verify Your Identity
+          Two-Factor Authentication
         </h2>
-        <p class="text-secondary-600">
-          Complete your sign-in with two-factor authentication
+        <p class="text-secondary-600 mb-6">
+          Complete your login with two-factor authentication
         </p>
       </div>
 
@@ -156,6 +164,7 @@ function setupEventListeners(container: HTMLElement) {
   const errorMessage = container.querySelector("#errorMessage") as HTMLElement;
   const successMessage = container.querySelector("#successMessage") as HTMLElement;
   const errorText = container.querySelector("#errorText") as HTMLElement;
+  const backButton = container.querySelector("#backButton") as HTMLButtonElement;
 
   // Get user data from session storage
   const tempUserId = sessionStorage.getItem("tempUserId");
@@ -170,6 +179,11 @@ function setupEventListeners(container: HTMLElement) {
   }
 
   const userData = JSON.parse(tempUserData);
+
+  // Back button listener
+  backButton.addEventListener("click", () => {
+    window.location.href = "/login";
+  });
 
   // WebAuthn authentication
   webauthnButton.addEventListener("click", async () => {

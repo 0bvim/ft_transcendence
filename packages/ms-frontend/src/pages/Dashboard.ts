@@ -1,5 +1,19 @@
 import { authApi, User } from '../api/auth';
 
+// Utility function to construct avatar URL
+function getAvatarUrl(avatarUrl: string | null | undefined): string {
+  if (!avatarUrl) {
+    return '/default-avatar.png';
+  }
+  
+  if (avatarUrl.startsWith('http')) {
+    return avatarUrl;
+  }
+  
+  const authServiceUrl = `http://${window.location.hostname}:3001`;
+  return `${authServiceUrl}${avatarUrl}`;
+}
+
 export default function Dashboard(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen bg-secondary-50';
@@ -65,7 +79,7 @@ export default function Dashboard(): HTMLElement {
               <p class="text-xs text-secondary-500">@${user.username}</p>
             </div>
             <div class="avatar avatar-md">
-              <img src="${user.avatarUrl || '/default-avatar.png'}" alt="Avatar" class="avatar-img border-2 border-white shadow-soft" />
+              <img src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-2 border-white shadow-soft" />
             </div>
             <button id="logoutButton" class="btn btn-ghost btn-sm">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +239,7 @@ export default function Dashboard(): HTMLElement {
           <!-- Profile Card -->
           <div class="card-gradient p-6 text-center">
             <div class="avatar avatar-xl mx-auto mb-4">
-              <img src="${user.avatarUrl || '/default-avatar.png'}" alt="Avatar" class="avatar-img border-4 border-white shadow-medium" />
+              <img src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-4 border-white shadow-medium" />
             </div>
             <h3 class="text-lg font-semibold text-secondary-900 mb-1">${user.displayName || user.username}</h3>
             <p class="text-secondary-600 mb-2">@${user.username}</p>

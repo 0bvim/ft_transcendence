@@ -30,6 +30,14 @@ export default function BlockchainVerification(): HTMLElement {
     <div class="max-w-6xl mx-auto">
       <!-- Header -->
       <div class="mb-8">
+        <div class="flex items-center space-x-4 mb-4">
+          <button id="backButton" class="btn btn-ghost text-gray-400 hover:text-white">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Dashboard
+          </button>
+        </div>
         <h1 class="text-4xl font-bold mb-2">🔗 Blockchain Verification</h1>
         <p class="text-gray-300">
           Verify tournament results and achievements stored immutably on the Avalanche blockchain
@@ -280,6 +288,12 @@ function setupEventListeners(container: HTMLElement) {
   const refreshStatsBtn = container.querySelector('#refresh-stats-btn');
   refreshStatsBtn?.addEventListener('click', async () => {
     await loadBlockchainStats(container);
+  });
+
+  // Back button
+  const backButton = container.querySelector('#backButton');
+  backButton?.addEventListener('click', () => {
+    window.location.href = '/dashboard'; // Redirect to dashboard
   });
 }
 

@@ -8,9 +8,17 @@ export default function Tournament(): HTMLElement {
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-          Tournament Hub
-        </h1>
+        <div class="flex items-center space-x-4">
+          <button id="backButton" class="btn btn-ghost text-gray-400 hover:text-white">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Dashboard
+          </button>
+          <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+            Tournament Hub
+          </h1>
+        </div>
         <button id="create-tournament-btn" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
           Create Tournament
         </button>
@@ -87,11 +95,17 @@ export default function Tournament(): HTMLElement {
 
 function setupEventListeners(container: HTMLElement) {
   const createTournamentBtn = container.querySelector('#create-tournament-btn');
+  const backButton = container.querySelector('#backButton');
   
   createTournamentBtn?.addEventListener('click', () => {
     // Navigate to tournament creation page
     window.history.pushState({}, '', '/tournament/create');
     window.dispatchEvent(new Event('popstate'));
+  });
+
+  backButton?.addEventListener('click', () => {
+    // Navigate back to dashboard
+    window.history.back();
   });
 }
 
