@@ -234,7 +234,25 @@ export const authApi = {
     user: User;
     message: string;
   }> => {
+    console.log('🔍 Frontend API call details:', {
+      url: '/2fa/complete-setup',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')?.substring(0, 20)}...`
+      },
+      body: { userId, code },
+      timestamp: new Date().toISOString()
+    });
+    
     const response = await api.post("/2fa/complete-setup", { userId, code });
+    
+    console.log('🔍 Frontend API response:', {
+      status: response.status,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
     return response.data;
   },
 

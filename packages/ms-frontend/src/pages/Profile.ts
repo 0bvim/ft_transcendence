@@ -1,4 +1,5 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
+import { TwoFactorSetupModal } from '../components/TwoFactorSetup';
 import defaultAvatarUrl from '../../assets/wishes.png';
 
 // Utility function to construct avatar URL
@@ -657,139 +658,16 @@ function showSuccess(container: HTMLElement) {
 }
 
 async function setupTOTP(container: HTMLElement, user: any) {
-  try {
-    setLoading(container, true);
-    
-    // Start TOTP 2FA setup (without enabling yet)
-    const response = await authApi.enableTwoFactor(user.id);
-    
-    // Show TOTP setup modal with QR code (don't update user status yet)
-    showTOTPSetupModal(response, container, user);
-    
-  } catch (error) {
-    console.error('Failed to setup TOTP:', error);
-    showError(container, 'Failed to setup TOTP authentication');
-  } finally {
-    setLoading(container, false);
-  }
-}
-
-function showTOTPSetupModal(response: any, container: HTMLElement, user: any) {
-  const modalOverlay = document.createElement('div');
-  modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  console.log('🔄 Starting new 2FA setup flow for user:', user.id);
   
-  modalOverlay.innerHTML = `
-    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
-      <div class="p-6">
-        <div class="text-center mb-6">
-          <h3 class="text-xl font-semibold text-secondary-900 mb-2">Setup Authenticator App</h3>
-          <p class="text-secondary-600">Scan the QR code below with your authenticator app</p>
-        </div>
-        
-        <div class="text-center mb-6">
-          <div id="qr-code" class="inline-block p-4 bg-white border rounded-lg"></div>
-          <p class="text-sm text-secondary-600 mt-2">Or manually enter this code:</p>
-          <code class="text-sm bg-secondary-100 px-2 py-1 rounded">${response.totpSecret}</code>
-        </div>
-        
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-secondary-700 mb-2">
-            Enter the 6-digit code from your app:
-          </label>
-          <input 
-            type="text" 
-            id="verification-code" 
-            placeholder="123456"
-            maxlength="6"
-            class="block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-        
-        <div class="mb-6">
-          <h4 class="font-medium text-secondary-900 mb-2">Backup Codes</h4>
-          <p class="text-sm text-secondary-600 mb-3">Save these backup codes in a secure location. You can use them to access your account if you lose your device:</p>
-          <div class="bg-secondary-50 p-3 rounded border">
-            <div class="grid grid-cols-2 gap-2 text-sm font-mono">
-              ${response.backupCodes.map((code: string) => `<div>${code}</div>`).join('')}
-            </div>
-          </div>
-        </div>
-        
-        <div class="flex space-x-3">
-          <button id="verify-totp" class="flex-1 btn btn-primary">
-            Verify & Complete Setup
-          </button>
-          <button id="close-totp-modal" class="btn btn-secondary">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modalOverlay);
-  
-  // Generate QR code
-  if (response.qrCodeUrl) {
-    generateQRCode(response.qrCodeUrl, modalOverlay.querySelector('#qr-code') as HTMLElement);
-  }
-  
-  // Event listeners
-  const closeModal = () => {
-    document.body.removeChild(modalOverlay);
-  };
-  
-  modalOverlay.querySelector('#close-totp-modal')?.addEventListener('click', closeModal);
-  
-  modalOverlay.querySelector('#verify-totp')?.addEventListener('click', async () => {
-    const code = (modalOverlay.querySelector('#verification-code') as HTMLInputElement).value;
-    
-    if (!code || code.length !== 6) {
-      alert('Please enter a valid 6-digit code');
-      return;
-    }
-    
-    try {
-      console.log('🔐 Attempting 2FA verification with code:', code);
-      console.log('🔐 User ID:', user.id);
-      console.log('🔐 Code length:', code.length);
-      console.log('🔐 Time:', new Date().toISOString());
-      
-      // Complete the 2FA setup (this will enable 2FA after verification)
-      const result = await authApi.completeTwoFactorSetup(user.id, code);
-      
-      console.log('✅ 2FA setup successful:', result);
-      
-      // Update user in localStorage with the updated user data
-      localStorage.setItem('user', JSON.stringify(result.user));
-      
-      // Update display with the new user data
-      updateProfileDisplay(container, result.user);
-      
-      alert('2FA setup completed successfully!');
-      closeModal();
-      showSuccess(container);
-    } catch (error) {
-      console.error('❌ TOTP verification failed:', error);
-      console.log('❌ Failed code:', code);
-      console.log('❌ Time:', new Date().toISOString());
-      alert(`Invalid code. Please try again. Error: ${(error as any)?.message || 'Unknown error'}`);
-    }
+  // Use the new TwoFactorSetupModal
+  const modal = new TwoFactorSetupModal(user, container, (updatedUser) => {
+    console.log('✅ 2FA setup completed, updating profile display');
+    updateProfileDisplay(container, updatedUser);
+    showSuccess(container);
   });
+  
+  modal.show();
 }
 
-function generateQRCode(url: string, container: HTMLElement) {
-  // Create QR code using QR Server API (simple and reliable)
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-  
-  container.innerHTML = `
-    <div class="w-48 h-48 bg-white border-2 border-secondary-300 rounded-lg flex items-center justify-center">
-      <img 
-        src="${qrCodeUrl}" 
-        alt="QR Code for 2FA Setup" 
-        class="w-44 h-44 rounded"
-        onerror="this.parentElement.innerHTML='<div class=\\'text-center text-secondary-500\\'>QR Code failed to load<br/>Use manual setup instead</div>'"
-      />
-    </div>
-  `;
-}
+// Old 2FA setup functions removed - now using TwoFactorSetupModal component
