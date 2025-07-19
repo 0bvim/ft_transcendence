@@ -47,7 +47,8 @@ export async function authMiddleware(
         email: true,
         displayName: true,
         avatarUrl: true,
-        bio: true
+        bio: true,
+        twoFactorEnabled: true
       }
     });
 
@@ -65,7 +66,8 @@ export async function authMiddleware(
       email: user.email,
       displayName: user.displayName || undefined,
       avatarUrl: user.avatarUrl || undefined,
-      bio: user.bio || undefined
+      bio: user.bio || undefined,
+      twoFactorEnabled: user.twoFactorEnabled
     };
     
   } catch (error) {

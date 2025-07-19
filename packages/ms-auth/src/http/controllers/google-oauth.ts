@@ -84,6 +84,19 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
       email: userInfo.email,
     });
 
+    // Check if user has 2FA enabled
+    if (user.twoFactorEnabled) {
+      // Don't return tokens, instead return 2FA challenge
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userWithoutPassword } = user;
+      
+      return reply.status(200).send({
+        user: userWithoutPassword,
+        requiresTwoFactor: true,
+        message: "Two-factor authentication required",
+      });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
@@ -91,6 +104,7 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
       user: userWithoutPassword,
       accessToken,
       refreshToken,
+      requiresTwoFactor: false,
     });
   } catch (err) {
     if (err instanceof UserAlreadyExistsError) {

@@ -58,6 +58,7 @@ export async function updateProfile(
         displayName: true,
         avatarUrl: true,
         bio: true,
+        twoFactorEnabled: true,
         createdAt: true,
         updatedAt: true
       }

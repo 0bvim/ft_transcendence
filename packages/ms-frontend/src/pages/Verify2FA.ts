@@ -33,9 +33,6 @@ export default function Verify2FA(): HTMLElement {
           <button id="totp-tab" class="flex-1 py-2 px-4 text-sm font-medium text-center border-b-2 border-primary-600 text-primary-600">
             Authenticator App
           </button>
-          <button id="webauthn-tab" class="flex-1 py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-500 hover:text-secondary-700">
-            Security Key
-          </button>
           <button id="backup-tab" class="flex-1 py-2 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-500 hover:text-secondary-700">
             Backup Code
           </button>
@@ -75,23 +72,7 @@ export default function Verify2FA(): HTMLElement {
         </form>
       </div>
 
-      <!-- WebAuthn Method -->
-      <div id="webauthn-method" class="2fa-method hidden">
-        <div class="text-center mb-6">
-          <svg class="w-12 h-12 text-primary-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-          </svg>
-          <h3 class="text-lg font-medium text-secondary-900 mb-2">Use Security Key</h3>
-          <p class="text-secondary-600">Touch your security key or use biometric authentication</p>
-        </div>
-        
-        <button id="webauthn-btn" class="w-full btn btn-primary">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-          </svg>
-          Authenticate with Security Key
-        </button>
-      </div>
+
 
       <!-- Backup Code Method -->
       <div id="backup-method" class="2fa-method hidden">
@@ -173,13 +154,10 @@ function setupEventListeners(container: HTMLElement) {
   
   try {
     const totpTab = container.querySelector("#totp-tab") as HTMLButtonElement;
-    const webauthnTab = container.querySelector("#webauthn-tab") as HTMLButtonElement;
     const backupTab = container.querySelector("#backup-tab") as HTMLButtonElement;
     const totpMethod = container.querySelector("#totp-method") as HTMLElement;
-    const webauthnMethod = container.querySelector("#webauthn-method") as HTMLElement;
     const backupMethod = container.querySelector("#backup-method") as HTMLElement;
     const verifyTotpBtn = container.querySelector("#verify-totp-btn") as HTMLButtonElement;
-    const webauthnBtn = container.querySelector("#webauthn-btn") as HTMLButtonElement;
     const verifyBackupBtn = container.querySelector("#verify-backup-btn") as HTMLButtonElement;
     const errorMessage = container.querySelector("#error-message") as HTMLElement;
     const errorText = container.querySelector("#error-text") as HTMLElement;
@@ -216,29 +194,16 @@ function setupEventListeners(container: HTMLElement) {
   // Tab listeners
   totpTab.addEventListener("click", () => {
     totpTab.classList.add("border-primary-600");
-    webauthnTab.classList.remove("border-primary-600");
     backupTab.classList.remove("border-primary-600");
     totpMethod.classList.remove("hidden");
-    webauthnMethod.classList.add("hidden");
-    backupMethod.classList.add("hidden");
-  });
-
-  webauthnTab.addEventListener("click", () => {
-    webauthnTab.classList.add("border-primary-600");
-    totpTab.classList.remove("border-primary-600");
-    backupTab.classList.remove("border-primary-600");
-    webauthnMethod.classList.remove("hidden");
-    totpMethod.classList.add("hidden");
     backupMethod.classList.add("hidden");
   });
 
   backupTab.addEventListener("click", () => {
     backupTab.classList.add("border-primary-600");
     totpTab.classList.remove("border-primary-600");
-    webauthnTab.classList.remove("border-primary-600");
     backupMethod.classList.remove("hidden");
     totpMethod.classList.add("hidden");
-    webauthnMethod.classList.add("hidden");
   });
 
   // TOTP verification
@@ -264,7 +229,7 @@ function setupEventListeners(container: HTMLElement) {
       // Store tokens and redirect
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(response.user));
 
       // Clear temporary data
       sessionStorage.removeItem("tempUserId");
@@ -283,58 +248,7 @@ function setupEventListeners(container: HTMLElement) {
     }
   });
 
-  // WebAuthn authentication
-  webauthnBtn.addEventListener("click", async () => {
-    try {
-      setWebAuthnLoading(true);
 
-      // Generate authentication options
-      const { options, sessionId } = await authApi.generateWebAuthnAuthenticationOptions({
-        userId: tempUserId,
-      });
-
-      // Start WebAuthn authentication
-      const authenticationResponse = await startAuthentication(options);
-
-      // Verify the authentication
-      const verificationResult = await authApi.verifyWebAuthnAuthentication({
-        sessionId,
-        authenticationResponse,
-      });
-
-      if (verificationResult.verified) {
-        // Complete 2FA verification
-        const response = await authApi.verify2FA({
-          userId: tempUserId,
-          method: "webauthn",
-          sessionId,
-          authenticationResponse,
-        });
-
-        // Store tokens and redirect
-        localStorage.setItem("accessToken", response.accessToken);
-        localStorage.setItem("refreshToken", response.refreshToken);
-        localStorage.setItem("user", JSON.stringify(userData));
-
-        // Clear temporary data
-        sessionStorage.removeItem("tempUserId");
-        sessionStorage.removeItem("tempUserData");
-
-        showSuccess();
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1500);
-      } else {
-        showError("Authentication verification failed");
-      }
-    } catch (error: any) {
-      console.error("WebAuthn error:", error);
-      const message = error.response?.data?.message || "WebAuthn verification failed";
-      showError(message);
-    } finally {
-      setWebAuthnLoading(false);
-    }
-  });
 
   // Backup code form submission
   verifyBackupBtn.addEventListener("click", async (e) => {
@@ -361,7 +275,7 @@ function setupEventListeners(container: HTMLElement) {
       // Store tokens and redirect
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(response.user));
 
       // Clear temporary data
       sessionStorage.removeItem("tempUserId");
@@ -392,17 +306,7 @@ function setupEventListeners(container: HTMLElement) {
     }
   }
 
-  function setWebAuthnLoading(loading: boolean) {
-    const button = container.querySelector("#webauthn-btn") as HTMLButtonElement;
-    button.disabled = loading;
-    if (loading) {
-      button.textContent = "Waiting for device...";
-      button.classList.add("opacity-75");
-    } else {
-      button.textContent = "Authenticate with Security Key";
-      button.classList.remove("opacity-75");
-    }
-  }
+
 
   function setBackupCodeLoading(loading: boolean) {
     const button = container.querySelector("#verify-backup-btn") as HTMLButtonElement;

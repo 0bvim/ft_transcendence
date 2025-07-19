@@ -104,6 +104,7 @@ export async function uploadAvatar(
         displayName: true,
         avatarUrl: true,
         bio: true,
+        twoFactorEnabled: true,
         createdAt: true,
         updatedAt: true
       }

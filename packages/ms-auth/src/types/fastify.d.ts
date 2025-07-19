@@ -10,6 +10,7 @@ declare module 'fastify' {
       displayName?: string;
       avatarUrl?: string;
       bio?: string;
+      twoFactorEnabled: boolean;
     };
     file(): Promise<{
       fieldname: string;
