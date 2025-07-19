@@ -21,9 +21,12 @@ import {
   generateWebAuthnAuthenticationOptions,
   verifyWebAuthnAuthentication,
 } from "./controllers/webauthn-2fa";
+import { verifyTotpCode } from "./controllers/verify-totp-code";
+import { completeTwoFactorSetup } from "./controllers/complete-2fa-setup";
 import { getProfile } from "./controllers/get-profile";
 import { updateProfile } from "./controllers/update-profile";
 import { uploadAvatar } from './controllers/upload-avatar';
+import { removeAvatar } from './controllers/remove-avatar';
 import { authMiddleware } from './middleware/auth';
 import { env } from "../env";
 import path from "path";
@@ -38,31 +41,6 @@ export async function appRoutes(app: FastifyInstance) {
       res.setHeader('Access-Control-Allow-Methods', 'GET');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     }
-  });
-
-  // Debug endpoint - remove in production
-  app.get("/debug/config", async (request, reply) => {
-    return reply.status(200).send({
-      environment: env.NODE_ENV,
-      cors_configured: true,
-      google_oauth: {
-        client_id_configured: !!env.GOOGLE_CLIENT_ID,
-        client_secret_configured: !!env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: env.GOOGLE_REDIRECT_URI,
-      },
-      webauthn: {
-        rp_id: env.WEBAUTHN_RP_ID,
-        rp_name: env.WEBAUTHN_RP_NAME,
-        origin: env.WEBAUTHN_ORIGIN,
-      },
-      hosts: {
-        host: env.HOST,
-        frontend_host: env.FRONTEND_HOST,
-        frontend_port: env.FRONTEND_PORT,
-        auth_port: env.PORT,
-      },
-      jwt_configured: !!env.JWT_SECRET,
-    });
   });
 
   // Standard authentication routes (no auth required)
@@ -85,15 +63,20 @@ export async function appRoutes(app: FastifyInstance) {
     protectedRoutes.get("/profile", getProfile);
     protectedRoutes.put("/profile", updateProfile);
     protectedRoutes.post("/profile/avatar", uploadAvatar);
+    protectedRoutes.delete("/profile/avatar", removeAvatar);
 
     // User management
     protectedRoutes.delete("/delete/:id", deleteUser);
 
+    // 2FA routes
+    protectedRoutes.post("/2fa/enable", enableTwoFactor);
+    protectedRoutes.post("/2fa/disable", disableTwoFactor);
+    protectedRoutes.post("/2fa/verify-totp", verifyTotpCode);
+    protectedRoutes.post("/2fa/complete-setup", completeTwoFactorSetup);
+    
     // WebAuthn 2FA routes
     protectedRoutes.post("/2fa/webauthn/register", registerWebAuthnCredential);
     protectedRoutes.post("/2fa/webauthn/verify", verifyWebAuthnCredential);
-    protectedRoutes.post("/2fa/enable", enableTwoFactor);
-    protectedRoutes.post("/2fa/disable", disableTwoFactor);
     protectedRoutes.post("/2fa/backup-codes/generate", generateBackupCodes);
     protectedRoutes.post("/2fa/backup-codes/verify", verifyBackupCode);
     

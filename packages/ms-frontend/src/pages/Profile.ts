@@ -1,9 +1,11 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
+import { TwoFactorSetupModal } from '../components/TwoFactorSetup';
+import defaultAvatarUrl from '../../assets/wishes.png';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
   if (!avatarUrl) {
-    return '/default-avatar.png';
+    return defaultAvatarUrl;
   }
   
   if (avatarUrl.startsWith('http')) {
@@ -53,7 +55,7 @@ export default function Profile(): HTMLElement {
             <div class="text-center">
               <div class="relative inline-block">
                 <div class="avatar avatar-xl">
-                  <img id="avatarImage" src="/default-avatar.png" alt="Profile Avatar" class="avatar-img border-4 border-white shadow-medium" />
+                  <img id="avatarImage" src="${defaultAvatarUrl}" alt="Profile Avatar" class="avatar-img border-4 border-white shadow-medium" />
                 </div>
                 <div id="avatarUploadOverlay" class="absolute inset-0 bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer hidden">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,6 +64,16 @@ export default function Profile(): HTMLElement {
                   </svg>
                 </div>
                 <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="hidden" />
+              </div>
+              
+              <!-- Avatar Actions (shown only in edit mode) -->
+              <div id="avatarActions" class="mt-3 space-y-2 hidden">
+                <button id="removeAvatarButton" class="btn btn-sm btn-danger">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                  Remove Avatar
+                </button>
               </div>
               
               <div class="mt-4">
@@ -365,6 +377,8 @@ function setupEventListeners(container: HTMLElement) {
   const saveButton = container.querySelector('#saveButton') as HTMLButtonElement;
   const cancelButton = container.querySelector('#cancelButton') as HTMLButtonElement;
   const backButton = container.querySelector('#backButton') as HTMLButtonElement;
+  const removeAvatarButton = container.querySelector('#removeAvatarButton') as HTMLButtonElement;
+  const avatarActions = container.querySelector('#avatarActions') as HTMLElement;
 
   let isEditing = false;
   let originalData: any = {};
@@ -384,6 +398,7 @@ function setupEventListeners(container: HTMLElement) {
       editToggleText.textContent = 'Cancel Edit';
       formActions.classList.remove('hidden');
       avatarUploadOverlay.classList.remove('hidden');
+      avatarActions.classList.remove('hidden');
     } else {
       // Restore original data
       (container.querySelector('#displayNameInput') as HTMLInputElement).value = originalData.displayName;
@@ -393,6 +408,7 @@ function setupEventListeners(container: HTMLElement) {
       editToggleText.textContent = 'Edit Profile';
       formActions.classList.add('hidden');
       avatarUploadOverlay.classList.add('hidden');
+      avatarActions.classList.add('hidden');
     }
   });
 
@@ -479,6 +495,7 @@ function setupEventListeners(container: HTMLElement) {
       editToggleText.textContent = 'Edit Profile';
       formActions.classList.add('hidden');
       avatarUploadOverlay.classList.add('hidden');
+      avatarActions.classList.add('hidden');
       
       showSuccess(container);
     } catch (error: any) {
@@ -492,9 +509,53 @@ function setupEventListeners(container: HTMLElement) {
 
   // 2FA toggle
   const twoFactorToggle = container.querySelector('#twoFactorToggle') as HTMLButtonElement;
-  twoFactorToggle.addEventListener('click', () => {
-    // Navigate to 2FA setup/management
-    window.location.href = '/dashboard#security';
+  twoFactorToggle.addEventListener('click', async () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    if (user.twoFactorEnabled) {
+      // If 2FA is enabled, show management options
+      if (confirm('Do you want to disable Two-Factor Authentication? This will make your account less secure.')) {
+        try {
+          setLoading(container, true);
+          await authApi.disableTwoFactor(user.id);
+          
+          // Update user in localStorage
+          const updatedUser = { ...user, twoFactorEnabled: false };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          // Update display
+          updateProfileDisplay(container, updatedUser);
+          showSuccess(container);
+        } catch (error) {
+          console.error('Failed to disable 2FA:', error);
+          showError(container, 'Failed to disable 2FA');
+        } finally {
+          setLoading(container, false);
+        }
+      }
+    } else {
+      // If 2FA is disabled, directly setup TOTP
+      if (confirm('Enable Two-Factor Authentication with an authenticator app? This will add an extra layer of security to your account.')) {
+        setupTOTP(container, user);
+      }
+    }
+  });
+
+  // Remove Avatar button
+  removeAvatarButton.addEventListener('click', async () => {
+    if (confirm('Are you sure you want to remove your avatar? This action cannot be undone.')) {
+      try {
+        setLoading(container, true);
+        const { user } = await authApi.removeAvatar();
+        updateProfileDisplay(container, user);
+        showSuccess(container);
+      } catch (error) {
+        console.error('Failed to remove avatar:', error);
+        showError(container, 'Failed to remove avatar');
+      } finally {
+        setLoading(container, false);
+      }
+    }
   });
 
   // Delete account
@@ -516,9 +577,20 @@ function setupEventListeners(container: HTMLElement) {
 
 function toggleEditMode(container: HTMLElement, editing: boolean) {
   const inputs = container.querySelectorAll('input:not([readonly]), textarea');
+  const avatarUploadOverlay = container.querySelector('#avatarUploadOverlay') as HTMLElement;
+  const avatarActions = container.querySelector('#avatarActions') as HTMLElement;
+  
   inputs.forEach(input => {
     (input as HTMLInputElement | HTMLTextAreaElement).disabled = !editing;
   });
+
+  if (editing) {
+    avatarUploadOverlay.classList.remove('hidden');
+    avatarActions.classList.remove('hidden');
+  } else {
+    avatarUploadOverlay.classList.add('hidden');
+    avatarActions.classList.add('hidden');
+  }
 }
 
 function updateBioCounter(container: HTMLElement) {
@@ -537,19 +609,26 @@ function updateBioCounter(container: HTMLElement) {
 }
 
 function setLoading(container: HTMLElement, loading: boolean) {
-  const saveButtonText = container.querySelector('#saveButtonText') as HTMLElement;
-  const saveSpinner = container.querySelector('#saveSpinner') as HTMLElement;
+  const editToggle = container.querySelector('#editToggle') as HTMLButtonElement;
   const saveButton = container.querySelector('#saveButton') as HTMLButtonElement;
+  const twoFactorToggle = container.querySelector('#twoFactorToggle') as HTMLButtonElement;
+  const removeAvatarButton = container.querySelector('#removeAvatarButton') as HTMLButtonElement;
 
-  saveButton.disabled = loading;
-  
-  if (loading) {
-    saveButtonText.textContent = 'Saving...';
-    saveSpinner.classList.remove('hidden');
-  } else {
-    saveButtonText.textContent = 'Save Changes';
-    saveSpinner.classList.add('hidden');
-  }
+  // Disable buttons during loading
+  if (editToggle) editToggle.disabled = loading;
+  if (saveButton) saveButton.disabled = loading;
+  if (twoFactorToggle) twoFactorToggle.disabled = loading;
+  if (removeAvatarButton) removeAvatarButton.disabled = loading;
+
+  // Add visual feedback
+  const buttons = [editToggle, saveButton, twoFactorToggle, removeAvatarButton].filter(Boolean);
+  buttons.forEach(button => {
+    if (loading) {
+      button?.classList.add('opacity-75');
+    } else {
+      button?.classList.remove('opacity-75');
+    }
+  });
 }
 
 function showError(container: HTMLElement, message: string) {
@@ -577,3 +656,18 @@ function showSuccess(container: HTMLElement) {
     successMessage.classList.remove('animate-slide-down');
   }, 3000);
 }
+
+async function setupTOTP(container: HTMLElement, user: any) {
+  console.log('🔄 Starting new 2FA setup flow for user:', user.id);
+  
+  // Use the new TwoFactorSetupModal
+  const modal = new TwoFactorSetupModal(user, container, (updatedUser) => {
+    console.log('✅ 2FA setup completed, updating profile display');
+    updateProfileDisplay(container, updatedUser);
+    showSuccess(container);
+  });
+  
+  modal.show();
+}
+
+// Old 2FA setup functions removed - now using TwoFactorSetupModal component

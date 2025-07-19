@@ -105,7 +105,7 @@ function setupEventListeners(container: HTMLElement) {
 
   backButton?.addEventListener('click', () => {
     // Navigate back to dashboard
-    window.history.back();
+    window.location.href = '/dashboard';
   });
 }
 

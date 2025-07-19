@@ -119,14 +119,11 @@ export async function enableTwoFactor(request: FastifyRequest, reply: FastifyRep
       backupCodesRepository,
     );
 
-    const { enabled, backupCodes } = await enableTwoFactorUseCase.execute({
+    const result = await enableTwoFactorUseCase.execute({
       userId,
     });
 
-    return reply.status(200).send({
-      enabled,
-      backupCodes,
-    });
+    return reply.status(200).send(result);
   } catch (err) {
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });

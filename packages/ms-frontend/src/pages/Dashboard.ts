@@ -1,9 +1,10 @@
 import { authApi, User } from '../api/auth';
+import defaultAvatarUrl from '../../assets/wishes.png';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
   if (!avatarUrl) {
-    return '/default-avatar.png';
+    return defaultAvatarUrl;
   }
   
   if (avatarUrl.startsWith('http')) {

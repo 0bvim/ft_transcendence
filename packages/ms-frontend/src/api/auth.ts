@@ -89,6 +89,8 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  requiresTwoFactor?: boolean;
+  message?: string;
 }
 
 export interface RefreshTokenRequest {
@@ -142,12 +144,17 @@ export const authApi = {
   uploadAvatar: async (file: File): Promise<{ user: User; avatarUrl: string }> => {
     const formData = new FormData();
     formData.append('avatar', file);
-    
+
     const response = await api.post("/profile/avatar", formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  },
+
+  removeAvatar: async (): Promise<{ user: User }> => {
+    const response = await api.delete("/profile/avatar");
     return response.data;
   },
 
@@ -211,25 +218,68 @@ export const authApi = {
     return response.data;
   },
 
-  // 2FA verification for login flow
-  verify2FA: async (data: {
-    userId: string;
-    method: "webauthn" | "backup_code";
-    sessionId?: string;
-    authenticationResponse?: any;
-    backupCode?: string;
-  }) => {
-    const response = await api.post("/verify-2fa", data);
-    return response.data;
-  },
-
-  enableTwoFactor: async (userId: string) => {
+  // 2FA Authentication APIs
+  enableTwoFactor: async (userId: string): Promise<{ 
+    setup: boolean; 
+    backupCodes: string[];
+    totpSecret: string;
+    qrCodeUrl: string;
+  }> => {
     const response = await api.post("/2fa/enable", { userId });
     return response.data;
   },
 
-  disableTwoFactor: async (userId: string) => {
+  completeTwoFactorSetup: async (userId: string, code: string): Promise<{
+    enabled: boolean;
+    user: User;
+    message: string;
+  }> => {
+    console.log('🔍 Frontend API call details:', {
+      url: '/2fa/complete-setup',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')?.substring(0, 20)}...`
+      },
+      body: { userId, code },
+      timestamp: new Date().toISOString()
+    });
+    
+    const response = await api.post("/2fa/complete-setup", { userId, code });
+    
+    console.log('🔍 Frontend API response:', {
+      status: response.status,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
+  },
+
+  disableTwoFactor: async (userId: string): Promise<{ disabled: boolean }> => {
     const response = await api.post("/2fa/disable", { userId });
+    return response.data;
+  },
+
+  verify2FA: async (data: {
+    userId: string;
+    method: 'webauthn' | 'backup_code' | 'totp' | 'sms' | 'email';
+    sessionId?: string;
+    authenticationResponse?: any;
+    backupCode?: string;
+    totpCode?: string;
+    smsCode?: string;
+    emailCode?: string;
+  }): Promise<AuthResponse> => {
+    const response = await api.post("/verify-2fa", data);
+    return response.data;
+  },
+
+  verifyTotpCode: async (userId: string, code: string): Promise<{ 
+    verified: boolean; 
+    user: User;
+  }> => {
+    const response = await api.post("/2fa/verify-totp", { userId, code });
     return response.data;
   },
 

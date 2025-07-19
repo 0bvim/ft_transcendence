@@ -61,13 +61,20 @@ export default function GoogleCallback(): HTMLElement {
         throw new Error(data.error || 'Authentication failed');
       }
 
-      // Store tokens and user data
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.requiresTwoFactor) {
+        // Store temporary user data for 2FA verification
+        sessionStorage.setItem("tempUserId", data.user.id);
+        sessionStorage.setItem("tempUserData", JSON.stringify(data.user));
+        window.location.href = "/verify-2fa";
+      } else {
+        // Store tokens and user data
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
+      }
     } catch (error: any) {
       console.error('Google callback error:', error);
       showError(error.message || 'Authentication failed');

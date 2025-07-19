@@ -149,7 +149,7 @@ describe("WebAuthn 2FA Use Cases", () => {
         userId: user.id,
       });
 
-      expect(result.enabled).toBe(true);
+      expect(result.setup).toBe(true);
       expect(result.backupCodes).toHaveLength(8);
       expect(result.backupCodes[0]).toMatch(/^[A-Za-z0-9]{8}$/);
     });
