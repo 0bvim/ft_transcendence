@@ -2,10 +2,13 @@ import { authApi } from "../api/auth";
 import { startRegistration, startAuthentication } from "../utils/webauthn";
 
 export default function Verify2FA(): HTMLElement {
-  const container = document.createElement("div");
-  container.className = "min-h-screen bg-mesh-gradient flex items-center justify-center p-4 relative overflow-hidden";
+  console.log("🔍 Verify2FA component loading...");
+  
+  try {
+    const container = document.createElement("div");
+    container.className = "min-h-screen bg-mesh-gradient flex items-center justify-center p-4 relative overflow-hidden";
 
-  container.innerHTML = `
+    container.innerHTML = `
     <!-- Background decorative elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute -top-40 -right-40 w-80 h-80 bg-warning-300/20 rounded-full blur-3xl animate-float"></div>
@@ -135,32 +138,58 @@ export default function Verify2FA(): HTMLElement {
 
       <!-- Login Link -->
       <div class="mt-6 text-center">
-        <a href="/login" class="text-sm text-primary-600 hover:text-primary-500">
+        <a href="/login" id="backButton" class="text-sm text-primary-600 hover:text-primary-500">
           ← Back to Login
         </a>
       </div>
     </div>
   `;
 
-  // Add event listeners
-  setupEventListeners(container);
+    // Add event listeners
+    setupEventListeners(container);
 
-  return container;
+    console.log("✅ Verify2FA component loaded successfully");
+    return container;
+    
+  } catch (error) {
+    console.error("❌ Error loading Verify2FA component:", error);
+    
+    // Create fallback error container
+    const errorContainer = document.createElement("div");
+    errorContainer.className = "min-h-screen bg-mesh-gradient flex items-center justify-center p-4";
+    errorContainer.innerHTML = `
+      <div class="card-gradient p-8 text-center">
+        <h2 class="text-xl font-bold text-red-600 mb-4">Error Loading 2FA Verification</h2>
+        <p class="text-secondary-600 mb-4">There was an error loading the verification page.</p>
+        <a href="/login" class="btn btn-primary">Back to Login</a>
+      </div>
+    `;
+    return errorContainer;
+  }
 }
 
 function setupEventListeners(container: HTMLElement) {
-  const totpTab = container.querySelector("#totp-tab") as HTMLButtonElement;
-  const webauthnTab = container.querySelector("#webauthn-tab") as HTMLButtonElement;
-  const backupTab = container.querySelector("#backup-tab") as HTMLButtonElement;
-  const totpMethod = container.querySelector("#totp-method") as HTMLElement;
-  const webauthnMethod = container.querySelector("#webauthn-method") as HTMLElement;
-  const backupMethod = container.querySelector("#backup-method") as HTMLElement;
-  const verifyTotpBtn = container.querySelector("#verify-totp-btn") as HTMLButtonElement;
-  const webauthnBtn = container.querySelector("#webauthn-btn") as HTMLButtonElement;
-  const verifyBackupBtn = container.querySelector("#verify-backup-btn") as HTMLButtonElement;
-  const errorMessage = container.querySelector("#error-message") as HTMLElement;
-  const errorText = container.querySelector("#error-text") as HTMLElement;
-  const backButton = container.querySelector("#backButton") as HTMLButtonElement;
+  console.log("🔍 Setting up event listeners for Verify2FA...");
+  
+  try {
+    const totpTab = container.querySelector("#totp-tab") as HTMLButtonElement;
+    const webauthnTab = container.querySelector("#webauthn-tab") as HTMLButtonElement;
+    const backupTab = container.querySelector("#backup-tab") as HTMLButtonElement;
+    const totpMethod = container.querySelector("#totp-method") as HTMLElement;
+    const webauthnMethod = container.querySelector("#webauthn-method") as HTMLElement;
+    const backupMethod = container.querySelector("#backup-method") as HTMLElement;
+    const verifyTotpBtn = container.querySelector("#verify-totp-btn") as HTMLButtonElement;
+    const webauthnBtn = container.querySelector("#webauthn-btn") as HTMLButtonElement;
+    const verifyBackupBtn = container.querySelector("#verify-backup-btn") as HTMLButtonElement;
+    const errorMessage = container.querySelector("#error-message") as HTMLElement;
+    const errorText = container.querySelector("#error-text") as HTMLElement;
+    const backButton = container.querySelector("#backButton") as HTMLAnchorElement;
+    
+    console.log("🔍 Element check:", {
+      totpTab: !!totpTab,
+      backButton: !!backButton,
+      verifyTotpBtn: !!verifyTotpBtn
+    });
 
   // Get user data from session storage
   const tempUserId = sessionStorage.getItem("tempUserId");
@@ -176,10 +205,13 @@ function setupEventListeners(container: HTMLElement) {
 
   const userData = JSON.parse(tempUserData);
 
-  // Back button listener
-  backButton.addEventListener("click", () => {
-    window.location.href = "/login";
-  });
+  // Back button listener (prevent default to handle navigation programmatically)
+  if (backButton) {
+    backButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "/login";
+    });
+  }
 
   // Tab listeners
   totpTab.addEventListener("click", () => {
@@ -406,11 +438,18 @@ function setupEventListeners(container: HTMLElement) {
     });
   });
 
-  // Auto-format backup code input
-  const backupCodeInput = container.querySelector("#backup-code") as HTMLInputElement;
-  backupCodeInput.addEventListener("input", (e) => {
-    const target = e.target as HTMLInputElement;
-    // Remove any non-alphanumeric characters and convert to uppercase
-    target.value = target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  });
+    // Auto-format backup code input
+    const backupCodeInput = container.querySelector("#backup-code") as HTMLInputElement;
+    backupCodeInput.addEventListener("input", (e) => {
+      const target = e.target as HTMLInputElement;
+      // Remove any non-alphanumeric characters and convert to uppercase
+      target.value = target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    });
+    
+    console.log("✅ Verify2FA event listeners setup complete");
+    
+  } catch (error) {
+    console.error("❌ Error setting up event listeners:", error);
+    throw error; // Re-throw to be caught by parent
+  }
 } 
