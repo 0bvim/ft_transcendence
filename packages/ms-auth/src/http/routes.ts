@@ -24,6 +24,7 @@ import {
 import { getProfile } from "./controllers/get-profile";
 import { updateProfile } from "./controllers/update-profile";
 import { uploadAvatar } from './controllers/upload-avatar';
+import { removeAvatar } from './controllers/remove-avatar';
 import { authMiddleware } from './middleware/auth';
 import { env } from "../env";
 import path from "path";
@@ -85,6 +86,7 @@ export async function appRoutes(app: FastifyInstance) {
     protectedRoutes.get("/profile", getProfile);
     protectedRoutes.put("/profile", updateProfile);
     protectedRoutes.post("/profile/avatar", uploadAvatar);
+    protectedRoutes.delete("/profile/avatar", removeAvatar);
 
     // User management
     protectedRoutes.delete("/delete/:id", deleteUser);

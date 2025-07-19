@@ -168,7 +168,7 @@ function setupEventListeners(container: HTMLElement) {
     try {
       const response = await authApi.login(data);
       
-      if (response.user.twoFactorEnabled) {
+      if (response.requiresTwoFactor) {
         // Store temporary user data for 2FA verification
         sessionStorage.setItem("tempUserId", response.user.id);
         sessionStorage.setItem("tempUserData", JSON.stringify(response.user));

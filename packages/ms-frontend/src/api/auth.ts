@@ -89,6 +89,8 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  requiresTwoFactor?: boolean;
+  message?: string;
 }
 
 export interface RefreshTokenRequest {
@@ -142,12 +144,17 @@ export const authApi = {
   uploadAvatar: async (file: File): Promise<{ user: User; avatarUrl: string }> => {
     const formData = new FormData();
     formData.append('avatar', file);
-    
+
     const response = await api.post("/profile/avatar", formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  },
+
+  removeAvatar: async (): Promise<{ user: User }> => {
+    const response = await api.delete("/profile/avatar");
     return response.data;
   },
 
