@@ -21,3 +21,11 @@ scrape_configs:
     static_configs:
       - targets: ["authentication:3001"]
     metrics_path: "/metrics"
+  - job_name: "blockchain"
+    static_configs:
+      - targets: ["blockchain:3004"]
+    metrics_path: "/metrics"
+  - job_name: "tournament-service"
+    static_configs:
+      - targets: ["tournament:4243"]
+    metrics_path: "/metrics"

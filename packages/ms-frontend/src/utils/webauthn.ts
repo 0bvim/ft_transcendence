@@ -119,4 +119,8 @@ export async function getWebAuthnAssertion(options: any): Promise<any> {
     },
     type: assertion.type,
   };
-} 
+}
+
+// Modern WebAuthn API exports (aliases for compatibility)
+export const startRegistration = createWebAuthnCredential;
+export const startAuthentication = getWebAuthnAssertion; 

@@ -5,7 +5,7 @@ services:
   ms-frontend:
     container_name: frontend
     build:
-      context: ./packages/
+      context: ./packages
       dockerfile: ./ms-frontend/Dockerfile
       target: development
     ports:
@@ -48,6 +48,63 @@ services:
     env_file: ./packages/ms-game/.env
     ports:
       - "${GAME_PORT:-3003}:3003"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    depends_on:
+      logstash:
+        condition: service_healthy
+
+  tournament:
+    container_name: tournament
+    build:
+      context: ./packages
+      dockerfile: ./tournament/Dockerfile
+      target: development
+    ports:
+      - "${TOURNAMENT_PORT:-4243}:4243"
+    environment:
+      - PORT=4243
+      - DATABASE_URL=file:./tournament.db
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - AUTH_SERVICE_URL=http://authentication:3001
+      - GAME_SERVICE_URL=http://game:3003
+      - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
+    volumes:
+      - ./packages/tournament/src:/app/src
+      - ./packages/tournament/prisma:/app/prisma
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    depends_on:
+      logstash:
+        condition: service_healthy
+      blockchain:
+        condition: service_started
+
+  blockchain:
+    container_name: blockchain
+    build:
+      context: ./packages
+      dockerfile: ./blockchain/Dockerfile
+      target: development
+    ports:
+      - "${BLOCKCHAIN_PORT:-3004}:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
+      - AVALANCHE_CHAIN_ID=${AVALANCHE_CHAIN_ID:-43113}
+      - PRIVATE_KEY=${BLOCKCHAIN_PRIVATE_KEY}
+      - TOURNAMENT_SCORING_CONTRACT_ADDRESS=${TOURNAMENT_SCORING_CONTRACT_ADDRESS}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
+      - TOURNAMENT_SERVICE_URL=http://tournament:4243
+      - AUTH_SERVICE_URL=http://authentication:3001
+      - GAS_LIMIT=${GAS_LIMIT:-3000000}
+      - GAS_PRICE=${GAS_PRICE:-20000000000}
+    volumes:
+      - ./packages/blockchain/src:/app/src
+      - ./packages/blockchain/contracts:/app/contracts
+      - ./packages/blockchain/scripts:/app/scripts
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:

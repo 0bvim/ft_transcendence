@@ -1,5 +1,6 @@
 import fastify from "fastify";
 import fastifyCors from "@fastify/cors";
+import fastifyMultipart from "@fastify/multipart";
 import { appRoutes } from "./http/routes";
 import { setupObservability } from "@ft-transcendence/observability";
 import { ZodError } from "zod";
@@ -24,6 +25,14 @@ app.register(fastifyCors, {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 });
 
+// Register multipart plugin for file uploads
+app.register(fastifyMultipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB instead of 5MB
+    files: 1
+  }
+});
+
 app.register(appRoutes);
 
 app.setErrorHandler((error, request, reply) => {
@@ -44,7 +53,7 @@ const start = async () => {
   app.log.info("Auth service starting up");
   try {
     await app.listen({
-      port: env.PORT ? Number(process.env.PORT) : 4242,
+      port: env.PORT ? Number(process.env.PORT) : 3001,
       host: "0.0.0.0",
     });
   } catch (err) {

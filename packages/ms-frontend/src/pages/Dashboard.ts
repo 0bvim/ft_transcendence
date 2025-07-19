@@ -1,10 +1,24 @@
 import { authApi, User } from '../api/auth';
 
+// Utility function to construct avatar URL
+function getAvatarUrl(avatarUrl: string | null | undefined): string {
+  if (!avatarUrl) {
+    return '/default-avatar.png';
+  }
+  
+  if (avatarUrl.startsWith('http')) {
+    return avatarUrl;
+  }
+  
+  const authServiceUrl = `http://${window.location.hostname}:3001`;
+  return `${authServiceUrl}${avatarUrl}`;
+}
+
 export default function Dashboard(): HTMLElement {
   const container = document.createElement('div');
-  container.className = 'min-h-screen bg-gray-50';
+  container.className = 'min-h-screen bg-secondary-50';
 
-  // Get user from localStorage
+  // Get user from localStorage first (for initial render)
   const userStr = localStorage.getItem('user');
   let user: User | null = null;
   
@@ -21,151 +35,340 @@ export default function Dashboard(): HTMLElement {
     return container;
   }
 
+  // Render initial content with localStorage data
+  renderDashboardContent(container, user);
+
+  // Setup event listeners
+  setupEventListeners(container);
+
+  // Refresh user data from API to get latest updates
+  refreshUserData(container);
+
+  return container;
+}
+
+async function refreshUserData(container: HTMLElement) {
+  try {
+    const { user } = await authApi.getProfile();
+    // Update localStorage with fresh data
+    localStorage.setItem('user', JSON.stringify(user));
+    // Re-render with fresh data
+    renderDashboardContent(container, user);
+    // Re-setup event listeners after re-render
+    setupEventListeners(container);
+  } catch (error) {
+    console.error('Failed to refresh user data:', error);
+    // If API call fails, keep using localStorage data
+  }
+}
+
+function renderDashboardContent(container: HTMLElement, user: User) {
   container.innerHTML = `
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <h1 class="text-xl font-semibold text-gray-900">ft_transcendence</h1>
+    <!-- Navigation -->
+    <nav class="bg-white/70 backdrop-blur-lg border-b border-white/20 sticky top-0 z-40">
+      <div class="container-fluid">
+        <div class="flex justify-between items-center h-16">
+          <!-- Logo -->
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center shadow-glow">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+              </svg>
+            </div>
+            <h1 class="text-xl font-bold text-gradient">ft_transcendence</h1>
           </div>
-          <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-700">Welcome, ${user.username}!</span>
-            <button
-              id="logoutButton"
-              class="btn btn-secondary text-sm"
-            >
-              Logout
+
+          <!-- Navigation Links -->
+          <div class="hidden md:flex items-center space-x-1">
+            <a href="/dashboard" data-link class="nav-link active">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2H3z"></path>
+              </svg>
+              Dashboard
+            </a>
+            <a href="/tournament" data-link class="nav-link">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+              </svg>
+              Tournaments
+            </a>
+            <a href="/profile" data-link class="nav-link">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              Profile
+            </a>
+          </div>
+
+          <!-- User Menu -->
+          <div class="flex items-center space-x-3">
+            <div class="hidden sm:block text-right">
+              <p class="text-sm font-medium text-secondary-900">${user.displayName || user.username}</p>
+              <p class="text-xs text-secondary-500">@${user.username}</p>
+            </div>
+            <div class="avatar avatar-md">
+              <img src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-2 border-white shadow-soft" />
+            </div>
+            <button id="logoutButton" class="btn btn-ghost btn-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
             </button>
           </div>
         </div>
       </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div class="px-4 py-6 sm:px-0">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Profile Information -->
-          <div class="card">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Profile Information</h2>
-            <div class="space-y-4">
-              <div>
-                <label class="form-label">Username</label>
-                <p class="text-sm text-gray-900">${user.username}</p>
+    <!-- Main Content -->
+    <main class="container-fluid py-8 space-y-8">
+      <!-- Welcome Section -->
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gradient mb-2">
+          Welcome back, ${user.displayName || user.username}!
+        </h1>
+        <p class="text-secondary-600">Ready to play some pong?</p>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <button class="card-hover p-6 text-center group">
+          <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-secondary-900 mb-2">Quick Match</h3>
+          <p class="text-sm text-secondary-600">Start a game right now</p>
+        </button>
+
+        <button class="card-hover p-6 text-center group">
+          <div class="w-12 h-12 bg-gradient-to-br from-success-500 to-success-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-secondary-900 mb-2">Join Tournament</h3>
+          <p class="text-sm text-secondary-600">Compete with others</p>
+        </button>
+
+        <button class="card-hover p-6 text-center group">
+          <div class="w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-secondary-900 mb-2">Create Tournament</h3>
+          <p class="text-sm text-secondary-600">Host your own event</p>
+        </button>
+
+        <button class="card-hover p-6 text-center group">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-secondary-900 mb-2">Statistics</h3>
+          <p class="text-sm text-secondary-600">View your performance</p>
+        </button>
+      </div>
+
+      <!-- Dashboard Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Stats -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Performance Overview -->
+          <div class="card-gradient p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-semibold text-secondary-900">Performance Overview</h2>
+              <select class="btn btn-secondary btn-sm">
+                <option>Last 7 days</option>
+                <option>Last 30 days</option>
+                <option>All time</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="text-center p-4 bg-secondary-50/50 rounded-xl">
+                <div class="text-3xl font-bold text-primary-600 mb-1" id="totalGames">0</div>
+                <div class="text-sm text-secondary-600">Games Played</div>
+                <div class="text-xs text-success-600 mt-1">+2 this week</div>
               </div>
-              <div>
-                <label class="form-label">Email</label>
-                <p class="text-sm text-gray-900">${user.email}</p>
+              <div class="text-center p-4 bg-secondary-50/50 rounded-xl">
+                <div class="text-3xl font-bold text-success-600 mb-1" id="winRate">0%</div>
+                <div class="text-sm text-secondary-600">Win Rate</div>
+                <div class="text-xs text-success-600 mt-1">+5% this week</div>
               </div>
-              <div>
-                <label class="form-label">Account Type</label>
-                <p class="text-sm text-gray-900">
-                  ${user.googleId ? 'Google Account' : 'Email/Password Account'}
-                </p>
-              </div>
-              <div>
-                <label class="form-label">Member Since</label>
-                <p class="text-sm text-gray-900">${new Date(user.createdAt).toLocaleDateString()}</p>
+              <div class="text-center p-4 bg-secondary-50/50 rounded-xl">
+                <div class="text-3xl font-bold text-warning-600 mb-1" id="currentStreak">0</div>
+                <div class="text-sm text-secondary-600">Current Streak</div>
+                <div class="text-xs text-secondary-500 mt-1">Personal best: 7</div>
               </div>
             </div>
           </div>
 
-          <!-- Security Settings -->
-          <div class="card">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Security Settings</h2>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-sm font-medium text-gray-900">Two-Factor Authentication</h3>
-                  <p class="text-sm text-gray-500">
-                    ${user.twoFactorEnabled ? 'Enabled' : 'Add an extra layer of security to your account'}
-                  </p>
+          <!-- Recent Matches -->
+          <div class="card-gradient p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-semibold text-secondary-900">Recent Matches</h2>
+              <a href="/matches" data-link class="text-sm text-primary-600 hover:text-primary-700 transition-colors">
+                View all
+              </a>
+            </div>
+
+            <div class="space-y-4" id="recentMatches">
+              <!-- Match items will be populated here -->
+              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-success-500 rounded-full"></div>
+                  <div>
+                    <p class="font-medium text-secondary-900">vs. AI Bot</p>
+                    <p class="text-sm text-secondary-600">2 hours ago</p>
+                  </div>
                 </div>
-                <button
-                  id="toggle2FAButton"
-                  class="btn ${user.twoFactorEnabled ? 'btn-secondary' : 'btn-primary'}"
-                >
-                  ${user.twoFactorEnabled ? 'Disable' : 'Enable'} 2FA
-                </button>
+                <div class="text-right">
+                  <div class="font-semibold text-success-600">Win</div>
+                  <div class="text-sm text-secondary-600">11-7</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-danger-500 rounded-full"></div>
+                  <div>
+                    <p class="font-medium text-secondary-900">vs. alice_gamer</p>
+                    <p class="text-sm text-secondary-600">1 day ago</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-danger-600">Loss</div>
+                  <div class="text-sm text-secondary-600">8-11</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-success-500 rounded-full"></div>
+                  <div>
+                    <p class="font-medium text-secondary-900">vs. bob_player</p>
+                    <p class="text-sm text-secondary-600">2 days ago</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-semibold text-success-600">Win</div>
+                  <div class="text-sm text-secondary-600">11-5</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Profile Card -->
+          <div class="card-gradient p-6 text-center">
+            <div class="avatar avatar-xl mx-auto mb-4">
+              <img src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-4 border-white shadow-medium" />
+            </div>
+            <h3 class="text-lg font-semibold text-secondary-900 mb-1">${user.displayName || user.username}</h3>
+            <p class="text-secondary-600 mb-2">@${user.username}</p>
+            <div class="flex items-center justify-center space-x-2 mb-4">
+              <span class="status-dot status-online"></span>
+              <span class="text-sm text-secondary-600">Online</span>
+            </div>
+            <a href="/profile" data-link class="btn btn-primary btn-sm w-full">
+              Edit Profile
+            </a>
+          </div>
+
+          <!-- Active Tournaments -->
+          <div class="card-gradient p-6">
+            <h3 class="text-lg font-semibold text-secondary-900 mb-4">Active Tournaments</h3>
+            <div class="space-y-3" id="activeTournaments">
+              <div class="p-3 bg-secondary-50/50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="font-medium text-secondary-900">Summer Championship</p>
+                  <span class="badge badge-warning">Round 2</span>
+                </div>
+                <p class="text-xs text-secondary-600">Next match: Tomorrow 3:00 PM</p>
               </div>
               
-              ${user.twoFactorEnabled ? `
-                <div class="space-y-2">
-                  <button
-                    id="generateBackupCodesButton"
-                    class="btn btn-secondary w-full"
-                  >
-                    Generate Backup Codes
-                  </button>
-                  <button
-                    id="addWebAuthnButton"
-                    class="btn btn-secondary w-full"
-                  >
-                    Add Security Key
-                  </button>
+              <div class="text-center py-4 text-secondary-500">
+                <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <p class="text-sm">Join more tournaments</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Status -->
+          <div class="card-gradient p-6">
+            <h3 class="text-lg font-semibold text-secondary-900 mb-4">Security Status</h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-4 h-4 text-${user.twoFactorEnabled ? 'success' : 'warning'}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                  </svg>
+                  <span class="text-sm text-secondary-900">Two-Factor Auth</span>
                 </div>
+                <span class="badge badge-${user.twoFactorEnabled ? 'success' : 'warning'}">
+                  ${user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="text-sm text-secondary-900">Account Verified</span>
+                </div>
+                <span class="badge badge-success">Active</span>
+              </div>
+
+              ${!user.twoFactorEnabled ? `
+              <div class="mt-3 p-3 bg-warning-50 rounded-lg border border-warning-200">
+                <p class="text-xs text-warning-700 mb-2">Enhance your security</p>
+                <a href="/profile" data-link class="text-xs text-warning-600 hover:text-warning-700 underline">
+                  Enable 2FA
+                </a>
+              </div>
               ` : ''}
             </div>
           </div>
 
-          <!-- Account Actions -->
-          <div class="card">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Account Actions</h2>
-            <div class="space-y-4">
-              <button
-                id="deleteAccountButton"
-                class="btn bg-red-600 text-white hover:bg-red-700 w-full"
-              >
-                Delete Account
-              </button>
-              <p class="text-sm text-gray-500">
-                This action cannot be undone. This will permanently delete your account.
-              </p>
-            </div>
-          </div>
-
-          <!-- Messages -->
-          <div class="card">
-            <div id="messageContainer" class="space-y-2">
-              <!-- Messages will be displayed here -->
+          <!-- Quick Stats -->
+          <div class="card-gradient p-6">
+            <h3 class="text-lg font-semibold text-secondary-900 mb-4">Quick Stats</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-sm text-secondary-600">Rank</span>
+                <span class="text-sm font-medium text-secondary-900">#42</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-secondary-600">Total Tournaments</span>
+                <span class="text-sm font-medium text-secondary-900">3</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-secondary-600">Best Position</span>
+                <span class="text-sm font-medium text-secondary-900">2nd</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-secondary-600">Member Since</span>
+                <span class="text-sm font-medium text-secondary-900">${new Date(user.createdAt).toLocaleDateString()}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Backup Codes Modal -->
-    <div id="backupCodesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Backup Codes</h3>
-          <p class="text-sm text-gray-600 mb-4">
-            Save these codes in a secure place. Each code can only be used once.
-          </p>
-          <div id="backupCodesList" class="space-y-2 mb-4">
-            <!-- Backup codes will be displayed here -->
-          </div>
-          <button
-            id="closeBackupCodesModal"
-            class="btn btn-primary w-full"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </main>
   `;
+}
 
-  // Add event listeners
-  const logoutButton = container.querySelector('#logoutButton') as HTMLButtonElement;
-  const toggle2FAButton = container.querySelector('#toggle2FAButton') as HTMLButtonElement;
-  const generateBackupCodesButton = container.querySelector('#generateBackupCodesButton') as HTMLButtonElement;
-  const addWebAuthnButton = container.querySelector('#addWebAuthnButton') as HTMLButtonElement;
-  const deleteAccountButton = container.querySelector('#deleteAccountButton') as HTMLButtonElement;
-  const messageContainer = container.querySelector('#messageContainer') as HTMLDivElement;
-  const backupCodesModal = container.querySelector('#backupCodesModal') as HTMLDivElement;
-  const closeBackupCodesModal = container.querySelector('#closeBackupCodesModal') as HTMLButtonElement;
-
+function setupEventListeners(container: HTMLElement) {
   // Logout functionality
+  const logoutButton = container.querySelector('#logoutButton') as HTMLButtonElement;
   logoutButton.addEventListener('click', () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -173,180 +376,42 @@ export default function Dashboard(): HTMLElement {
     window.location.href = '/login';
   });
 
-  // Toggle 2FA
-  toggle2FAButton.addEventListener('click', async () => {
-    try {
-      toggle2FAButton.disabled = true;
-      toggle2FAButton.textContent = 'Processing...';
+  // Quick action buttons
+  const quickMatchBtn = container.querySelector('.card-hover:nth-child(1)') as HTMLElement;
+  const joinTournamentBtn = container.querySelector('.card-hover:nth-child(2)') as HTMLElement;
+  const createTournamentBtn = container.querySelector('.card-hover:nth-child(3)') as HTMLElement;
+  const statisticsBtn = container.querySelector('.card-hover:nth-child(4)') as HTMLElement;
 
-      if (user!.twoFactorEnabled) {
-        await authApi.disableTwoFactor(user!.id);
-        showMessage('Two-factor authentication disabled successfully', 'success');
-        user!.twoFactorEnabled = false;
-      } else {
-        const response = await authApi.enableTwoFactor(user!.id);
-        showMessage('Two-factor authentication enabled successfully', 'success');
-        user!.twoFactorEnabled = true;
-        
-        // Show backup codes if generated
-        if (response.backupCodes && response.backupCodes.length > 0) {
-          showBackupCodes(response.backupCodes);
-        }
-      }
-
-      // Update localStorage
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      // Refresh page to update UI
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (error: any) {
-      console.error('2FA toggle error:', error);
-      showMessage(error.response?.data?.error || 'Failed to toggle 2FA', 'error');
-    } finally {
-      toggle2FAButton.disabled = false;
-      toggle2FAButton.textContent = user!.twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA';
-    }
+  quickMatchBtn.addEventListener('click', () => {
+    // Navigate to game
+    window.location.href = '/game';
   });
 
-  // Generate backup codes
-  if (generateBackupCodesButton) {
-    generateBackupCodesButton.addEventListener('click', async () => {
-      try {
-        generateBackupCodesButton.disabled = true;
-        generateBackupCodesButton.textContent = 'Generating...';
-
-        const response = await authApi.generateBackupCodes(user!.id);
-        showBackupCodes(response.backupCodes);
-        showMessage('New backup codes generated successfully', 'success');
-      } catch (error: any) {
-        console.error('Backup codes generation error:', error);
-        showMessage(error.response?.data?.error || 'Failed to generate backup codes', 'error');
-      } finally {
-        generateBackupCodesButton.disabled = false;
-        generateBackupCodesButton.textContent = 'Generate Backup Codes';
-      }
-    });
-  }
-
-  // Add WebAuthn credential
-  if (addWebAuthnButton) {
-    addWebAuthnButton.addEventListener('click', async () => {
-      try {
-        addWebAuthnButton.disabled = true;
-        addWebAuthnButton.textContent = 'Preparing...';
-
-        // Check if WebAuthn is supported
-        if (!navigator.credentials || !navigator.credentials.create) {
-          showMessage('WebAuthn is not supported in this browser', 'error');
-          return;
-        }
-
-        // Import WebAuthn utilities
-        const { createWebAuthnCredential } = await import('../utils/webauthn');
-
-        // Get registration options
-        const optionsResponse = await authApi.generateWebAuthnRegistrationOptions({
-          userId: user!.id,
-          userDisplayName: user!.username,
-        });
-
-        addWebAuthnButton.textContent = 'Touch your security key...';
-
-        // Create WebAuthn credential
-        const credential = await createWebAuthnCredential(optionsResponse.options);
-
-        addWebAuthnButton.textContent = 'Registering...';
-
-        // Register with backend
-        const registrationResponse = await authApi.verifyWebAuthnRegistration({
-          sessionId: optionsResponse.sessionId,
-          registrationResponse: credential,
-          name: `Security Key ${new Date().toLocaleDateString()}`,
-        });
-
-        showMessage('Security key registered successfully!', 'success');
-        
-        // Refresh page to update UI
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } catch (error: any) {
-        console.error('WebAuthn setup error:', error);
-        const message = error.response?.data?.error || error.message || 'Failed to set up security key';
-        showMessage(message, 'error');
-      } finally {
-        addWebAuthnButton.disabled = false;
-        addWebAuthnButton.textContent = 'Add Security Key';
-      }
-    });
-  }
-
-  // Delete account
-  deleteAccountButton.addEventListener('click', async () => {
-    const confirmed = confirm(
-      'Are you sure you want to delete your account? This action cannot be undone.'
-    );
-
-    if (!confirmed) return;
-
-    try {
-      deleteAccountButton.disabled = true;
-      deleteAccountButton.textContent = 'Deleting...';
-
-      await authApi.deleteUser(user!.id);
-      
-      // Clear local storage
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      
-      alert('Account deleted successfully');
-      window.location.href = '/login';
-    } catch (error: any) {
-      console.error('Account deletion error:', error);
-      showMessage(error.response?.data?.error || 'Failed to delete account', 'error');
-      deleteAccountButton.disabled = false;
-      deleteAccountButton.textContent = 'Delete Account';
-    }
+  joinTournamentBtn.addEventListener('click', () => {
+    window.location.href = '/tournament';
   });
 
-  // Close backup codes modal
-  closeBackupCodesModal.addEventListener('click', () => {
-    backupCodesModal.classList.add('hidden');
+  createTournamentBtn.addEventListener('click', () => {
+    window.location.href = '/tournament/create';
   });
 
-  function showMessage(message: string, type: 'success' | 'error' | 'info') {
-    const messageElement = document.createElement('div');
-    messageElement.className = `p-3 rounded-md ${
-      type === 'success' ? 'bg-green-100 text-green-700' :
-      type === 'error' ? 'bg-red-100 text-red-700' :
-      'bg-blue-100 text-blue-700'
-    }`;
-    messageElement.textContent = message;
+  statisticsBtn.addEventListener('click', () => {
+    window.location.href = '/profile#stats';
+  });
 
-    messageContainer.appendChild(messageElement);
+  // Load user stats
+  loadUserStats(container);
+}
 
-    // Remove message after 5 seconds
-    setTimeout(() => {
-      messageElement.remove();
-    }, 5000);
-  }
+async function loadUserStats(container: HTMLElement) {
+  // This would typically load from an API
+  // For now, we'll simulate some data
+  const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
+  const winRateEl = container.querySelector('#winRate') as HTMLElement;
+  const currentStreakEl = container.querySelector('#currentStreak') as HTMLElement;
 
-  function showBackupCodes(codes: string[]) {
-    const backupCodesList = container.querySelector('#backupCodesList') as HTMLDivElement;
-    backupCodesList.innerHTML = '';
-
-    codes.forEach(code => {
-      const codeElement = document.createElement('div');
-      codeElement.className = 'bg-gray-100 p-2 rounded font-mono text-sm';
-      codeElement.textContent = code;
-      backupCodesList.appendChild(codeElement);
-    });
-
-    backupCodesModal.classList.remove('hidden');
-  }
-
-  return container;
+  // Simulate loading stats
+  totalGamesEl.textContent = '12';
+  winRateEl.textContent = '67%';
+  currentStreakEl.textContent = '3';
 } 
