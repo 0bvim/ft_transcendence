@@ -29,10 +29,15 @@ import { env } from "../env";
 import path from "path";
 
 export async function appRoutes(app: FastifyInstance) {
-  // Serve static files for uploaded avatars
+  // Serve static files for uploaded avatars with CORS headers
   app.register(require('@fastify/static'), {
     root: path.join(process.cwd(), 'uploads'),
     prefix: '/uploads/',
+    setHeaders: (res: any, path: string) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
   });
 
   // Debug endpoint - remove in production
