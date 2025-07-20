@@ -1,4 +1,5 @@
 import { authApi } from '../api/auth';
+import { clientLogger } from '../utils/clientLogger';
 
 interface TwoFactorSetupState {
   step: 'start' | 'setup' | 'verify' | 'complete';
@@ -278,13 +279,13 @@ export class TwoFactorSetupModal {
   }
 
   private async startSetup() {
-    console.log('🔄 Starting 2FA setup for user:', this.user.id);
+    clientLogger.info('Starting 2FA setup for user', { userId: this.user.id });
     
     this.setState({ loading: true, error: undefined });
 
     try {
       const response = await authApi.enableTwoFactor(this.user.id);
-      console.log('✅ 2FA setup response:', response);
+      clientLogger.info('2FA setup response', { response });
 
       this.setState({
         step: 'setup',
@@ -294,7 +295,7 @@ export class TwoFactorSetupModal {
         loading: false
       });
     } catch (error: any) {
-      console.error('❌ 2FA setup failed:', error);
+      clientLogger.error('2FA setup failed', { error });
       this.setState({
         loading: false,
         error: error.response?.data?.error || 'Failed to setup 2FA. Please try again.'
@@ -323,7 +324,7 @@ export class TwoFactorSetupModal {
       return;
     }
 
-    console.log('🔐 Verifying 2FA code:', {
+    clientLogger.info('Verifying 2FA code', {
       userId: this.user.id,
       code: code,
       codeLength: code.length,
@@ -334,7 +335,7 @@ export class TwoFactorSetupModal {
 
     try {
       const response = await authApi.completeTwoFactorSetup(this.user.id, code);
-      console.log('✅ 2FA verification successful:', response);
+      clientLogger.info('2FA verification successful', { response });
 
       this.setState({
         step: 'complete',
@@ -346,8 +347,8 @@ export class TwoFactorSetupModal {
       localStorage.setItem('user', JSON.stringify(this.user));
       
     } catch (error: any) {
-      console.error('❌ 2FA verification failed:', error);
-      console.log('❌ Failed code details:', {
+      clientLogger.error('2FA verification failed', { error });
+      clientLogger.error('Failed code details', {
         code: code,
         codeLength: code.length,
         time: new Date().toISOString(),

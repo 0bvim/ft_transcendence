@@ -38,7 +38,7 @@ export async function verifyTotpCode(request: FastifyRequest, reply: FastifyRepl
       return reply.status(401).send({ error: "Invalid TOTP code" });
     }
 
-    console.error('Verify TOTP error:', err);
+    request.log.error('Verify TOTP error:', err);
     return reply.status(500).send({ error: "Failed to verify TOTP code" });
   }
 } 

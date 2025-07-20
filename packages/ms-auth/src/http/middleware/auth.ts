@@ -71,7 +71,7 @@ export async function authMiddleware(
     };
     
   } catch (error) {
-    console.error('JWT verification error:', error);
+          request.log.error('JWT verification error:', error);
     return reply.status(401).send({
       error: 'Unauthorized',
       message: 'Invalid or expired token'

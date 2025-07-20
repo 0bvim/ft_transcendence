@@ -36,12 +36,12 @@ setupObservability(server, {
 
 // Validate required environment variables
 if (!TOURNAMENT_SCORING_CONTRACT_ADDRESS) {
-  console.error("❌ TOURNAMENT_SCORING_CONTRACT_ADDRESS is required");
+  server.log.error("TOURNAMENT_SCORING_CONTRACT_ADDRESS is required");
   process.exit(1);
 }
 
 if (!PRIVATE_KEY) {
-  console.error("❌ PRIVATE_KEY is required");
+  server.log.error("PRIVATE_KEY is required");
   process.exit(1);
 }
 
@@ -58,7 +58,8 @@ async function startServer() {
     const blockchainService = new BlockchainService(
       AVALANCHE_RPC_URL,
       TOURNAMENT_SCORING_CONTRACT_ADDRESS,
-      PRIVATE_KEY
+      PRIVATE_KEY,
+      server.log
     );
 
     // Verify blockchain connection

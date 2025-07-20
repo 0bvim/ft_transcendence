@@ -45,7 +45,7 @@ export async function getProfile(
     });
 
   } catch (error) {
-    console.error('Error getting profile:', error);
+    request.log.error('Error getting profile:', error);
     
     return reply.status(500).send({
       error: 'Internal server error',

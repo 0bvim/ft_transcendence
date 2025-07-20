@@ -30,7 +30,7 @@ export async function removeAvatar(
         await fs.unlink(filePath);
       } catch (error) {
         // Ignore errors when deleting avatar file (file might not exist)
-        console.warn('Failed to delete avatar file:', error);
+        request.log.warn('Failed to delete avatar file:', error);
       }
     }
 
@@ -47,7 +47,7 @@ export async function removeAvatar(
       user: userWithoutPassword,
     });
   } catch (error) {
-    console.error('Error removing avatar:', error);
+    request.log.error('Error removing avatar:', error);
     return reply.status(500).send({
       message: 'Failed to remove avatar'
     });

@@ -45,8 +45,7 @@ const sketch = (p: p5) => {
       // Use a web-safe fallback font instead of loading external font
       retroFont = null; // Will use default font
     } catch (error) {
-      // Log to both console and ELK stack
-      console.warn("Font loading failed, using default font");
+      // Log to ELK stack via gameLogger
       if (typeof gameLogger !== 'undefined') {
         gameLogger.warn("Font loading failed, using default font", { error: error });
       }

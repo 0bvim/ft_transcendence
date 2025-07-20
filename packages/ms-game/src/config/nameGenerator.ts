@@ -1,12 +1,21 @@
 const playerNamesCsvUrl = new URL('../../public/player_names.csv?url', import.meta.url).href;
 
+// Access game logger from global scope
+declare const gameLogger: any;
+
 export async function getRandomPlayerName(): Promise<string> {
 	try {
 		const response = await fetch(playerNamesCsvUrl); // Use the imported URL
 		if (!response.ok) {
-			console.error(`Failed to fetch player_names.csv: ${response.status} ${response.statusText}`);
 			const errorText = await response.text();
-			console.error("Response content on error:", errorText);
+			if (typeof gameLogger !== 'undefined') {
+				gameLogger.error('Failed to fetch player names CSV', {
+					action: 'fetchPlayerNames',
+					status: response.status,
+					statusText: response.statusText,
+					responseContent: errorText
+				});
+			}
 			return "Error Player";
 		}
 		const csvText = await response.text();
@@ -28,7 +37,14 @@ export async function getRandomPlayerName(): Promise<string> {
 		}
 
 		if (adjectives.length === 0 || substantives.length === 0) {
-			console.error("Adjectives or substantives array is empty after parsing CSV. Check CSV content and path.");
+			if (typeof gameLogger !== 'undefined') {
+				gameLogger.error('Empty name arrays after CSV parsing', {
+					action: 'parsePlayerNames',
+					adjectivesCount: adjectives.length,
+					substantivesCount: substantives.length,
+					csvUrl: playerNamesCsvUrl
+				});
+			}
 			return "Default Player";
 		}
 
@@ -38,10 +54,20 @@ export async function getRandomPlayerName(): Promise<string> {
 		return `${adj} ${sub}`;
 
 	} catch (e: unknown) {
-		if (e instanceof Error) {
-			console.error('Failed to fetch or parse player names:', e.message);
-		} else {
-			console.error('An unknown error occurred:', e);
+		if (typeof gameLogger !== 'undefined') {
+			if (e instanceof Error) {
+				gameLogger.error('Failed to fetch or parse player names', {
+					action: 'getRandomPlayerName',
+					error: e.message,
+					csvUrl: playerNamesCsvUrl
+				});
+			} else {
+				gameLogger.error('Unknown error occurred in player name generation', {
+					action: 'getRandomPlayerName',
+					error: e,
+					csvUrl: playerNamesCsvUrl
+				});
+			}
 		}
 		return "Fallback Player";
 	}

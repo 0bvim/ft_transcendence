@@ -43,14 +43,17 @@ export class BlockchainService {
   private contract: TournamentScoring;
   private signer: ethers.Signer;
   private contractAddress: string;
+  private logger: any;
 
   constructor(
     rpcUrl: string,
     contractAddress: string,
-    privateKey?: string
+    privateKey?: string,
+    logger?: any
   ) {
     this.contractAddress = contractAddress;
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.logger = logger || console; // fallback to console if no logger provided
     
     if (privateKey) {
       this.signer = new ethers.Wallet(privateKey, this.provider);
@@ -74,7 +77,11 @@ export class BlockchainService {
     maxParticipants: number
   ): Promise<{ tournamentId: number; transactionHash: string }> {
     try {
-      console.log(`Creating tournament on blockchain: ${name}`);
+      this.logger.info('Creating tournament on blockchain', { 
+        action: 'createTournament',
+        name, 
+        maxParticipants 
+      });
       
       const tx = await this.contract.createTournament(
         name,
@@ -87,14 +94,23 @@ export class BlockchainService {
       // Extract tournament ID from events
       const tournamentId = await this.contract.getTournamentCount();
       
-      console.log(`Tournament created with ID: ${tournamentId}`);
+      this.logger.info('Tournament created successfully', { 
+        action: 'createTournament',
+        tournamentId: Number(tournamentId),
+        transactionHash: receipt?.hash || tx.hash
+      });
       
       return {
         tournamentId: Number(tournamentId),
         transactionHash: receipt?.hash || tx.hash
       };
     } catch (error) {
-      console.error("Error creating tournament on blockchain:", error);
+      this.logger.error('Failed to create tournament on blockchain', { 
+        action: 'createTournament',
+        error: error instanceof Error ? error.message : error,
+        name, 
+        maxParticipants 
+      });
       throw new Error(`Failed to create tournament on blockchain: ${error}`);
     }
   }
@@ -109,7 +125,13 @@ export class BlockchainService {
     participantType: "HUMAN" | "AI"
   ): Promise<string> {
     try {
-      console.log(`Adding participant to tournament ${tournamentId}: ${displayName}`);
+      this.logger.info('Adding participant to tournament', { 
+        action: 'addParticipant',
+        tournamentId, 
+        userId,
+        displayName, 
+        participantType 
+      });
       
       const tx = await this.contract.addParticipant(
         tournamentId,
@@ -120,11 +142,21 @@ export class BlockchainService {
       
       const receipt = await tx.wait();
       
-      console.log(`Participant added successfully`);
+      this.logger.info('Participant added successfully', { 
+        action: 'addParticipant',
+        tournamentId,
+        userId,
+        transactionHash: receipt?.hash || tx.hash
+      });
       
       return receipt?.hash || tx.hash;
     } catch (error) {
-      console.error("Error adding participant to blockchain:", error);
+      this.logger.error('Failed to add participant to tournament', { 
+        action: 'addParticipant',
+        error: error instanceof Error ? error.message : error,
+        tournamentId,
+        userId
+      });
       throw new Error(`Failed to add participant to blockchain: ${error}`);
     }
   }
@@ -134,16 +166,27 @@ export class BlockchainService {
    */
   async startTournament(tournamentId: number): Promise<string> {
     try {
-      console.log(`Starting tournament ${tournamentId} on blockchain`);
+      this.logger.info('Starting tournament on blockchain', { 
+        action: 'startTournament',
+        tournamentId 
+      });
       
       const tx = await this.contract.startTournament(tournamentId);
       const receipt = await tx.wait();
       
-      console.log(`Tournament started successfully`);
+      this.logger.info('Tournament started successfully', { 
+        action: 'startTournament',
+        tournamentId,
+        transactionHash: receipt?.hash || tx.hash
+      });
       
       return receipt?.hash || tx.hash;
     } catch (error) {
-      console.error("Error starting tournament on blockchain:", error);
+      this.logger.error('Failed to start tournament on blockchain', { 
+        action: 'startTournament',
+        error: error instanceof Error ? error.message : error,
+        tournamentId
+      });
       throw new Error(`Failed to start tournament on blockchain: ${error}`);
     }
   }
@@ -161,7 +204,16 @@ export class BlockchainService {
     player2Score: number
   ): Promise<string> {
     try {
-      console.log(`Recording match result for tournament ${tournamentId}`);
+      this.logger.info('Recording match result on blockchain', { 
+        action: 'recordMatchResult',
+        tournamentId, 
+        round,
+        player1Id, 
+        player2Id, 
+        winnerId,
+        player1Score, 
+        player2Score
+      });
       
       // Generate result hash for verification
       const resultHash = ethers.keccak256(
@@ -184,11 +236,24 @@ export class BlockchainService {
       
       const receipt = await tx.wait();
       
-      console.log(`Match result recorded successfully`);
+      this.logger.info('Match result recorded successfully', { 
+        action: 'recordMatchResult',
+        tournamentId,
+        round,
+        winnerId,
+        transactionHash: receipt?.hash || tx.hash,
+        resultHash
+      });
       
       return receipt?.hash || tx.hash;
     } catch (error) {
-      console.error("Error recording match result on blockchain:", error);
+      this.logger.error('Failed to record match result on blockchain', { 
+        action: 'recordMatchResult',
+        error: error instanceof Error ? error.message : error,
+        tournamentId, 
+        round,
+        winnerId
+      });
       throw new Error(`Failed to record match result on blockchain: ${error}`);
     }
   }
@@ -202,7 +267,12 @@ export class BlockchainService {
     finalPositions: string[]
   ): Promise<string> {
     try {
-      console.log(`Completing tournament ${tournamentId} on blockchain`);
+      this.logger.info('Completing tournament on blockchain', { 
+        action: 'completeTournament',
+        tournamentId, 
+        winnerId,
+        participantCount: finalPositions.length
+      });
       
       const tx = await this.contract.completeTournament(
         tournamentId,
@@ -212,11 +282,21 @@ export class BlockchainService {
       
       const receipt = await tx.wait();
       
-      console.log(`Tournament completed successfully`);
+      this.logger.info('Tournament completed successfully', { 
+        action: 'completeTournament',
+        tournamentId,
+        winnerId,
+        transactionHash: receipt?.hash || tx.hash
+      });
       
       return receipt?.hash || tx.hash;
     } catch (error) {
-      console.error("Error completing tournament on blockchain:", error);
+      this.logger.error('Failed to complete tournament on blockchain', { 
+        action: 'completeTournament',
+        error: error instanceof Error ? error.message : error,
+        tournamentId,
+        winnerId
+      });
       throw new Error(`Failed to complete tournament on blockchain: ${error}`);
     }
   }
@@ -241,7 +321,11 @@ export class BlockchainService {
         isVerified: result.isVerified
       };
     } catch (error) {
-      console.error("Error getting tournament from blockchain:", error);
+      this.logger.error('Failed to get tournament from blockchain', { 
+        action: 'getTournament',
+        error: error instanceof Error ? error.message : error,
+        tournamentId
+      });
       throw new Error(`Failed to get tournament from blockchain: ${error}`);
     }
   }
@@ -267,7 +351,11 @@ export class BlockchainService {
         resultHash: result.resultHash
       };
     } catch (error) {
-      console.error("Error getting match from blockchain:", error);
+      this.logger.error('Failed to get match from blockchain', { 
+        action: 'getMatch',
+        error: error instanceof Error ? error.message : error,
+        matchId
+      });
       throw new Error(`Failed to get match from blockchain: ${error}`);
     }
   }
@@ -288,7 +376,11 @@ export class BlockchainService {
         proofHash: achievement.proofHash
       }));
     } catch (error) {
-      console.error("Error getting user achievements from blockchain:", error);
+      this.logger.error('Failed to get user achievements from blockchain', { 
+        action: 'getUserAchievements',
+        error: error instanceof Error ? error.message : error,
+        userId
+      });
       throw new Error(`Failed to get user achievements from blockchain: ${error}`);
     }
   }
@@ -301,7 +393,11 @@ export class BlockchainService {
       const results = await this.contract.getUserTournaments(userId);
       return results.map(id => Number(id));
     } catch (error) {
-      console.error("Error getting user tournaments from blockchain:", error);
+      this.logger.error('Failed to get user tournaments from blockchain', { 
+        action: 'getUserTournaments',
+        error: error instanceof Error ? error.message : error,
+        userId
+      });
       throw new Error(`Failed to get user tournaments from blockchain: ${error}`);
     }
   }
@@ -313,7 +409,11 @@ export class BlockchainService {
     try {
       return await this.contract.verifyMatchResult(resultHash);
     } catch (error) {
-      console.error("Error verifying match result on blockchain:", error);
+      this.logger.error('Failed to verify match result on blockchain', { 
+        action: 'verifyMatchResult',
+        error: error instanceof Error ? error.message : error,
+        resultHash
+      });
       throw new Error(`Failed to verify match result on blockchain: ${error}`);
     }
   }
@@ -326,7 +426,10 @@ export class BlockchainService {
       const count = await this.contract.getTournamentCount();
       return Number(count);
     } catch (error) {
-      console.error("Error getting tournament count from blockchain:", error);
+      this.logger.error('Failed to get tournament count from blockchain', { 
+        action: 'getTournamentCount',
+        error: error instanceof Error ? error.message : error
+      });
       throw new Error(`Failed to get tournament count from blockchain: ${error}`);
     }
   }
@@ -349,7 +452,10 @@ export class BlockchainService {
         name: network.name
       };
     } catch (error) {
-      console.error("Error getting network info:", error);
+      this.logger.error('Failed to get network info', { 
+        action: 'getNetworkInfo',
+        error: error instanceof Error ? error.message : error
+      });
       throw new Error(`Failed to get network info: ${error}`);
     }
   }
@@ -362,7 +468,11 @@ export class BlockchainService {
       const code = await this.provider.getCode(this.contractAddress);
       return code !== "0x";
     } catch (error) {
-      console.error("Error checking contract deployment:", error);
+      this.logger.error('Failed to check contract deployment', { 
+        action: 'isContractDeployed',
+        error: error instanceof Error ? error.message : error,
+        contractAddress: this.contractAddress
+      });
       return false;
     }
   }

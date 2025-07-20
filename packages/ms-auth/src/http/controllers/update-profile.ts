@@ -70,7 +70,7 @@ export async function updateProfile(
     });
 
   } catch (error) {
-    console.error('Error updating profile:', error);
+    request.log.error('Error updating profile:', error);
     
     if (error instanceof z.ZodError) {
       return reply.status(400).send({

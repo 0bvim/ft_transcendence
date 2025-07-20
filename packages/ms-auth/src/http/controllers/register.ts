@@ -13,7 +13,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
   });
 
   try {
-    console.log('Registration attempt received:', { 
+    request.log.info('Registration attempt received:', { 
       body: request.body, 
       headers: request.headers 
     });
@@ -21,7 +21,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     // NOTE: Parse and validate the request body against the schema
     const { username, email, password } = registerBodySchema.parse(request.body);
 
-    console.log('Registration request parsed successfully:', { username, email });
+    request.log.info('Registration request parsed successfully:', { username, email });
 
     const usersRepository = new PrismaUsersRepository();
     const registerUseCase = new RegisterUseCase(usersRepository);
@@ -32,9 +32,9 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
       password,
     });
 
-    console.log('User registered successfully:', { username, email });
+    request.log.info('User registered successfully:', { username, email });
   } catch (err) {
-    console.error('Registration error:', err);
+    request.log.error('Registration error:', err);
     
     if (err instanceof UserAlreadyExistsError) {
       return reply
@@ -43,7 +43,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     }
 
     if (err instanceof z.ZodError) {
-      console.error('Validation error:', err.format());
+      request.log.error('Validation error:', err.format());
       return reply
         .status(400)
         .send({ error: "Invalid input data", details: err.format() });

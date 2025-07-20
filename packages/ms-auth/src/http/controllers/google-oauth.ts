@@ -30,13 +30,13 @@ export async function googleOAuthInitiate(request: FastifyRequest, reply: Fastif
       include_granted_scopes: true,
     });
 
-    console.log('Generated Google OAuth URL:', authUrl);
+    request.log.info('Generated Google OAuth URL:', authUrl);
 
     return reply.status(200).send({
       authUrl,
     });
   } catch (err) {
-    console.error('Google OAuth initiate error:', err);
+    request.log.error('Google OAuth initiate error:', err);
     return reply.status(500).send({ error: "Failed to initiate OAuth" });
   }
 }
@@ -48,26 +48,26 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
   });
 
   try {
-    console.log('Google OAuth callback received query:', request.query);
+    request.log.info('Google OAuth callback received query:', request.query);
     
     const { code } = callbackQuerySchema.parse(request.query);
 
-    console.log('Exchanging authorization code for tokens...');
+    request.log.info('Exchanging authorization code for tokens...');
     
     // Exchange authorization code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    console.log('Tokens received, fetching user info...');
+    request.log.info('Tokens received, fetching user info...');
 
     // Get user info from Google
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
-    console.log('User info received:', { email: userInfo.email, id: userInfo.id });
+    request.log.info('User info received:', { email: userInfo.email, id: userInfo.id });
 
     if (!userInfo.email || !userInfo.id) {
-      console.error('Missing user information from Google:', userInfo);
+      request.log.error('Missing user information from Google:', userInfo);
       return reply.status(400).send({ error: "Failed to get user information from Google" });
     }
 
@@ -113,7 +113,7 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
       });
     }
     
-    console.error('OAuth callback error:', err);
+    request.log.error('OAuth callback error:', err);
     return reply.status(500).send({ error: "OAuth authentication failed" });
   }
 }
@@ -169,7 +169,7 @@ export async function googleOAuthLink(request: FastifyRequest, reply: FastifyRep
       });
     }
     
-    console.error('OAuth link error:', err);
+    request.log.error('OAuth link error:', err);
     return reply.status(500).send({ error: "Failed to link Google account" });
   }
 } 

@@ -62,7 +62,7 @@ export async function registerWebAuthnCredential(request: FastifyRequest, reply:
       return reply.status(404).send({ error: "User not found" });
     }
     
-    console.error('Register WebAuthn credential error:', err);
+    request.log.error('Register WebAuthn credential error:', err);
     return reply.status(500).send({ error: "Failed to register WebAuthn credential" });
   }
 }
@@ -99,7 +99,7 @@ export async function verifyWebAuthnCredential(request: FastifyRequest, reply: F
       return reply.status(401).send({ error: "Invalid WebAuthn credential" });
     }
     
-    console.error('Verify WebAuthn credential error:', err);
+    request.log.error('Verify WebAuthn credential error:', err);
     return reply.status(500).send({ error: "Failed to verify WebAuthn credential" });
   }
 }
@@ -129,7 +129,7 @@ export async function enableTwoFactor(request: FastifyRequest, reply: FastifyRep
       return reply.status(404).send({ error: "User not found" });
     }
     
-    console.error('Enable 2FA error:', err);
+    request.log.error('Enable 2FA error:', err);
     return reply.status(500).send({ error: "Failed to enable 2FA" });
   }
 }
@@ -163,7 +163,7 @@ export async function disableTwoFactor(request: FastifyRequest, reply: FastifyRe
       return reply.status(404).send({ error: "User not found" });
     }
     
-    console.error('Disable 2FA error:', err);
+    request.log.error('Disable 2FA error:', err);
     return reply.status(500).send({ error: "Failed to disable 2FA" });
   }
 }
@@ -195,7 +195,7 @@ export async function generateBackupCodes(request: FastifyRequest, reply: Fastif
       return reply.status(404).send({ error: "User not found" });
     }
     
-    console.error('Generate backup codes error:', err);
+    request.log.error('Generate backup codes error:', err);
     return reply.status(500).send({ error: "Failed to generate backup codes" });
   }
 }
@@ -230,7 +230,7 @@ export async function verifyBackupCode(request: FastifyRequest, reply: FastifyRe
       return reply.status(401).send({ error: "Invalid or already used backup code" });
     }
     
-    console.error('Verify backup code error:', err);
+    request.log.error('Verify backup code error:', err);
     return reply.status(500).send({ error: "Failed to verify backup code" });
   }
 }
@@ -275,7 +275,7 @@ export async function generateWebAuthnRegistrationOptions(request: FastifyReques
       return reply.status(404).send({ error: "User not found" });
     }
     
-    console.error('Generate WebAuthn registration options error:', err);
+    request.log.error('Generate WebAuthn registration options error:', err);
     return reply.status(500).send({ error: "Failed to generate registration options" });
   }
 }
@@ -328,7 +328,7 @@ export async function verifyWebAuthnRegistration(request: FastifyRequest, reply:
       return reply.status(401).send({ error: "Invalid WebAuthn registration" });
     }
     
-    console.error('Verify WebAuthn registration error:', err);
+    request.log.error('Verify WebAuthn registration error:', err);
     return reply.status(500).send({ error: "Failed to verify WebAuthn registration" });
   }
 }
@@ -369,7 +369,7 @@ export async function generateWebAuthnAuthenticationOptions(request: FastifyRequ
       return reply.status(404).send({ error: "User not found" });
     }
     
-    console.error('Generate WebAuthn authentication options error:', err);
+    request.log.error('Generate WebAuthn authentication options error:', err);
     return reply.status(500).send({ error: "Failed to generate authentication options" });
   }
 }
@@ -416,7 +416,7 @@ export async function verifyWebAuthnAuthentication(request: FastifyRequest, repl
       return reply.status(401).send({ error: "Invalid WebAuthn authentication" });
     }
     
-    console.error('Verify WebAuthn authentication error:', err);
+    request.log.error('Verify WebAuthn authentication error:', err);
     return reply.status(500).send({ error: "Failed to verify WebAuthn authentication" });
   }
 } 
