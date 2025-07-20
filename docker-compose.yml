@@ -7,7 +7,7 @@ services:
     build:
       context: ./packages
       dockerfile: ./ms-frontend/Dockerfile
-      target: development
+      target: prod
     ports:
       - "${FRONTEND_PORT:-3010}:3010"
     networks:
@@ -80,21 +80,41 @@ services:
       blockchain:
         condition: service_started
 
+  blockchain-node:
+    container_name: blockchain-node
+    build:
+      context: ./packages
+      dockerfile: ./blockchain/Dockerfile
+      target: development
+    command: npx hardhat node --hostname 0.0.0.0 --port 8545
+    ports:
+      - "8545:8545"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8545 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   blockchain:
     container_name: blockchain
     build:
       context: ./packages
       dockerfile: ./blockchain/Dockerfile
-      target: development
+      target: prod
     ports:
       - "${BLOCKCHAIN_PORT:-3004}:3004"
     environment:
       - NODE_ENV=production
       - PORT=3004
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
-      - AVALANCHE_CHAIN_ID=${AVALANCHE_CHAIN_ID:-43113}
-      - PRIVATE_KEY=${BLOCKCHAIN_PRIVATE_KEY}
+      - AVALANCHE_RPC_URL=http://blockchain-node:8545
+      - AVALANCHE_CHAIN_ID=1337
+      - PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
       - TOURNAMENT_SCORING_CONTRACT_ADDRESS=${TOURNAMENT_SCORING_CONTRACT_ADDRESS}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
       - TOURNAMENT_SERVICE_URL=http://tournament:4243
@@ -109,6 +129,8 @@ services:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
       logstash:
+        condition: service_healthy
+      blockchain-node:
         condition: service_healthy
 
   elasticsearch:

@@ -31,7 +31,7 @@ groups:
   - name: frontend_alerts
     rules:
       - alert: FrontendDown
-        expr: up{job="ms-frontend:3010"} == 0
+        expr: up{job="ms-frontend"} == 0
         for: 1m
         labels:
           severity: critical
@@ -40,7 +40,7 @@ groups:
           description: "Frontend service has been down for more than 1 minute."
 
       - alert: FrontendHighResponseTime
-        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="frontend:3010"}[5m])) > 1000
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="ms-frontend"}[5m])) > 1000
         for: 2m
         labels:
           severity: warning
@@ -51,7 +51,7 @@ groups:
   - name: game_service_alerts
     rules:
       - alert: GameServiceDown
-        expr: up{job="game-service"} == 0
+        expr: up{job="ms-game"} == 0
         for: 1m
         labels:
           severity: critical
@@ -60,7 +60,7 @@ groups:
           description: "Game service has been down for more than 1 minute."
 
       - alert: GameServiceHighResponseTime
-        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="game-service"}[5m])) > 200
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="ms-game"}[5m])) > 200
         for: 2m
         labels:
           severity: warning
@@ -69,7 +69,7 @@ groups:
           description: "Game service response time is above 200ms for more than 2 minutes."
 
       - alert: GameServiceErrorRate
-        expr: rate(http_requests_total{job="game-service",status_code=~"5.."}[5m]) / rate(http_requests_total{job="game-service"}[5m]) > 0.05
+        expr: rate(http_requests_total{job="ms-game",status_code=~"5.."}[5m]) / rate(http_requests_total{job="ms-game"}[5m]) > 0.05
         for: 2m
         labels:
           severity: warning
@@ -114,6 +114,46 @@ groups:
         annotations:
           summary: "Auth service high client error rate"
           description: "Auth service client error rate is above 10% for more than 5 minutes."
+
+  - name: blockchain_alerts
+    rules:
+      - alert: BlockchainServiceDown
+        expr: up{job="blockchain"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Blockchain service is down"
+          description: "Blockchain service has been down for more than 1 minute."
+
+      - alert: BlockchainHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="blockchain"}[5m])) > 500
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blockchain service high response time"
+          description: "Blockchain service response time is above 500ms for more than 2 minutes."
+
+  - name: tournament_alerts
+    rules:
+      - alert: TournamentServiceDown
+        expr: up{job="tournament"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tournament service is down"
+          description: "Tournament service has been down for more than 1 minute."
+
+      - alert: TournamentHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="tournament"}[5m])) > 300
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tournament service high response time"
+          description: "Tournament service response time is above 300ms for more than 2 minutes."
 
   - name: prometheus_alerts
     rules:

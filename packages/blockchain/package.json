@@ -20,7 +20,9 @@
     "flatten": "hardhat flatten",
     "size": "hardhat size-contracts",
     "coverage": "hardhat coverage",
-    "start": "node dist/server.js"
+    "start": "node dist/src/server.js",
+    "generate-wallet": "ts-node scripts/generate-wallet.ts",
+    "check-balance": "ts-node scripts/check-balance.ts"
   },
   "keywords": [
     "blockchain",

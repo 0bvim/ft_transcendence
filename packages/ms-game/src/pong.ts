@@ -7,8 +7,12 @@ import { Ball } from "./Ball";
 import { Side } from "./Board";
 import { AI } from "./AI";
 import { loadConfigFromJson } from "./config/ConfigLoader";
+import "./clientLogger"; // Initialize game client logging
 
 let retroFont: p5.Font | null = null;
+
+// Access game logger from global scope
+declare const gameLogger: any;
 
 const sketch = (p: p5) => {
   const targetFrameRate = 144;
@@ -41,7 +45,11 @@ const sketch = (p: p5) => {
       // Use a web-safe fallback font instead of loading external font
       retroFont = null; // Will use default font
     } catch (error) {
+      // Log to both console and ELK stack
       console.warn("Font loading failed, using default font");
+      if (typeof gameLogger !== 'undefined') {
+        gameLogger.warn("Font loading failed, using default font", { error: error });
+      }
       retroFont = null;
     }
   };
@@ -53,6 +61,15 @@ const sketch = (p: p5) => {
     p.frameRate(targetFrameRate);
 
     config = await loadConfigFromJson();
+    
+    // Log game initialization
+    if (typeof gameLogger !== 'undefined') {
+      gameLogger.gameEvent("game_initialized", { 
+        canvasSize: { width: Board.width, height: Board.height },
+        targetFrameRate,
+        config 
+      });
+    }
 
     player1 = new Paddle(Board.backBorder, p.height / 2);
     player2 = new Paddle(
@@ -307,9 +324,25 @@ const sketch = (p: p5) => {
     if (ball.currentX <= 0) {
       ball.reset(Side.Left);
       player2.scoreUp();
+      // Log scoring event
+      if (typeof gameLogger !== 'undefined') {
+        gameLogger.gameEvent("player_scored", { 
+          scorer: "player2", 
+          newScore: player2.currentScore,
+          ballPosition: { x: ball.currentX, y: ball.currentY }
+        });
+      }
     } else if (ball.currentX + 2 * Ball.radius >= Board.width) {
       ball.reset(Side.Right);
       player1.scoreUp();
+      // Log scoring event
+      if (typeof gameLogger !== 'undefined') {
+        gameLogger.gameEvent("player_scored", { 
+          scorer: "player1", 
+          newScore: player1.currentScore,
+          ballPosition: { x: ball.currentX, y: ball.currentY }
+        });
+      }
     }
   }
 
@@ -317,6 +350,14 @@ const sketch = (p: p5) => {
     if (player1.currentScore < 3 && player2.currentScore < 3) return;
     if (Math.abs(player1.currentScore - player2.currentScore) >= 2) {
       gameState = GameState.End;
+      // Log game end
+      if (typeof gameLogger !== 'undefined') {
+        gameLogger.gameEvent("game_ended", { 
+          winner: player1.currentScore > player2.currentScore ? "player1" : "player2",
+          finalScore: { player1: player1.currentScore, player2: player2.currentScore },
+          gameDuration: p.millis()
+        });
+      }
     }
   }
 

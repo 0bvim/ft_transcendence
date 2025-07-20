@@ -30,6 +30,38 @@ const initializeApp = async () => {
     prefix: "/",
   });
 
+  // Game client logs endpoint - receive logs from browser and forward to ELK
+  app.post('/api/logs/game-client', async (request, reply) => {
+    const body = request.body as { logs: any[] };
+    
+    if (body && Array.isArray(body.logs)) {
+      body.logs.forEach(logEntry => {
+        const logData = {
+          ...logEntry,
+          service: "game-service",
+          logType: "client-side"
+        };
+        const message = `Game Client Log: ${logEntry.message}`;
+        
+        switch (logEntry.level) {
+          case 'error':
+            app.log.error(logData, message);
+            break;
+          case 'warn':
+            app.log.warn(logData, message);
+            break;
+          case 'debug':
+            app.log.debug(logData, message);
+            break;
+          default:
+            app.log.info(logData, message);
+        }
+      });
+    }
+    
+    return { status: 'ok', processed: body?.logs?.length || 0 };
+  });
+
   // SPA fallback route - serve index.html for unknown routes
   app.setNotFoundHandler(
     async (request: FastifyRequest, reply: FastifyReply) => {

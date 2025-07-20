@@ -32,4 +32,17 @@ FROM build AS prod
 
 ENV NODE_ENV=production
 
-CMD ["make", "prod"]
+# Install curl for health checks and entrypoint script
+RUN apk add --no-cache curl
+
+# Copy the entrypoint script
+COPY ./blockchain/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Compile smart contracts first to generate typechain-types
+RUN npm run build:contracts
+# Then build TypeScript server code
+RUN npm run build:server
+
+# Use custom entrypoint for contract deployment
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

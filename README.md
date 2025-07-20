@@ -1,293 +1,184 @@
-# ft_transcendence - Microservices Architecture
+# 🎮 ft_transcendence - Microservices Pong Platform
 
-🎮 **A modern transcendence project with microservices architecture and professional DevOps practices**
+> **A modern transcendence project with microservices architecture, blockchain integration, and professional DevOps practices**
 
-## 📋 Project Overview
+## 🏗️ Project Overview
 
-This is a **microservices-based ft_transcendence** implementation featuring:
+**ft_transcendence** is a comprehensive Pong gaming platform built with:
 
-- 🏗️ **Microservices Architecture**: Separate services for frontend, authentication, and game
-- 🎯 **Pong Game**: Classic game built with TypeScript and p5.js
-- 🔐 **Authentication Service**: JWT-based auth with Google OAuth and WebAuthn support
-- 🌐 **Frontend Service**: Modern UI with Vite, TypeScript, and Tailwind CSS
-- 📊 **Complete Observability**: ELK Stack + Prometheus + Grafana for monitoring
-- 🐳 **Containerized**: All services run in Docker containers
-- 📈 **Production Ready**: Structured logging, metrics, health checks
+- **🎯 Real-time Pong Game** - Multi-player support with WebSocket integration
+- **🏆 Tournament System** - Complete bracket management and scoring
+- **⛓️ Blockchain Integration** - Immutable tournament score recording
+- **🔐 Advanced Authentication** - JWT, 2FA, Google OAuth, WebAuthn
+- **📊 Full Observability** - ELK stack + Prometheus/Grafana monitoring
+- **🐳 Containerized Architecture** - Docker-based microservices
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Clone and navigate to project
-cd ft_transcendence
+# 1. Setup environment
+cp env.example .env
+# Edit .env with your configuration
 
 # 2. Start all services
-make up
+docker-compose up -d
 
-# 3. Open applications in browser
-make run
-
-# 4. View monitoring dashboards
-make metrics
+# 3. Access the application
+open http://localhost:3010
 ```
 
-## 🌐 Service URLs
+## 📚 Documentation Structure
 
-| Service | URL | Description | Status |
-|---------|-----|-------------|--------|
-| **Frontend** | http://localhost:3010 | Main application interface | ✅ |
-| **Authentication** | http://localhost:3001 | Auth API endpoints | ✅ |
-| **Game** | http://localhost:3003 | Pong game service | ✅ |
-| **Grafana** | http://localhost:3002 | Metrics dashboard (admin/admin) | ✅ |
-| **Kibana** | http://localhost:5601 | Logs visualization | ✅ |
-| **Prometheus** | http://localhost:9090 | Metrics collection | ✅ |
-| **Elasticsearch** | http://localhost:9200 | Search and analytics | ✅ |
+### 🔧 Setup & Configuration
+- **[Environment Setup](docs/setup/environment-setup.md)** - Complete environment configuration guide
+- **[Blockchain Wallet Setup](docs/setup/blockchain-wallet-setup.md)** - Blockchain wallet and token setup  
+- **[ENV Setup](docs/setup/env-setup.md)** - Legacy environment setup reference
 
-## 🏗️ Architecture
+### 🏗️ Architecture
+- **[Blockchain Architecture](docs/architecture/blockchain-architecture.md)** - Two-layer blockchain design with charts
+- **[Container Architecture](docs/architecture/containers.mmd)** - Container relationships diagram
+- **[Sequence Diagrams](docs/architecture/sequence-diagram.mmd)** - System interaction flows
+
+### 🔧 Services
+- **[Authentication Service](docs/services/auth-service.md)** - JWT, 2FA, OAuth implementation
+- **[Frontend Service](docs/services/frontend-service.md)** - TypeScript + Tailwind SPA
+- **[Game Service](docs/services/game-service.md)** - Real-time Pong game engine
+- **[Observability](docs/services/observability.md)** - Logging, metrics, and monitoring
+
+### 🌐 API Reference
+- **[Authentication API](docs/api/auth-api-requests.md)** - Complete API endpoints with curl examples
+
+### 📋 Project Reference
+- **[Subject Requirements](docs/subject.txt)** - Original ft_transcendence project requirements
+
+## 🛠️ Technology Stack
+
+### **Frontend**
+- **TypeScript** + **Tailwind CSS** + **Vite**
+- **p5.js** for game rendering
+- **WebSocket** for real-time gameplay
+
+### **Backend Microservices**
+- **Fastify** (Node.js framework)
+- **SQLite** with **Prisma ORM**
+- **JWT** + **2FA** authentication
+- **WebAuthn** security
+
+### **Blockchain**
+- **Hardhat** local development network
+- **Solidity** smart contracts
+- **Avalanche** compatible (testnet/mainnet ready)
+
+### **DevOps & Monitoring**
+- **Docker** + **docker-compose**
+- **ELK Stack** (Elasticsearch, Logstash, Kibana)
+- **Prometheus** + **Grafana**
+- **Professional logging** and metrics
+
+## 📊 System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           ft_transcendence                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
-│  │   Frontend      │  │   Auth Service  │  │   Game Service  │            │
-│  │   (Port 3010)   │  │   (Port 3001)   │  │   (Port 3003)   │            │
-│  │                 │  │                 │  │                 │            │
-│  │ • Vite + TS     │  │ • Fastify       │  │ • Fastify       │            │
-│  │ • Tailwind CSS  │  │ • Prisma ORM    │  │ • p5.js Game    │            │
-│  │ • UI Components │  │ • JWT Auth      │  │ • Static Assets │            │
-│  │                 │  │ • Google OAuth  │  │ • Health Check  │            │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘            │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │                     Monitoring & Observability                         │ │
-│  │                                                                         │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │ │
-│  │  │ Elasticsearch│  │   Kibana    │  │  Logstash   │  │ Prometheus  │   │ │
-│  │  │ (Port 9200) │  │ (Port 5601) │  │ (Port 5001) │  │ (Port 9090) │   │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │ │
-│  │                                                                         │ │
-│  │  ┌─────────────┐                                                        │ │
-│  │  │   Grafana   │                                                        │ │
-│  │  │ (Port 3002) │                                                        │ │
-│  │  └─────────────┘                                                        │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Game Service  │    │  Auth Service   │
+│   :3010         │◄──►│   :3003         │◄──►│   :3001         │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+         ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+         │  Tournament     │    │   Blockchain    │    │  Blockchain     │
+         │  Service :4243  │◄──►│   Service :3004 │◄──►│   Node :8545    │
+         └─────────────────┘    └─────────────────┘    └─────────────────┘
+                                         │
+         ┌─────────────────┐             ▼
+         │   Monitoring    │    ┌─────────────────┐
+         │   Stack         │◄───│  Smart Contract │
+         │   ELK + P/G     │    │  TournamentScoring│
+         └─────────────────┘    └─────────────────┘
 ```
 
-## 📁 Project Structure
+## 🎮 Features
 
-```
-ft_transcendence/
-├── packages/
-│   ├── ms-frontend/           # Frontend microservice (Vite + TypeScript)
-│   │   ├── src/              # Source code
-│   │   ├── public/           # Static assets
-│   │   ├── Dockerfile        # Container configuration
-│   │   ├── package.json      # Dependencies
-│   │   └── vite.config.ts    # Vite configuration
-│   │
-│   ├── ms-auth/              # Authentication microservice (Fastify + Prisma)
-│   │   ├── src/              # Source code
-│   │   ├── prisma/           # Database schema
-│   │   ├── Dockerfile        # Container configuration
-│   │   └── package.json      # Dependencies
-│   │
-│   ├── ms-game/              # Game microservice (Fastify + p5.js)
-│   │   ├── src/              # Server source code
-│   │   ├── public/           # Game assets
-│   │   ├── Dockerfile        # Container configuration
-│   │   ├── package.json      # Dependencies
-│   │   └── env_example       # Environment template
-│   │
-│   └── observability/        # Shared observability library
-│       ├── src/              # Logging and metrics utilities
-│       └── package.json      # Dependencies
-│
-├── devops/
-│   ├── elasticsearch/        # Elasticsearch configuration
-│   ├── grafana/              # Grafana dashboards and config
-│   ├── kibana/               # Kibana configuration
-│   ├── logstash/             # Logstash pipeline configuration
-│   └── prometheus/           # Prometheus scraping configuration
-│
-├── docs/
-│   └── doc-devops/           # Architecture diagrams
-│
-├── docker-compose.yml        # All services orchestration
-├── Makefile                  # Development commands
-├── env.example               # Environment variables template
-└── README.md                 # This file
-```
+### **🏓 Core Game**
+- ✅ Real-time multiplayer Pong
+- ✅ AI opponent with adjustable difficulty
+- ✅ Smooth 60fps gameplay
+- ✅ WebSocket-based networking
 
-## 🛠️ Available Commands
+### **🏆 Tournament System**
+- ✅ Single elimination brackets
+- ✅ Automatic matchmaking
+- ✅ Live score tracking
+- ✅ Blockchain score verification
+
+### **🔐 Security & Authentication**
+- ✅ JWT-based authentication
+- ✅ Two-Factor Authentication (TOTP + WebAuthn)
+- ✅ Google OAuth integration
+- ✅ Secure password hashing (bcrypt)
+
+### **⛓️ Blockchain Integration**
+- ✅ Local development blockchain
+- ✅ Automatic smart contract deployment
+- ✅ Immutable tournament scoring
+- ✅ Avalanche testnet/mainnet ready
+
+### **📊 Professional DevOps**
+- ✅ Complete containerization
+- ✅ Health checks and monitoring
+- ✅ Structured logging (ELK stack)  
+- ✅ Metrics and alerting (Prometheus/Grafana)
+
+## 🌐 Service Endpoints
+
+| Service | Port | Endpoint | Description |
+|---------|------|----------|-------------|
+| **Frontend** | 3010 | http://localhost:3010 | Main web interface |
+| **Authentication** | 3001 | http://localhost:3001 | Auth API |
+| **Game** | 3003 | http://localhost:3003 | Game engine + WebSocket |
+| **Tournament** | 4243 | http://localhost:4243 | Tournament management |
+| **Blockchain** | 3004 | http://localhost:3004 | Blockchain API |
+| **Prometheus** | 9090 | http://localhost:9090 | Metrics dashboard |
+| **Grafana** | 3002 | http://localhost:3002 | Monitoring UI |
+| **Kibana** | 5601 | http://localhost:5601 | Log analysis |
+
+## 🔍 Health Checks
 
 ```bash
-# Service Management
-make up          # Start all services (with build)
-make down        # Stop all services
-make restart     # Restart all services
+# Check all services
+curl http://localhost:3001/health  # Auth
+curl http://localhost:3003/health  # Game  
+curl http://localhost:4243/health  # Tournament
+curl http://localhost:3004/health  # Blockchain
 
-# Quick Access
-make run         # Open application URLs in browser
-make metrics     # Open monitoring dashboards (Grafana & Kibana)
-
-# Cleanup
-make clean       # Complete cleanup (containers, volumes, images)
-
-# Help
-make help        # Show all available commands
+# Monitor system
+open http://localhost:9090/targets  # Prometheus targets
+open http://localhost:3002          # Grafana dashboards
 ```
 
-## 🔧 Development Setup
+## 🏁 Subject Compliance
 
-### Prerequisites
-- Docker and Docker Compose
-- Make (for convenience commands)
+This implementation fulfills all **ft_transcendence subject requirements**:
 
-### Environment Configuration
+- ✅ **Mandatory**: TypeScript frontend, Docker deployment, Pong game, tournament system
+- ✅ **Major Modules**: Backend framework (Fastify), User management, Blockchain scores
+- ✅ **Major Modules**: Remote players, 2FA/JWT, Microservices architecture  
+- ✅ **Major Modules**: DevOps (ELK stack), AI opponent
+- ✅ **Minor Modules**: Database (SQLite), Frontend toolkit (Tailwind), Monitoring
 
-1. **Copy environment files:**
-```bash
-# Main environment (optional - has defaults)
-cp env.example .env
+**Total: 7+ Major Modules + Multiple Minor Modules** = Complete subject compliance
 
-# Game service environment
-cp packages/ms-game/env_example packages/ms-game/.env
-```
+## 👥 Contributing
 
-2. **Start development:**
-```bash
-make up
-```
+1. Follow the established patterns in the documentation
+2. Update relevant docs when making changes
+3. Test changes with `docker-compose up -d`
+4. Check service health endpoints
 
-3. **Access services:**
-- Frontend: http://localhost:3010
-- Game: http://localhost:3003
-- Auth API: http://localhost:3001
+## 📝 License
 
-## 📊 Monitoring & Observability
-
-### Logs (ELK Stack)
-- **Elasticsearch**: Stores and indexes logs
-- **Logstash**: Processes and forwards logs
-- **Kibana**: Visualizes logs and provides search interface
-
-### Metrics (Prometheus + Grafana)
-- **Prometheus**: Collects metrics from services
-- **Grafana**: Creates dashboards and visualizations
-
-### Health Checks
-All services provide health endpoints:
-- Frontend: http://localhost:3010/health
-- Auth: http://localhost:3001/health
-- Game: http://localhost:3003/health
-
-## 🎮 Game Features
-
-- **Classic Pong gameplay** with modern graphics
-- **TypeScript implementation** for type safety
-- **p5.js rendering** for smooth graphics
-- **Responsive design** for different screen sizes
-- **Real-time game state** management
-
-## 🔐 Authentication Features
-
-- **JWT-based authentication**
-- **Google OAuth integration**
-- **WebAuthn support** for passwordless login
-- **Secure session management**
-- **CORS configuration** for microservices
-
-## 🌟 Technical Highlights
-
-### Microservices Architecture
-- ✅ **Service separation** by domain
-- ✅ **Independent deployments**
-- ✅ **Scalable design**
-- ✅ **Technology diversity** (different tech per service)
-
-### DevOps Practices
-- ✅ **Containerization** with Docker
-- ✅ **Service orchestration** with docker-compose
-- ✅ **Monitoring** with Prometheus + Grafana
-- ✅ **Logging** with ELK stack
-- ✅ **Health checks** and readiness probes
-- ✅ **Environment configuration**
-
-### Modern Development
-- ✅ **TypeScript** for type safety
-- ✅ **Modern frameworks** (Vite, Fastify)
-- ✅ **Database ORM** (Prisma)
-- ✅ **Linting and formatting**
-- ✅ **Hot reloading** in development
-
-## 🚀 Production Deployment
-
-The project is designed for production deployment with:
-
-- **Docker containers** for consistent environments
-- **Health checks** for container orchestration
-- **Structured logging** for log aggregation
-- **Metrics collection** for monitoring
-- **Environment-based configuration**
-- **Security best practices**
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Port conflicts**: Check if ports are already in use
-2. **Docker issues**: Ensure Docker daemon is running
-3. **Build failures**: Check logs with `docker-compose logs [service]`
-4. **Health check failures**: Verify service is responding on correct port
-
-### Debugging Commands
-
-```bash
-# Check service logs
-docker-compose logs ms-frontend
-docker-compose logs ms-auth
-docker-compose logs ms-game
-
-# Check service health
-curl http://localhost:3010/health
-curl http://localhost:3001/health
-curl http://localhost:3003/health
-
-# Check metrics
-curl http://localhost:3003/metrics
-```
-
-## 📈 Performance Monitoring
-
-### Key Metrics to Monitor
-- **HTTP request duration**
-- **Request rate**
-- **Error rate**
-- **Memory usage**
-- **CPU usage**
-
-### Dashboards
-- **Grafana**: Real-time metrics and alerting
-- **Kibana**: Log analysis and troubleshooting
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test with `make up`
-5. Submit a pull request
-
-## 📚 Architecture Documentation
-
-- [Container Architecture](docs/doc-devops/Containers.mmd) - Service relationships
-- [Observability Setup](packages/observability/) - Logging and metrics library
-- [Environment Configuration](env.example) - Configuration options
+This project is part of the 42 School ft_transcendence curriculum.
 
 ---
 
-**ft_transcendence** - Modern microservices architecture with professional DevOps practices
-
-*Built with TypeScript, Docker, and industry-standard monitoring tools*
+**🎯 Ready to play? Start with the [Environment Setup Guide](docs/setup/environment-setup.md)!**
