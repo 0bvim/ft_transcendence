@@ -119,7 +119,7 @@ export async function uploadAvatar(
       }
     } catch (error) {
       // Ignore errors when deleting old avatar
-      request.log.warn('Failed to delete old avatar:', error);
+      console.warn('Failed to delete old avatar:', error);
     }
 
     return reply.status(200).send({
@@ -129,7 +129,7 @@ export async function uploadAvatar(
     });
 
   } catch (error) {
-    request.log.error('Error uploading avatar:', error);
+    console.error('Error uploading avatar:', error);
     
     if (error instanceof z.ZodError) {
       return reply.status(400).send({

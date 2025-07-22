@@ -9,28 +9,23 @@ scrape_configs:
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
-      
-  - job_name: "ms-frontend"
+  - job_name: "frontend:3010"
     static_configs:
       - targets: ["frontend:3010"]
     metrics_path: "/metrics"
-    
-  - job_name: "ms-game"
+  - job_name: "game-service"
     static_configs:
       - targets: ["game:3003"]
     metrics_path: "/metrics"
-    
   - job_name: "ms-auth"
     static_configs:
       - targets: ["authentication:3001"]
     metrics_path: "/metrics"
-    
   - job_name: "blockchain"
     static_configs:
       - targets: ["blockchain:3004"]
     metrics_path: "/metrics"
-    
-  - job_name: "tournament"
+  - job_name: "tournament-service"
     static_configs:
       - targets: ["tournament:4243"]
     metrics_path: "/metrics"

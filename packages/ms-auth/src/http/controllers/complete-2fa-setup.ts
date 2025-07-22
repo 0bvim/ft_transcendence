@@ -12,7 +12,7 @@ export async function completeTwoFactorSetup(request: FastifyRequest, reply: Fas
   });
 
   try {
-    request.log.info('🔍 Complete 2FA Setup Request:', {
+    console.log('🔍 Complete 2FA Setup Request:', {
       body: request.body,
       headers: request.headers,
       method: request.method,
@@ -22,7 +22,7 @@ export async function completeTwoFactorSetup(request: FastifyRequest, reply: Fas
 
     const { userId, code } = completeTwoFactorSetupBodySchema.parse(request.body);
     
-    request.log.info('🔍 Parsed data:', { userId, code, codeLength: code.length });
+    console.log('🔍 Parsed data:', { userId, code, codeLength: code.length });
 
     const usersRepository = new PrismaUsersRepository();
     const completeTwoFactorSetupUseCase = new CompleteTwoFactorSetupUseCase(
@@ -48,7 +48,7 @@ export async function completeTwoFactorSetup(request: FastifyRequest, reply: Fas
       return reply.status(401).send({ error: "Invalid TOTP code" });
     }
 
-    request.log.error('Complete 2FA setup error:', err);
+    console.error('Complete 2FA setup error:', err);
     return reply.status(500).send({ error: "Failed to complete 2FA setup" });
   }
 } 

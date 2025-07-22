@@ -170,7 +170,7 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
       return reply.status(401).send({ error: "Invalid 2FA verification" });
     }
 
-    request.log.error("2FA verification error:", err);
+    console.error("2FA verification error:", err);
     return reply.status(500).send({ error: "2FA verification failed" });
   }
 } 

@@ -61,11 +61,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain tournament creation failed', { 
-        action: 'createTournament',
-        error: error instanceof Error ? error.message : error,
-        input: request.body
-      });
+      console.error('Error creating tournament on blockchain:', error);
       
       if (error instanceof z.ZodError) {
         return reply.status(400).send({
@@ -105,11 +101,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain participant addition failed', {
-        action: 'addParticipant', 
-        error: error instanceof Error ? error.message : error,
-        input: request.body
-      });
+      console.error('Error adding participant to blockchain:', error);
       
       if (error instanceof z.ZodError) {
         return reply.status(400).send({
@@ -146,11 +138,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain tournament start failed', {
-        action: 'startTournament',
-        error: error instanceof Error ? error.message : error,
-        tournamentId: (request.params as { tournamentId: string }).tournamentId
-      });
+      console.error('Error starting tournament on blockchain:', error);
       
       return reply.status(500).send({
         success: false,
@@ -185,11 +173,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain match result recording failed', {
-        action: 'recordMatchResult',
-        error: error instanceof Error ? error.message : error,
-        input: request.body
-      });
+      console.error('Error recording match result on blockchain:', error);
       
       if (error instanceof z.ZodError) {
         return reply.status(400).send({
@@ -228,11 +212,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain tournament completion failed', {
-        action: 'completeTournament',
-        error: error instanceof Error ? error.message : error,
-        input: request.body
-      });
+      console.error('Error completing tournament on blockchain:', error);
       
       if (error instanceof z.ZodError) {
         return reply.status(400).send({
@@ -269,11 +249,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain tournament retrieval failed', {
-        action: 'getTournament',
-        error: error instanceof Error ? error.message : error,
-        tournamentId: (request.params as { tournamentId: string }).tournamentId
-      });
+      console.error('Error getting tournament from blockchain:', error);
       
       return reply.status(500).send({
         success: false,
@@ -300,11 +276,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain match retrieval failed', {
-        action: 'getMatch',
-        error: error instanceof Error ? error.message : error,
-        params: request.params
-      });
+      console.error('Error getting match from blockchain:', error);
       
       return reply.status(500).send({
         success: false,
@@ -331,11 +303,7 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain user achievements retrieval failed', {
-        action: 'getUserAchievements', 
-        error: error instanceof Error ? error.message : error,
-        userId: (request.params as { userId: string }).userId
-      });
+      console.error('Error getting user achievements from blockchain:', error);
       
       return reply.status(500).send({
         success: false,
@@ -346,7 +314,7 @@ export class BlockchainController {
   }
 
   /**
-   * Get user tournaments from the blockchain
+   * Get user tournament history from blockchain
    */
   async getUserTournaments(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -356,25 +324,24 @@ export class BlockchainController {
       
       return reply.status(200).send({
         success: true,
-        data: tournaments
+        message: 'User tournaments retrieved successfully from blockchain',
+        data: {
+          tournaments
+        }
       });
     } catch (error) {
-      request.log.error('Blockchain user tournaments retrieval failed', {
-        action: 'getUserTournaments',
-        error: error instanceof Error ? error.message : error,
-        userId: (request.params as { userId: string }).userId
-      });
+      console.error('Error getting user tournaments from blockchain:', error);
       
       return reply.status(500).send({
         success: false,
-        error: 'Blockchain error', 
+        error: 'Blockchain error',
         message: 'Failed to get user tournaments from blockchain'
       });
     }
   }
 
   /**
-   * Verify match result on the blockchain
+   * Verify a match result on the blockchain
    */
   async verifyMatchResult(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -384,14 +351,14 @@ export class BlockchainController {
       
       return reply.status(200).send({
         success: true,
-        data: { isVerified, resultHash }
+        message: 'Match result verification completed',
+        data: {
+          isVerified,
+          resultHash
+        }
       });
     } catch (error) {
-      request.log.error('Blockchain match verification failed', {
-        action: 'verifyMatchResult',
-        error: error instanceof Error ? error.message : error,
-        resultHash: (request.params as { resultHash: string }).resultHash
-      });
+      console.error('Error verifying match result on blockchain:', error);
       
       return reply.status(500).send({
         success: false,
@@ -420,14 +387,11 @@ export class BlockchainController {
         }
       });
     } catch (error) {
-      request.log.error('Blockchain network info retrieval failed', {
-        action: 'getNetworkInfo',
-        error: error instanceof Error ? error.message : error
-      });
+      console.error('Error getting network info:', error);
       
       return reply.status(500).send({
         success: false,
-        error: 'Network error',
+        error: 'Blockchain error',
         message: 'Failed to get network information'
       });
     }
@@ -443,16 +407,15 @@ export class BlockchainController {
       
       return reply.status(200).send({
         success: true,
+        message: 'Blockchain statistics retrieved successfully',
         data: {
           tournamentCount,
-          network: networkInfo
+          network: networkInfo,
+          contractAddress: this.blockchainService.getContractAddress()
         }
       });
     } catch (error) {
-      request.log.error('Blockchain stats retrieval failed', {
-        action: 'getStats', 
-        error: error instanceof Error ? error.message : error
-      });
+      console.error('Error getting blockchain stats:', error);
       
       return reply.status(500).send({
         success: false,

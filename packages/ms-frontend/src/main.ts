@@ -1,6 +1,5 @@
 import './style.css';
 import { Router } from './router/index';
-import './utils/clientLogger'; // Initialize client-side logging
 
 // Get the app container
 const appContainer = document.getElementById('app');

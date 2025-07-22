@@ -1,9 +1,8 @@
 import { authApi } from "../api/auth";
 import { startRegistration, startAuthentication } from "../utils/webauthn";
-import { clientLogger } from "../utils/clientLogger";
 
 export default function Verify2FA(): HTMLElement {
-  clientLogger.info("Verify2FA component loading");
+  console.log("🔍 Verify2FA component loading...");
   
   try {
     const container = document.createElement("div");
@@ -130,11 +129,11 @@ export default function Verify2FA(): HTMLElement {
     // Add event listeners
     setupEventListeners(container);
 
-    clientLogger.info("Verify2FA component loaded successfully");
+    console.log("✅ Verify2FA component loaded successfully");
     return container;
     
   } catch (error) {
-    clientLogger.error("Error loading Verify2FA component:", error);
+    console.error("❌ Error loading Verify2FA component:", error);
     
     // Create fallback error container
     const errorContainer = document.createElement("div");
@@ -151,7 +150,7 @@ export default function Verify2FA(): HTMLElement {
 }
 
 function setupEventListeners(container: HTMLElement) {
-  clientLogger.info("Setting up event listeners for Verify2FA...");
+  console.log("🔍 Setting up event listeners for Verify2FA...");
   
   try {
     const totpTab = container.querySelector("#totp-tab") as HTMLButtonElement;
@@ -164,7 +163,7 @@ function setupEventListeners(container: HTMLElement) {
     const errorText = container.querySelector("#error-text") as HTMLElement;
     const backButton = container.querySelector("#backButton") as HTMLAnchorElement;
     
-    clientLogger.info("Element check:", {
+    console.log("🔍 Element check:", {
       totpTab: !!totpTab,
       backButton: !!backButton,
       verifyTotpBtn: !!verifyTotpBtn
@@ -241,7 +240,7 @@ function setupEventListeners(container: HTMLElement) {
         window.location.href = "/dashboard";
       }, 1500);
     } catch (error: any) {
-      clientLogger.error("TOTP error:", error);
+      console.error("TOTP error:", error);
       const message = error.response?.data?.message || "Invalid authentication code";
       showError(message);
     } finally {
@@ -287,7 +286,7 @@ function setupEventListeners(container: HTMLElement) {
         window.location.href = "/dashboard";
       }, 1500);
     } catch (error: any) {
-      clientLogger.error("Backup code error:", error);
+      console.error("Backup code error:", error);
       const message = error.response?.data?.message || "Invalid backup code";
       showError(message);
     } finally {
@@ -351,10 +350,10 @@ function setupEventListeners(container: HTMLElement) {
       target.value = target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     });
     
-    clientLogger.info("Verify2FA event listeners setup complete");
+    console.log("✅ Verify2FA event listeners setup complete");
     
   } catch (error) {
-    clientLogger.error("Error setting up event listeners:", error);
+    console.error("❌ Error setting up event listeners:", error);
     throw error; // Re-throw to be caught by parent
   }
 } 

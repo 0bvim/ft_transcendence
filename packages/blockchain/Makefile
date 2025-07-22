@@ -13,19 +13,19 @@ first_setup:
 .PHONY: compile
 compile:
 	@echo "Compiling smart contracts..."
-	@npm run build:contracts
+	@npx hardhat compile
 
 # deploy smart contracts to local network
 .PHONY: deploy-local
 deploy-local:
 	@echo "Deploying smart contracts to local network..."
-	@./node_modules/.bin/hardhat run scripts/deploy-local.ts --network localhost
+	@npx hardhat run scripts/deploy-local.ts --network localhost
 
 # deploy smart contracts to testnet
 .PHONY: deploy-testnet
 deploy-testnet:
 	@echo "Deploying smart contracts to testnet..."
-	@./node_modules/.bin/hardhat run scripts/deploy.ts --network fuji
+	@npx hardhat run scripts/deploy.ts --network fuji
 
 # start hardhat node for local development
 .PHONY: node
@@ -52,13 +52,8 @@ dev: first_setup compile
 	npm run dev
 
 .PHONY: prod
-prod: first_setup build-server
+prod: first_setup compile
 	npm run start
-
-.PHONY: build-server
-build-server:
-	@echo "Building server code..."
-	@npm run build:server
 
 .PHONY: container
 container:
@@ -79,15 +74,3 @@ test:
 clean:
 	@echo "Cleaning artifacts..."
 	@npx hardhat clean
-
-# Generate a new wallet for blockchain transactions
-.PHONY: generate-wallet
-generate-wallet:
-	@echo "Generating new wallet..."
-	@npm run generate-wallet
-
-# Check wallet balance
-.PHONY: check-balance
-check-balance:
-	@echo "Checking wallet balance..."
-	@npm run check-balance

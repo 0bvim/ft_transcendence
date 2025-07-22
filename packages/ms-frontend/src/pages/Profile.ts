@@ -1,6 +1,5 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
 import { TwoFactorSetupModal } from '../components/TwoFactorSetup';
-import { clientLogger } from '../utils/clientLogger';
 import defaultAvatarUrl from '../../assets/wishes.png';
 
 // Utility function to construct avatar URL
@@ -659,11 +658,11 @@ function showSuccess(container: HTMLElement) {
 }
 
 async function setupTOTP(container: HTMLElement, user: any) {
-  clientLogger.info('Starting new 2FA setup flow', { userId: user.id });
+  console.log('🔄 Starting new 2FA setup flow for user:', user.id);
   
   // Use the new TwoFactorSetupModal
   const modal = new TwoFactorSetupModal(user, container, (updatedUser) => {
-    clientLogger.info('2FA setup completed successfully');
+    console.log('✅ 2FA setup completed, updating profile display');
     updateProfileDisplay(container, updatedUser);
     showSuccess(container);
   });

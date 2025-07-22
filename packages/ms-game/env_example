@@ -1,49 +1,14 @@
-# =============================================================================
-# MS-GAME SERVICE ENVIRONMENT CONFIGURATION
-# =============================================================================
-# Copy this file to .env and update values as needed
+# Game Service Environment Configuration
+# Copy this file to .env and customize values for your environment
 
-# =============================================================================
-# SERVICE CONFIGURATION
-# =============================================================================
-NODE_ENV=production
+# Service Configuration
 PORT=3003
+NODE_ENV=production
 HOST=0.0.0.0
 
-# =============================================================================
-# GAME CONFIGURATION
-# =============================================================================
-# Game settings
-GAME_MODE=pong
-ENABLE_AI=true
-
-# Game performance settings
-MAX_PLAYERS_PER_GAME=2
-GAME_TICK_RATE=60
-BALL_SPEED_MULTIPLIER=1.0
-PADDLE_SPEED_MULTIPLIER=1.0
-
-# =============================================================================
-# OBSERVABILITY & LOGGING
-# =============================================================================
+# Logging
 LOG_LEVEL=info
 
-# Logstash connection (for ELK stack)
-LOGSTASH_HOST=logstash
-LOGSTASH_PORT=5001
-
-# =============================================================================
-# MICROSERVICES COMMUNICATION
-# =============================================================================
-# Other service URLs (internal container communication)
-AUTH_SERVICE_URL=http://authentication:3001
-TOURNAMENT_SERVICE_URL=http://tournament:4243
-FRONTEND_URL=http://frontend:3010
-
-# =============================================================================
-# WEBSOCKET CONFIGURATION
-# =============================================================================
-# WebSocket settings for real-time multiplayer
-ENABLE_WEBSOCKETS=true
-WS_HEARTBEAT_INTERVAL=30000
-MAX_CONNECTIONS_PER_IP=10
+# Game Configuration
+GAME_MODE=pong
+ENABLE_AI=true
