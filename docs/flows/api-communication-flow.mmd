@@ -1,94 +1,56 @@
-graph LR
-    %% Frontend API Calls
-    subgraph "Frontend Service :3010"
-        FE[Frontend SPA<br/>Vite + TypeScript]
-    end
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    %% Client Layer
+    Browser[Web Browser] -->|HTTPS| Frontend[Frontend Service<br/>:3010]
     
-    %% Authentication Service APIs
-    subgraph "Authentication Service :3001"
-        AuthAPI[Auth API]
-        AuthEndpoints["POST /api/auth/register<br/>POST /api/auth/login<br/>POST /api/auth/refresh<br/>POST /api/auth/google/callback<br/>POST /api/auth/setup-2fa<br/>POST /api/auth/verify-2fa<br/>GET /api/auth/profile<br/>PUT /api/auth/profile<br/>DELETE /api/auth/profile<br/>POST /api/auth/upload-avatar"]
-        AuthDB[(PostgreSQL<br/>Users, Tokens, 2FA)]
-    end
-    
-    %% Tournament Service APIs  
-    subgraph "Tournament Service :3002"
-        TournamentAPI[Tournament API]
-        TournamentEndpoints["GET /tournaments<br/>POST /tournaments<br/>GET /tournaments/:id<br/>POST /tournaments/:id/join<br/>POST /tournaments/:id/start<br/>POST /matches/:id/result<br/>GET /matches/:id<br/>GET /user-stats/:id"]
-        TournamentDB[(SQLite<br/>Tournaments, Matches)]
-    end
-    
-    %% Game Service APIs
-    subgraph "Game Service :3003"
-        GameAPI[Game API]
-        GameEndpoints["GET /tournament/:tournamentId/match/:matchId<br/>GET /api/tournament/match/:matchId<br/>POST /api/tournament/match/result<br/>GET / (Serve game HTML)"]
-        GameStatic[Static Game Files<br/>p5.js, CSS, Assets]
-    end
-    
-    %% Blockchain Service APIs
-    subgraph "Blockchain Service :3004" 
-        BlockchainAPI[Blockchain API]
-        BlockchainEndpoints["POST /api/blockchain/tournaments<br/>POST /api/blockchain/participants<br/>POST /api/blockchain/start<br/>POST /api/blockchain/match-results<br/>POST /api/blockchain/complete<br/>GET /api/blockchain/tournament/:id<br/>GET /api/blockchain/health"]
-        SmartContract[Avalanche Smart Contract<br/>TournamentScoring.sol]
-    end
-    
-    %% External Services
-    GoogleOAuth[Google OAuth API]
-    AvalancheNetwork[Avalanche Network]
-    
-    %% Frontend to Services
-    FE -->|"POST /api/auth/*"| AuthAPI
-    FE -->|"GET/POST /tournaments/*"| TournamentAPI  
-    FE -->|"GET /tournament/:id/match/:id"| GameAPI
-    FE -->|"GET/POST /api/blockchain/*"| BlockchainAPI
-    
-    %% Service to Service Communication
-    TournamentAPI -->|"POST /api/blockchain/tournaments<br/>POST /api/blockchain/participants<br/>POST /api/blockchain/match-results"| BlockchainAPI
-    GameAPI -->|"GET /matches/:id<br/>POST /matches/:id/result"| TournamentAPI
-    
-    %% External API Integration
-    AuthAPI -->|"OAuth Flow"| GoogleOAuth
-    BlockchainAPI -->|"Smart Contract Calls"| AvalancheNetwork
+    %% API Routes
+    Frontend -->|POST /api/auth/*| Auth[Auth Service<br/>:3001]
+    Frontend -->|GET/POST /tournaments*| Tournament[Tournament Service<br/>:3002]
+    Frontend -->|GET /tournament/*/match/*| Game[Game Service<br/>:3003]
+    Frontend -->|POST /api/blockchain/*| Blockchain[Blockchain Service<br/>:3004]
     
     %% Database Connections
-    AuthAPI --> AuthDB
-    TournamentAPI --> TournamentDB
+    Auth -->|SQL Queries| AuthDB[(SQLite<br/>Users & Tokens)]
+    Tournament -->|SQL Queries| TournamentDB[(SQLite<br/>Tournaments & Matches)]
     
-    %% Blockchain Integration
-    BlockchainAPI --> SmartContract
-    SmartContract --> AvalancheNetwork
+    %% External API Integration
+    Auth -->|OAuth 2.0| Google[Google OAuth API]
+    Blockchain -->|JSON-RPC| Avalanche[Avalanche Network]
     
-    %% API Response Formats
-    subgraph "Response Formats"
-        StandardResponse["{<br/>  success: boolean,<br/>  data: T,<br/>  message: string<br/>}"]
-        AuthResponse["{<br/>  accessToken: string,<br/>  refreshToken: string,<br/>  user: UserProfile<br/>}"]
-        TournamentResponse["{<br/>  id: string,<br/>  name: string,<br/>  status: 'WAITING'|'ACTIVE'|'COMPLETED',<br/>  participants: Player[],<br/>  matches: Match[]<br/>}"]
-    end
-    
-    %% Error Handling
-    subgraph "Error Responses"
-        ErrorFormats["400 Bad Request<br/>401 Unauthorized<br/>403 Forbidden<br/>404 Not Found<br/>422 Validation Error<br/>500 Internal Server Error"]
-        ErrorStructure["{<br/>  success: false,<br/>  error: string,<br/>  details?: object<br/>}"]
-    end
+    %% Inter-service Communication
+    Tournament -->|Match Results API| Blockchain
+    Game -->|Match Data API| Tournament
     
     %% Authentication Flow
-    subgraph "JWT Authentication"
-        JWTFlow["1. Login/Register → JWT tokens<br/>2. Store in localStorage<br/>3. Include in Authorization header<br/>4. Validate on protected routes<br/>5. Refresh when expired"]
+    subgraph "JWT Auth"
+        JWTFlow[JWT Tokens<br/>Access & Refresh<br/>localStorage]
     end
     
-    %% Styling
-    classDef frontend fill:#e1f5fe
-    classDef auth fill:#f3e5f5  
-    classDef tournament fill:#e8f5e8
-    classDef game fill:#fff3e0
-    classDef blockchain fill:#fce4ec
-    classDef external fill:#f5f5f5
-    classDef database fill:#e0f2f1
+    Auth -.->|Issues JWT| JWTFlow
+    JWTFlow -.->|Validates| Tournament
+    JWTFlow -.->|Validates| Game
+    JWTFlow -.->|Validates| Blockchain
     
-    class FE frontend
-    class AuthAPI,AuthEndpoints auth
-    class TournamentAPI,TournamentEndpoints tournament  
-    class GameAPI,GameEndpoints,GameStatic game
-    class BlockchainAPI,BlockchainEndpoints,SmartContract blockchain
-    class GoogleOAuth,AvalancheNetwork external
-    class AuthDB,TournamentDB database 
+    %% API Response Format
+    subgraph "Standard Response"
+        APIResponse["{<br/>  success: boolean,<br/>  data: T,<br/>  message: string<br/>}"]
+    end
+    
+    Auth -.->|JSON Response| APIResponse
+    Tournament -.->|JSON Response| APIResponse
+    Game -.->|JSON Response| APIResponse
+    Blockchain -.->|JSON Response| APIResponse
+    
+    %% Styling
+    style Browser fill:#e3f2fd,stroke:#1976d2
+    style Frontend fill:#e8f5e8,stroke:#4caf50
+    style Auth fill:#fff3e0,stroke:#ff9800
+    style Tournament fill:#f3e5f5,stroke:#9c27b0
+    style Game fill:#fce4ec,stroke:#e91e63
+    style Blockchain fill:#e0f2f1,stroke:#009688
+    style AuthDB fill:#fff8e1,stroke:#fbc02d
+    style TournamentDB fill:#fff8e1,stroke:#fbc02d
+    style Google fill:#f5f5f5,stroke:#757575
+    style Avalanche fill:#f5f5f5,stroke:#757575
+    style JWTFlow fill:#e1f5fe,stroke:#0288d1
+    style APIResponse fill:#f3e5f5,stroke:#673ab7 

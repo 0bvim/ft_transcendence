@@ -3,8 +3,7 @@ graph TB
     Google[Google OAuth]
     Avalanche[Avalanche Blockchain]
     
-    %% Load Balancer / Reverse Proxy
-    LB[Load Balancer/Nginx<br/>Port 80/443]
+
     
     %% Frontend
     Frontend[Frontend Service<br/>Vite + TypeScript<br/>Port 3010]
@@ -16,7 +15,7 @@ graph TB
     Blockchain[Blockchain Service<br/>Hardhat + Solidity<br/>Port 3004]
     
     %% Databases
-    AuthDB[(Auth Database<br/>PostgreSQL)]
+    AuthDB[(Auth Database<br/>SQLite)]
     TournamentDB[(Tournament Database<br/>SQLite)]
     
     %% Monitoring Stack
@@ -29,8 +28,7 @@ graph TB
     end
     
     %% Client connections
-    Client[Web Browser<br/>Firefox/Chrome] --> LB
-    LB --> Frontend
+    Client[Web Browser<br/>Firefox/Chrome] --> Frontend
     
     %% Frontend API calls
     Frontend -->|Auth APIs| Auth

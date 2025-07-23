@@ -1,0 +1,95 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart LR
+    subgraph "External Network"
+        Internet[Internet<br/>Users & APIs]
+    end
+    
+
+    
+    subgraph "Application Network"
+        Frontend[Frontend<br/>:3010]
+        Auth[Auth Service<br/>:3001]
+        Tournament[Tournament Service<br/>:3002]
+        Game[Game Service<br/>:3003]
+        Blockchain[Blockchain Service<br/>:3004]
+    end
+    
+    subgraph "Data Network"
+        AuthSQLite[Auth SQLite<br/>File System]
+        TournamentSQLite[Tournament SQLite<br/>File System]
+    end
+    
+    subgraph "Monitoring Network"
+        Prometheus[Prometheus<br/>:9090]
+        Grafana[Grafana<br/>:3000]
+        ElasticSearch[Elasticsearch<br/>:9200]
+        Logstash[Logstash<br/>:5000]
+        Kibana[Kibana<br/>:5601]
+    end
+    
+    subgraph "External APIs"
+        GoogleAPI[Google OAuth<br/>:443]
+        AvalancheRPC[Avalanche RPC<br/>:443]
+    end
+    
+    %% Network Flow
+    Internet -->|Direct HTTP<br/>3010,3001,3003| Frontend
+    
+    Frontend -->|HTTP API<br/>3001| Auth
+    Frontend -->|HTTP API<br/>3002| Tournament
+    Frontend -->|HTTP API<br/>3003| Game
+    Frontend -->|HTTP API<br/>3004| Blockchain
+    
+    %% Database Connections
+    Auth -->|SQLite<br/>Local FS| AuthSQLite
+    Tournament -->|SQLite<br/>Local FS| TournamentSQLite
+    
+    %% External API Connections
+    Auth -->|HTTPS<br/>443| GoogleAPI
+    Blockchain -->|JSON-RPC<br/>443| AvalancheRPC
+    
+    %% Monitoring Connections
+    Frontend -->|HTTP Metrics<br/>9090| Prometheus
+    Auth -->|HTTP Metrics<br/>9090| Prometheus
+    Tournament -->|HTTP Metrics<br/>9090| Prometheus
+    Game -->|HTTP Metrics<br/>9090| Prometheus
+    Blockchain -->|HTTP Metrics<br/>9090| Prometheus
+    
+    Frontend -->|TCP Logs<br/>5000| Logstash
+    Auth -->|TCP Logs<br/>5000| Logstash
+    Tournament -->|TCP Logs<br/>5000| Logstash
+    Game -->|TCP Logs<br/>5000| Logstash
+    Blockchain -->|TCP Logs<br/>5000| Logstash
+    
+    Logstash -->|HTTP<br/>9200| ElasticSearch
+    Kibana -->|HTTP<br/>9200| ElasticSearch
+    Grafana -->|HTTP<br/>9090| Prometheus
+    
+    %% Inter-service Communication
+    Tournament -.->|HTTP API<br/>3004| Blockchain
+    Game -.->|HTTP API<br/>3002| Tournament
+    
+    %% Network Ports Legend
+    subgraph "Port Legend"
+        PortInfo["🔹 3000-3010 - Application Services<br/>🔹 4243/8545 - Tournament & Blockchain<br/>🔹 5000-5601 - Logs & Visualization<br/>🔹 9090-9200 - Monitoring"]
+    end
+    
+    %% Styling
+    style Internet fill:#e3f2fd,stroke:#1976d2
+
+    style Frontend fill:#4caf50,color:#fff,stroke:#2e7d32
+    style Auth fill:#ff9800,color:#fff,stroke:#ef6c00
+    style Tournament fill:#9c27b0,color:#fff,stroke:#6a1b9a
+    style Game fill:#e91e63,color:#fff,stroke:#ad1457
+    style Blockchain fill:#009688,color:#fff,stroke:#00695c
+    style AuthSQLite fill:#7dd3fc,stroke:#0284c7
+    style TournamentSQLite fill:#7dd3fc,stroke:#0284c7
+
+    style Prometheus fill:#ff6f00,color:#fff,stroke:#e65100
+    style Grafana fill:#ff5722,color:#fff,stroke:#d84315
+    style ElasticSearch fill:#795548,color:#fff,stroke:#5d4037
+    style Logstash fill:#607d8b,color:#fff,stroke:#455a64
+    style Kibana fill:#3f51b5,color:#fff,stroke:#303f9f
+    style GoogleAPI fill:#f5f5f5,stroke:#757575
+    style AvalancheRPC fill:#f5f5f5,stroke:#757575
+    style PortInfo fill:#f8f9fa,stroke:#6c757d 
