@@ -10,11 +10,16 @@ const createTournamentSchema = z.object({
   aiDifficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
   autoStart: z.boolean().default(true),
   userId: z.string().min(1, 'User ID is required'), // TODO: Get from auth middleware
+  displayName: z.string().min(1, 'Display name is required'), // For creating participants
 });
 
 export async function createTournament(request: FastifyRequest, reply: FastifyReply) {
   try {
+    console.log('=== CREATE TOURNAMENT DEBUG ===');
+    console.log('Request body received:', JSON.stringify(request.body, null, 2));
+    
     const data = createTournamentSchema.parse(request.body);
+    console.log('Validation successful, parsed data:', JSON.stringify(data, null, 2));
     
     const tournament = await createTournamentUseCase(data);
     
@@ -25,7 +30,12 @@ export async function createTournament(request: FastifyRequest, reply: FastifyRe
     });
     
   } catch (error) {
+    console.log('=== CREATE TOURNAMENT ERROR ===');
+    console.log('Error type:', error.constructor.name);
+    console.log('Error details:', error);
+    
     if (error instanceof z.ZodError) {
+      console.log('Validation errors:', JSON.stringify(error.errors, null, 2));
       return reply.status(400).send({
         success: false,
         error: 'Validation error',

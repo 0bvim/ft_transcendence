@@ -305,22 +305,50 @@ function setupRadioButtonStyles(container: HTMLElement) {
           
           if (radio === input && (radio as HTMLInputElement).checked) {
             // Selected state
-            label?.classList.add('border-blue-500');
-            if (indicator) {
-              indicator.classList.add('bg-blue-500', 'border-blue-500');
-              indicator.classList.remove('border-gray-400');
+            if (groupName === 'tournamentType') {
+              // Tournament type has indicators
+              label?.classList.add('border-blue-500');
+              if (indicator) {
+                indicator.classList.add('bg-blue-500', 'border-blue-500');
+                indicator.classList.remove('border-gray-400');
+              }
+            } else if (groupName === 'aiDifficulty') {
+              // AI difficulty uses border colors
+              label?.classList.remove('border-gray-600');
+              if (radio.id === 'ai-easy') {
+                label?.classList.add('border-green-500', 'bg-green-500/10');
+              } else if (radio.id === 'ai-medium') {
+                label?.classList.add('border-yellow-500', 'bg-yellow-500/10');
+              } else if (radio.id === 'ai-hard') {
+                label?.classList.add('border-red-500', 'bg-red-500/10');
+              }
             }
           } else {
             // Unselected state
-            label?.classList.remove('border-blue-500');
-            if (indicator) {
-              indicator.classList.remove('bg-blue-500', 'border-blue-500');
-              indicator.classList.add('border-gray-400');
+            if (groupName === 'tournamentType') {
+              // Tournament type has indicators
+              label?.classList.remove('border-blue-500');
+              if (indicator) {
+                indicator.classList.remove('bg-blue-500', 'border-blue-500');
+                indicator.classList.add('border-gray-400');
+              }
+            } else if (groupName === 'aiDifficulty') {
+              // AI difficulty reset to default
+              label?.classList.remove('border-green-500', 'bg-green-500/10', 'border-yellow-500', 'bg-yellow-500/10', 'border-red-500', 'bg-red-500/10');
+              label?.classList.add('border-gray-600');
             }
           }
         });
       });
     });
+  });
+  
+  // Initialize the default states on page load
+  radioGroups.forEach(groupName => {
+    const checkedInput = container.querySelector(`input[name="${groupName}"]:checked`) as HTMLInputElement;
+    if (checkedInput) {
+      checkedInput.dispatchEvent(new Event('change'));
+    }
   });
 }
 
@@ -343,13 +371,30 @@ function updateTournamentPreview() {
 
 async function handleFormSubmit(form: HTMLFormElement) {
   const formData = new FormData(form);
+  
+  // Debug: Log what we're extracting from the form
+  console.log('=== FRONTEND FORM DATA DEBUG ===');
+  console.log('tournamentName:', formData.get('tournamentName'));
+  console.log('tournamentDescription:', formData.get('tournamentDescription'));
+  console.log('maxPlayers:', formData.get('maxPlayers'));
+  console.log('tournamentType:', formData.get('tournamentType'));
+  console.log('aiDifficulty:', formData.get('aiDifficulty'));
+  console.log('autoStart:', formData.has('autoStart'));
+  
+  // Convert form values to proper format
+  const tournamentTypeValue = formData.get('tournamentType') as string;
+  const aiDifficultyValue = formData.get('aiDifficulty') as string;
+  
   const tournamentData: CreateTournamentRequest = {
     name: formData.get('tournamentName') as string,
-    description: formData.get('tournamentDescription') as string,
-    maxParticipants: parseInt(formData.get('maxPlayers') as string),
+    description: formData.get('tournamentDescription') as string || '',
+    maxPlayers: parseInt(formData.get('maxPlayers') as string),
+    tournamentType: tournamentTypeValue === 'humans-only' ? 'HUMANS_ONLY' : 'MIXED',
     autoStart: formData.has('autoStart'),
-    aiDifficulty: (formData.get('aiDifficulty') as 'EASY' | 'MEDIUM' | 'HARD') || 'MEDIUM'
+    aiDifficulty: aiDifficultyValue ? aiDifficultyValue.toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD' : 'MEDIUM'
   };
+  
+  console.log('Final tournament data:', JSON.stringify(tournamentData, null, 2));
 
   try {
     // Submit to tournament API
@@ -359,7 +404,7 @@ async function handleFormSubmit(form: HTMLFormElement) {
     showSuccessMessage('Tournament created successfully!');
     
     setTimeout(() => {
-      window.history.pushState({}, '', `/tournament/${response.tournament.id}`);
+      window.history.pushState({}, '', `/tournament/${response.id}`);
       window.dispatchEvent(new Event('popstate'));
     }, 2000);
     

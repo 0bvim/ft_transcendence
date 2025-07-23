@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { blockchainClient } from '../services/blockchain-client';
 
 const prisma = new PrismaClient();
 
@@ -55,7 +56,7 @@ export async function submitMatchResultUseCase(input: SubmitMatchResultInput) {
     throw new Error('Unauthorized: Only match participants or tournament creator can submit results');
   }
 
-  // Update match result
+  // Update match result in database
   const updatedMatch = await prisma.match.update({
     where: { id: matchId },
     data: {
@@ -66,6 +67,25 @@ export async function submitMatchResultUseCase(input: SubmitMatchResultInput) {
       completedAt: new Date()
     }
   });
+
+  // Record match result on blockchain (non-blocking)
+  try {
+    const blockchainResult = await blockchainClient.recordMatchResult({
+      tournamentId: 1, // TODO: Get actual blockchain tournament ID from database
+      round: match.round,
+      player1Id: match.player1Id || '',
+      player2Id: match.player2Id || '',
+      winnerId,
+      player1Score,
+      player2Score
+    });
+
+    if (blockchainResult) {
+      console.log(`Match ${matchId} result recorded on blockchain: ${blockchainResult.transactionHash}`);
+    }
+  } catch (error) {
+    console.warn(`Failed to record match ${matchId} result on blockchain:`, error);
+  }
 
   // Update user stats
   await updateUserStats(match.player1Id!, match.player2Id!, winnerId);

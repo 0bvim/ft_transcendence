@@ -2,19 +2,27 @@ interface Tournament {
   id: string;
   name: string;
   description: string;
-  maxParticipants: number;
-  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  autoStart: boolean;
+  maxPlayers: number;
+  currentPlayers: number;
+  status: 'WAITING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  tournamentType: 'HUMANS_ONLY' | 'MIXED';
   aiDifficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  autoStart: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
   startedAt?: string;
   completedAt?: string;
-  currentParticipants: number;
-  progress: number;
   participants: TournamentParticipant[];
   matches: Match[];
+  // Computed fields from backend
+  progress?: number;
+  currentParticipants?: number;
+  progressPercentage?: number;
+  activeMatches?: number;
+  completedMatches?: number;
+  waitingMatches?: number;
+  currentRound?: number;
 }
 
 interface TournamentParticipant {
@@ -23,10 +31,11 @@ interface TournamentParticipant {
   userId?: string;
   displayName: string;
   participantType: 'HUMAN' | 'AI';
-  aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+  status: 'ACTIVE' | 'ELIMINATED' | 'WINNER';
   eliminated: boolean;
-  position?: number;
-  joinedAt: string;
+  eliminatedAt?: string;
+  finalPosition?: number;
+  createdAt: string;
 }
 
 interface Match {
@@ -34,39 +43,60 @@ interface Match {
   tournamentId: string;
   round: number;
   matchNumber: number;
-  player1Id: string;
-  player2Id: string;
-  player1DisplayName: string;
-  player2DisplayName: string;
+  player1Id?: string;
+  player2Id?: string;
   player1Score?: number;
   player2Score?: number;
   winnerId?: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
-  scheduledAt?: string;
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   startedAt?: string;
   completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Computed fields with participant info
+  player1?: {
+    id: string;
+    displayName: string;
+    participantType: 'HUMAN' | 'AI';
+  };
+  player2?: {
+    id: string;
+    displayName: string;
+    participantType: 'HUMAN' | 'AI';
+  };
+  winner?: {
+    id: string;
+    displayName: string;
+    participantType: 'HUMAN' | 'AI';
+  };
 }
 
 interface UserStats {
-  totalWins: number;
-  totalLosses: number;
+  userId: string;
+  displayName: string;
   totalTournaments: number;
-  winRate: number;
-  averagePosition: number;
-  recentTournaments: {
+  wins: number;
+  losses: number;
+  tournamentsWon: number;
+  tournamentsSecond: number;
+  tournamentsThird: number;
+  winRate?: number;
+  averagePosition?: number;
+  recentTournaments?: {
     id: string;
     name: string;
-    position: number;
+    finalPosition?: number;
     completedAt: string;
   }[];
 }
 
 interface CreateTournamentRequest {
   name: string;
-  description: string;
-  maxParticipants: number;
+  description?: string;
+  maxPlayers: number;
+  tournamentType: 'HUMANS_ONLY' | 'MIXED';
+  aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   autoStart: boolean;
-  aiDifficulty: 'EASY' | 'MEDIUM' | 'HARD';
 }
 
 interface SubmitMatchResultRequest {
@@ -88,13 +118,13 @@ class TournamentApi {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('accessToken'); // Fixed token key
     
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
+        ...(token && { 'Authorization': `Bearer ${token}` }), // Only add if token exists
         ...options.headers,
       },
     });
@@ -104,7 +134,9 @@ class TournamentApi {
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    // Backend returns {success, data, message} - extract the data
+    return result.data || result;
   }
 
   async getTournaments(params: {
@@ -118,7 +150,7 @@ class TournamentApi {
       page: number;
       limit: number;
       total: number;
-      totalPages: number;
+      pages: number;
     };
   }> {
     const searchParams = new URLSearchParams();
@@ -131,52 +163,106 @@ class TournamentApi {
     const query = searchParams.toString();
     const endpoint = `/tournaments${query ? `?${query}` : ''}`;
     
-    return this.request<{
-      tournaments: Tournament[];
-      pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-      };
-    }>(endpoint);
-  }
-
-  async getTournament(id: string): Promise<{ tournament: Tournament }> {
-    return this.request<{ tournament: Tournament }>(`/tournaments/${id}`);
-  }
-
-  async createTournament(data: CreateTournamentRequest): Promise<{ tournament: Tournament }> {
-    return this.request<{ tournament: Tournament }>('/tournaments', {
-      method: 'POST',
-      body: JSON.stringify(data),
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('accessToken') && { 
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
+        }),
+      },
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    // Backend returns: { success: true, data: tournaments[], pagination: {...} }
+    // So result.data IS the tournaments array, not result.data.tournaments
+    return {
+      tournaments: result.data || [], // Ensure we always return an array
+      pagination: result.pagination || {
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 0
+      }
+    };
   }
 
-  async joinTournament(id: string): Promise<{ tournament: Tournament }> {
-    return this.request<{ tournament: Tournament }>(`/tournaments/${id}/join`, {
-      method: 'POST',
-    });
+  async getTournament(id: string): Promise<Tournament> {
+    const response = await this.request<Tournament>(`/tournaments/${id}`);
+    return response;
   }
 
-  async startTournament(id: string): Promise<{ tournament: Tournament }> {
-    return this.request<{ tournament: Tournament }>(`/tournaments/${id}/start`, {
+  async createTournament(data: CreateTournamentRequest): Promise<Tournament> {
+    // Add current user ID and displayName from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const requestData = {
+      ...data,
+      userId: user.id || 'anonymous', // Tournament service needs userId
+      displayName: user.displayName || user.username || 'Anonymous' // Tournament service needs displayName
+    };
+    
+    const response = await this.request<Tournament>('/tournaments', {
       method: 'POST',
+      body: JSON.stringify(requestData),
     });
+    return response;
+  }
+
+  async joinTournament(id: string): Promise<{ participant: TournamentParticipant, tournament: Tournament }> {
+    // Get user info for join request
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const requestData = {
+      userId: user.id || 'anonymous',
+      displayName: user.displayName || user.username || 'Anonymous'
+    };
+    
+    const response = await this.request<{ participant: TournamentParticipant, tournament: Tournament }>(`/tournaments/${id}/join`, {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+    return response;
+  }
+
+  async startTournament(id: string): Promise<Tournament> {
+    // Tournament service needs userId to authorize start
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const requestData = {
+      userId: user.id || 'anonymous'
+    };
+    
+    const response = await this.request<Tournament>(`/tournaments/${id}/start`, {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+    return response;
   }
 
   async submitMatchResult(
     matchId: string,
     data: SubmitMatchResultRequest
   ): Promise<{ match: Match; tournament: Tournament }> {
-    return this.request<{ match: Match; tournament: Tournament }>(`/matches/${matchId}/result`, {
+    // Add user ID for authorization
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const requestData = {
+      ...data,
+      userId: user.id || 'anonymous'
+    };
+    
+    const response = await this.request<{ match: Match; tournament: Tournament }>(`/matches/${matchId}/result`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(requestData),
     });
+    return response;
   }
 
-  async getUserStats(userId: string): Promise<{ stats: UserStats }> {
-    return this.request<{ stats: UserStats }>(`/users/${userId}/stats`);
+  async getUserStats(userId: string): Promise<UserStats> {
+    const response = await this.request<UserStats>(`/users/${userId}/stats`);
+    return response;
   }
 }
 

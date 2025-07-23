@@ -86,7 +86,7 @@ class BlockchainApi {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('accessToken'); // Fixed token key
     
     const config: RequestInit = {
       headers: {
@@ -97,7 +97,7 @@ class BlockchainApi {
       ...options,
     };
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+    const response = await fetch(`${this.baseUrl}/api/blockchain${endpoint}`, config); // Fixed API path
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -105,7 +105,7 @@ class BlockchainApi {
     }
 
     const data = await response.json();
-    return data.data || data;
+    return data.data || data; // Handle both formats
   }
 
   // Tournament operations

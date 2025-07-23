@@ -20,6 +20,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
@@ -33,6 +34,7 @@
     "@ft-transcendence/observability": "workspace:*",
     "@prisma/client": "^5.0.0",
     "fastify": "^5.0.0",
+    "node-fetch": "^3.3.0",
     "zod": "^3.22.0"
   },
   "engines": {

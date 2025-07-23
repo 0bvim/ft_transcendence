@@ -1,11 +1,10 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
 import { TwoFactorSetupModal } from '../components/TwoFactorSetup';
-import defaultAvatarUrl from '../../assets/wishes.png';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
   if (!avatarUrl) {
-    return defaultAvatarUrl;
+    return '/assets/wishes.png';
   }
   
   if (avatarUrl.startsWith('http')) {
@@ -55,7 +54,7 @@ export default function Profile(): HTMLElement {
             <div class="text-center">
               <div class="relative inline-block">
                 <div class="avatar avatar-xl">
-                  <img id="avatarImage" src="${defaultAvatarUrl}" alt="Profile Avatar" class="avatar-img border-4 border-white shadow-medium" />
+                  <img id="avatarImage" src="/assets/wishes.png" alt="Profile Avatar" class="avatar-img border-4 border-white shadow-medium" />
                 </div>
                 <div id="avatarUploadOverlay" class="absolute inset-0 bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer hidden">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

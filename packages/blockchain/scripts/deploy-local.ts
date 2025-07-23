@@ -84,13 +84,19 @@ async function main() {
   
   // Save contract address to environment file
   const envPath = path.join(__dirname, "..", ".env.development");
-  let envContent = fs.readFileSync(envPath, "utf8");
   
-  // Update the contract address in the env file
-  envContent = envContent.replace(
-    /TOURNAMENT_SCORING_CONTRACT_ADDRESS=.*/,
-    `TOURNAMENT_SCORING_CONTRACT_ADDRESS=${contractAddress}`
-  );
+  let envContent = "";
+  if (fs.existsSync(envPath)) {
+    envContent = fs.readFileSync(envPath, "utf8");
+    // Update the contract address in the env file
+    envContent = envContent.replace(
+      /TOURNAMENT_SCORING_CONTRACT_ADDRESS=.*/,
+      `TOURNAMENT_SCORING_CONTRACT_ADDRESS=${contractAddress}`
+    );
+  } else {
+    // Create new env file with contract address
+    envContent = `TOURNAMENT_SCORING_CONTRACT_ADDRESS=${contractAddress}\n`;
+  }
   
   fs.writeFileSync(envPath, envContent);
   console.log("📝 Contract address saved to .env.development");

@@ -5,9 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "ts-node src/index.ts",
-    "build": "hardhat compile",
-    "clean": "hardhat clean",
+    "dev": "ts-node src/server.ts",
+    "build": "hardhat compile && tsc",
+    "build:contracts": "hardhat compile",
+    "build:server": "npx tsc",
+    "clean": "hardhat clean && rm -rf dist",
     "test": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:fuji": "hardhat run scripts/deploy.ts --network fuji",
@@ -18,7 +20,9 @@
     "flatten": "hardhat flatten",
     "size": "hardhat size-contracts",
     "coverage": "hardhat coverage",
-    "start": "node dist/index.js"
+    "start": "node dist/src/server.js",
+    "generate-wallet": "ts-node scripts/generate-wallet.ts",
+    "check-balance": "ts-node scripts/check-balance.ts"
   },
   "keywords": [
     "blockchain",
@@ -55,6 +59,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
+    "@ft-transcendence/observability": "file:../observability",
     "@openzeppelin/contracts": "^4.9.3",
     "fastify": "^5.4.0",
     "fastify-plugin": "^4.5.1",

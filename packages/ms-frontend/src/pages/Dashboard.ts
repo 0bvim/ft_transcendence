@@ -1,10 +1,11 @@
 import { authApi, User } from '../api/auth';
-import defaultAvatarUrl from '../../assets/wishes.png';
+import { tournamentApi } from '../api/tournament';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
   if (!avatarUrl) {
-    return defaultAvatarUrl;
+    // Use the wishes.png image from assets folder
+    return '/assets/wishes.png';
   }
   
   if (avatarUrl.startsWith('http')) {
@@ -42,10 +43,24 @@ export default function Dashboard(): HTMLElement {
   // Setup event listeners
   setupEventListeners(container);
 
-  // Refresh user data from API to get latest updates
-  refreshUserData(container);
+  // Load real data from APIs
+  loadRealData(container, user);
 
   return container;
+}
+
+async function loadRealData(container: HTMLElement, user: User) {
+  try {
+    // Load user stats and tournaments in parallel
+    await Promise.all([
+      loadUserStats(container),
+      loadRecentTournaments(container, user.id),
+      loadActiveTournaments(container, user.id),
+      refreshUserData(container)
+    ]);
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error);
+  }
 }
 
 async function refreshUserData(container: HTMLElement) {
@@ -125,14 +140,14 @@ function renderDashboardContent(container: HTMLElement, user: User) {
       <!-- Welcome Section -->
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gradient mb-2">
-          Welcome back, ${user.displayName || user.username}!
+          Welcome back, ${user.displayName || user.username}
         </h1>
         <p class="text-secondary-600">Ready to play some pong?</p>
       </div>
 
       <!-- Quick Actions -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <button class="card-hover p-6 text-center group">
+        <button class="card-hover p-6 text-center group" id="quickMatchBtn">
           <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -142,7 +157,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <p class="text-sm text-secondary-600">Start a game right now</p>
         </button>
 
-        <button class="card-hover p-6 text-center group">
+        <button class="card-hover p-6 text-center group" id="joinTournamentBtn">
           <div class="w-12 h-12 bg-gradient-to-br from-success-500 to-success-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
@@ -152,7 +167,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <p class="text-sm text-secondary-600">Compete with others</p>
         </button>
 
-        <button class="card-hover p-6 text-center group">
+        <button class="card-hover p-6 text-center group" id="createTournamentBtn">
           <div class="w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -162,7 +177,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <p class="text-sm text-secondary-600">Host your own event</p>
         </button>
 
-        <button class="card-hover p-6 text-center group">
+        <button class="card-hover p-6 text-center group" id="statisticsBtn">
           <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -181,82 +196,53 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <div class="card-gradient p-6">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xl font-semibold text-secondary-900">Performance Overview</h2>
-              <select class="btn btn-secondary btn-sm">
-                <option>Last 7 days</option>
-                <option>Last 30 days</option>
-                <option>All time</option>
-              </select>
+              <div class="text-xs text-secondary-500" id="statsLastUpdated">Loading...</div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div class="text-center p-4 bg-secondary-50/50 rounded-xl">
-                <div class="text-3xl font-bold text-primary-600 mb-1" id="totalGames">0</div>
+                <div class="text-3xl font-bold text-primary-600 mb-1" id="totalGames">
+                  <div class="animate-pulse bg-secondary-200 h-8 w-16 mx-auto rounded"></div>
+                </div>
                 <div class="text-sm text-secondary-600">Games Played</div>
-                <div class="text-xs text-success-600 mt-1">+2 this week</div>
               </div>
               <div class="text-center p-4 bg-secondary-50/50 rounded-xl">
-                <div class="text-3xl font-bold text-success-600 mb-1" id="winRate">0%</div>
+                <div class="text-3xl font-bold text-success-600 mb-1" id="winRate">
+                  <div class="animate-pulse bg-secondary-200 h-8 w-16 mx-auto rounded"></div>
+                </div>
                 <div class="text-sm text-secondary-600">Win Rate</div>
-                <div class="text-xs text-success-600 mt-1">+5% this week</div>
               </div>
               <div class="text-center p-4 bg-secondary-50/50 rounded-xl">
-                <div class="text-3xl font-bold text-warning-600 mb-1" id="currentStreak">0</div>
-                <div class="text-sm text-secondary-600">Current Streak</div>
-                <div class="text-xs text-secondary-500 mt-1">Personal best: 7</div>
+                <div class="text-3xl font-bold text-warning-600 mb-1" id="totalTournaments">
+                  <div class="animate-pulse bg-secondary-200 h-8 w-16 mx-auto rounded"></div>
+                </div>
+                <div class="text-sm text-secondary-600">Tournaments</div>
               </div>
             </div>
           </div>
 
-          <!-- Recent Matches -->
+          <!-- Recent Tournaments -->
           <div class="card-gradient p-6">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl font-semibold text-secondary-900">Recent Matches</h2>
-              <a href="/matches" data-link class="text-sm text-primary-600 hover:text-primary-700 transition-colors">
+              <h2 class="text-xl font-semibold text-secondary-900">Recent Tournaments</h2>
+              <a href="/tournament" data-link class="text-sm text-primary-600 hover:text-primary-700 transition-colors">
                 View all
               </a>
             </div>
 
-            <div class="space-y-4" id="recentMatches">
-              <!-- Match items will be populated here -->
-              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
+            <div class="space-y-4" id="recentTournaments">
+              <!-- Loading state -->
+              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl animate-pulse">
                 <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-success-500 rounded-full"></div>
+                  <div class="w-2 h-2 bg-secondary-300 rounded-full"></div>
                   <div>
-                    <p class="font-medium text-secondary-900">vs. AI Bot</p>
-                    <p class="text-sm text-secondary-600">2 hours ago</p>
+                    <div class="bg-secondary-300 h-4 w-32 rounded mb-1"></div>
+                    <div class="bg-secondary-200 h-3 w-20 rounded"></div>
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="font-semibold text-success-600">Win</div>
-                  <div class="text-sm text-secondary-600">11-7</div>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
-                <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-danger-500 rounded-full"></div>
-                  <div>
-                    <p class="font-medium text-secondary-900">vs. alice_gamer</p>
-                    <p class="text-sm text-secondary-600">1 day ago</p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div class="font-semibold text-danger-600">Loss</div>
-                  <div class="text-sm text-secondary-600">8-11</div>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
-                <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-success-500 rounded-full"></div>
-                  <div>
-                    <p class="font-medium text-secondary-900">vs. bob_player</p>
-                    <p class="text-sm text-secondary-600">2 days ago</p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div class="font-semibold text-success-600">Win</div>
-                  <div class="text-sm text-secondary-600">11-5</div>
+                  <div class="bg-secondary-300 h-4 w-16 rounded mb-1"></div>
+                  <div class="bg-secondary-200 h-3 w-12 rounded"></div>
                 </div>
               </div>
             </div>
@@ -285,19 +271,10 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <div class="card-gradient p-6">
             <h3 class="text-lg font-semibold text-secondary-900 mb-4">Active Tournaments</h3>
             <div class="space-y-3" id="activeTournaments">
-              <div class="p-3 bg-secondary-50/50 rounded-lg">
-                <div class="flex items-center justify-between mb-2">
-                  <p class="font-medium text-secondary-900">Summer Championship</p>
-                  <span class="badge badge-warning">Round 2</span>
-                </div>
-                <p class="text-xs text-secondary-600">Next match: Tomorrow 3:00 PM</p>
-              </div>
-              
-              <div class="text-center py-4 text-secondary-500">
-                <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                <p class="text-sm">Join more tournaments</p>
+              <!-- Loading state -->
+              <div class="animate-pulse">
+                <div class="bg-secondary-200 h-16 rounded-lg mb-2"></div>
+                <div class="bg-secondary-100 h-12 rounded-lg"></div>
               </div>
             </div>
           </div>
@@ -339,21 +316,22 @@ function renderDashboardContent(container: HTMLElement, user: User) {
             </div>
           </div>
 
-          <!-- Quick Stats -->
+          <!-- User Stats -->
           <div class="card-gradient p-6">
             <h3 class="text-lg font-semibold text-secondary-900 mb-4">Quick Stats</h3>
-            <div class="space-y-3">
+            <div class="space-y-3" id="quickStats">
+              <!-- Loading states -->
               <div class="flex justify-between">
                 <span class="text-sm text-secondary-600">Rank</span>
-                <span class="text-sm font-medium text-secondary-900">#42</span>
+                <div class="bg-secondary-200 h-4 w-8 rounded animate-pulse"></div>
               </div>
               <div class="flex justify-between">
-                <span class="text-sm text-secondary-600">Total Tournaments</span>
-                <span class="text-sm font-medium text-secondary-900">3</span>
+                <span class="text-sm text-secondary-600">Tournaments Won</span>
+                <div class="bg-secondary-200 h-4 w-6 rounded animate-pulse"></div>
               </div>
               <div class="flex justify-between">
                 <span class="text-sm text-secondary-600">Best Position</span>
-                <span class="text-sm font-medium text-secondary-900">2nd</span>
+                <div class="bg-secondary-200 h-4 w-10 rounded animate-pulse"></div>
               </div>
               <div class="flex justify-between">
                 <span class="text-sm text-secondary-600">Member Since</span>
@@ -367,7 +345,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
   `;
 }
 
-function setupEventListeners(container: HTMLElement) {
+async function setupEventListeners(container: HTMLElement) {
   // Logout functionality
   const logoutButton = container.querySelector('#logoutButton') as HTMLButtonElement;
   logoutButton.addEventListener('click', () => {
@@ -378,10 +356,10 @@ function setupEventListeners(container: HTMLElement) {
   });
 
   // Quick action buttons
-  const quickMatchBtn = container.querySelector('.card-hover:nth-child(1)') as HTMLElement;
-  const joinTournamentBtn = container.querySelector('.card-hover:nth-child(2)') as HTMLElement;
-  const createTournamentBtn = container.querySelector('.card-hover:nth-child(3)') as HTMLElement;
-  const statisticsBtn = container.querySelector('.card-hover:nth-child(4)') as HTMLElement;
+  const quickMatchBtn = container.querySelector('#quickMatchBtn') as HTMLElement;
+  const joinTournamentBtn = container.querySelector('#joinTournamentBtn') as HTMLElement;
+  const createTournamentBtn = container.querySelector('#createTournamentBtn') as HTMLElement;
+  const statisticsBtn = container.querySelector('#statisticsBtn') as HTMLElement;
 
   quickMatchBtn.addEventListener('click', () => {
     // Navigate to game
@@ -399,20 +377,142 @@ function setupEventListeners(container: HTMLElement) {
   statisticsBtn.addEventListener('click', () => {
     window.location.href = '/profile#stats';
   });
-
-  // Load user stats
-  loadUserStats(container);
 }
 
 async function loadUserStats(container: HTMLElement) {
-  // This would typically load from an API
-  // For now, we'll simulate some data
-  const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
-  const winRateEl = container.querySelector('#winRate') as HTMLElement;
-  const currentStreakEl = container.querySelector('#currentStreak') as HTMLElement;
+  try {
+    // Use existing user data and tournament API to get some stats
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const response = await tournamentApi.getTournaments({ limit: 50 });
+    const tournaments = response.tournaments || [];
+    
+    // Calculate basic stats from available data
+    const userTournaments = tournaments.filter(t => t.createdBy === user.id);
+    const totalTournaments = userTournaments.length;
+    
+    // Update UI with calculated stats
+    const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
+    const winRateEl = container.querySelector('#winRate') as HTMLElement;
+    const totalTournamentsEl = container.querySelector('#totalTournaments') as HTMLElement;
+    const statsLastUpdatedEl = container.querySelector('#statsLastUpdated') as HTMLElement;
 
-  // Simulate loading stats
-  totalGamesEl.textContent = '12';
-  winRateEl.textContent = '67%';
-  currentStreakEl.textContent = '3';
+    if (totalGamesEl) totalGamesEl.textContent = totalTournaments.toString();
+    if (winRateEl) winRateEl.textContent = '0%'; // Will be calculated when match system is implemented
+    if (totalTournamentsEl) totalTournamentsEl.textContent = totalTournaments.toString();
+    if (statsLastUpdatedEl) statsLastUpdatedEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+
+  } catch (error) {
+    console.error('Failed to load user stats:', error);
+    // Set fallback values
+    const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
+    const winRateEl = container.querySelector('#winRate') as HTMLElement;
+    const totalTournamentsEl = container.querySelector('#totalTournaments') as HTMLElement;
+    
+    if (totalGamesEl) totalGamesEl.textContent = '0';
+    if (winRateEl) winRateEl.textContent = '0%';
+    if (totalTournamentsEl) totalTournamentsEl.textContent = '0';
+  }
+}
+
+async function loadRecentTournaments(container: HTMLElement, userId: string) {
+  try {
+    const response = await tournamentApi.getTournaments({ limit: 10 });
+    const tournaments = response.tournaments || [];
+    const recentTournamentsEl = container.querySelector('#recentTournaments') as HTMLElement;
+    
+    if (!recentTournamentsEl) return;
+    
+    recentTournamentsEl.innerHTML = ''; // Clear loading state
+
+    if (tournaments.length === 0) {
+      recentTournamentsEl.innerHTML = `
+        <div class="text-center py-4 text-secondary-500">
+          <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <p class="text-sm">No tournaments found. Create one!</p>
+        </div>
+      `;
+    } else {
+      // Show recent tournaments (limit to 3)
+      tournaments.slice(0, 3).forEach((tournament: any) => {
+        const statusColor = tournament.status === 'ACTIVE' ? 'success' : 
+                           tournament.status === 'WAITING' ? 'warning' : 'secondary';
+        const statusDot = tournament.status === 'ACTIVE' ? 'bg-success-500' : 
+                         tournament.status === 'WAITING' ? 'bg-warning-500' : 'bg-secondary-500';
+        
+        recentTournamentsEl.innerHTML += `
+          <div class="flex items-center justify-between p-4 bg-secondary-50/50 rounded-xl">
+            <div class="flex items-center space-x-3">
+              <div class="w-2 h-2 ${statusDot} rounded-full"></div>
+              <div>
+                <p class="font-medium text-secondary-900">${tournament.name}</p>
+                <p class="text-sm text-secondary-600">${new Date(tournament.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-semibold text-${statusColor}-600">${tournament.status}</div>
+              <div class="text-sm text-secondary-600">${tournament.currentPlayers}/${tournament.maxPlayers}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+  } catch (error) {
+    console.error('Failed to load recent tournaments:', error);
+    const recentTournamentsEl = container.querySelector('#recentTournaments') as HTMLElement;
+    if (recentTournamentsEl) {
+      recentTournamentsEl.innerHTML = `
+        <div class="text-center py-4 text-red-500">
+          <p class="text-sm">Failed to load tournaments</p>
+        </div>
+      `;
+    }
+  }
+}
+
+async function loadActiveTournaments(container: HTMLElement, userId: string) {
+  try {
+    const response = await tournamentApi.getTournaments({ status: 'ACTIVE', limit: 5 });
+    const tournaments = response.tournaments || [];
+    const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
+    
+    if (!activeTournamentsEl) return;
+    
+    activeTournamentsEl.innerHTML = ''; // Clear loading state
+
+    if (tournaments.length === 0) {
+      activeTournamentsEl.innerHTML = `
+        <div class="text-center py-4 text-secondary-500">
+          <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <p class="text-sm">No active tournaments</p>
+        </div>
+      `;
+    } else {
+      // Show active tournaments
+      tournaments.slice(0, 2).forEach((tournament: any) => {
+        activeTournamentsEl.innerHTML += `
+          <div class="p-3 bg-secondary-50/50 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+              <p class="font-medium text-secondary-900">${tournament.name}</p>
+              <span class="badge badge-success">Active</span>
+            </div>
+            <p class="text-xs text-secondary-600">Players: ${tournament.currentPlayers}/${tournament.maxPlayers}</p>
+          </div>
+        `;
+      });
+    }
+  } catch (error) {
+    console.error('Failed to load active tournaments:', error);
+    const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
+    if (activeTournamentsEl) {
+      activeTournamentsEl.innerHTML = `
+        <div class="text-center py-4 text-red-500">
+          <p class="text-sm">Failed to load active tournaments</p>
+        </div>
+      `;
+    }
+  }
 } 

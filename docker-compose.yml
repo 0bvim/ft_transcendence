@@ -80,6 +80,26 @@ services:
       blockchain:
         condition: service_started
 
+  blockchain-node:
+    container_name: blockchain-node
+    build:
+      context: ./packages
+      dockerfile: ./blockchain/Dockerfile
+      target: development
+    command: npx hardhat node --hostname 0.0.0.0 --port 8545
+    ports:
+      - "8545:8545"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8545 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   blockchain:
     container_name: blockchain
     build:

@@ -24,8 +24,14 @@ export default function Tournament(): HTMLElement {
         </button>
       </div>
 
+      <!-- Loading State -->
+      <div id="loading-state" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+        <p class="mt-4 text-gray-400">Loading tournaments...</p>
+      </div>
+
       <!-- Tournament Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div id="tournament-stats" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 hidden">
         <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h3 class="text-lg font-semibold mb-2 text-blue-400">Active Tournaments</h3>
           <p class="text-3xl font-bold" id="active-tournaments-count">0</p>
@@ -40,8 +46,18 @@ export default function Tournament(): HTMLElement {
         </div>
       </div>
 
+      <!-- Error State -->
+      <div id="error-state" class="hidden text-center py-12">
+        <div class="text-red-400 text-6xl mb-4">⚠️</div>
+        <h3 class="text-xl font-semibold mb-2">Error Loading Tournaments</h3>
+        <p class="text-gray-400 mb-4" id="error-message">Failed to load tournaments</p>
+        <button id="retry-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+          Retry
+        </button>
+      </div>
+
       <!-- Tournament List -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div id="tournament-content" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
         <!-- Available Tournaments -->
         <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h2 class="text-2xl font-semibold mb-4 text-green-400">Available Tournaments</h2>
@@ -60,7 +76,7 @@ export default function Tournament(): HTMLElement {
       </div>
 
       <!-- Tournament Rules -->
-      <div class="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div id="tournament-rules" class="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700 hidden">
         <h2 class="text-2xl font-semibold mb-4 text-yellow-400">Tournament Rules</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
           <div>
@@ -84,131 +100,278 @@ export default function Tournament(): HTMLElement {
     </div>
   `;
 
-  // Add event listeners
   setupEventListeners(container);
-
-  // Load tournaments on page load
-  loadTournaments();
-
+  loadTournaments(container);
+  
   return container;
 }
 
-function setupEventListeners(container: HTMLElement) {
-  const createTournamentBtn = container.querySelector('#create-tournament-btn');
-  const backButton = container.querySelector('#backButton');
-  
-  createTournamentBtn?.addEventListener('click', () => {
-    // Navigate to tournament creation page
-    window.history.pushState({}, '', '/tournament/create');
-    window.dispatchEvent(new Event('popstate'));
-  });
+async function loadTournaments(container: HTMLElement) {
+  const loadingState = container.querySelector('#loading-state') as HTMLElement;
+  const errorState = container.querySelector('#error-state') as HTMLElement;
+  const tournamentStats = container.querySelector('#tournament-stats') as HTMLElement;
+  const tournamentContent = container.querySelector('#tournament-content') as HTMLElement;
+  const tournamentRules = container.querySelector('#tournament-rules') as HTMLElement;
 
-  backButton?.addEventListener('click', () => {
-    // Navigate back to dashboard
-    window.location.href = '/dashboard';
-  });
-}
+  try {
+    // Show loading state
+    showElement(loadingState);
+    hideElement(errorState);
+    hideElement(tournamentStats);
+    hideElement(tournamentContent);
+    hideElement(tournamentRules);
 
-function loadTournaments() {
-  // TODO: Load tournaments from backend
-  // For now, create mock data
-  const mockTournaments = [
-    {
-      id: 1,
-      name: 'Spring Championship',
-      players: 6,
-      maxPlayers: 8,
-      status: 'waiting',
-      createdBy: 'player1',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      name: 'AI Challenge',
-      players: 4,
-      maxPlayers: 4,
-      status: 'active',
-      createdBy: 'player2',
-      createdAt: new Date().toISOString(),
-    },
-  ];
+    console.log('Loading tournaments...');
 
-  displayTournaments(mockTournaments);
-}
-
-function displayTournaments(tournaments: any[]) {
-  const availableTournamentsContainer = document.getElementById('available-tournaments');
-  const userTournamentsContainer = document.getElementById('user-tournaments');
-  
-  if (!availableTournamentsContainer || !userTournamentsContainer) return;
-
-  // Clear existing content
-  availableTournamentsContainer.innerHTML = '';
-  userTournamentsContainer.innerHTML = '';
-
-  // Update counts
-  const activeTournaments = tournaments.filter(t => t.status === 'active').length;
-  const waitingTournaments = tournaments.filter(t => t.status === 'waiting').length;
-  const userTournaments = tournaments.filter(t => t.createdBy === getCurrentUser()).length;
-
-  document.getElementById('active-tournaments-count')!.textContent = activeTournaments.toString();
-  document.getElementById('waiting-tournaments-count')!.textContent = waitingTournaments.toString();
-  document.getElementById('user-tournaments-count')!.textContent = userTournaments.toString();
-
-  // Display tournaments
-  tournaments.forEach(tournament => {
-    const tournamentCard = createTournamentCard(tournament);
+    // Load tournaments
+    const response = await tournamentApi.getTournaments({ limit: 50 });
+    console.log('Tournament API response:', response);
     
-    if (tournament.createdBy === getCurrentUser()) {
-      userTournamentsContainer.appendChild(tournamentCard);
-    } else {
-      availableTournamentsContainer.appendChild(tournamentCard);
-    }
-  });
+    // Ensure we have a valid tournaments array
+    const tournaments = Array.isArray(response.tournaments) ? response.tournaments : [];
+    console.log('Processed tournaments:', tournaments);
+
+    // Get current user
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    console.log('Current user:', user);
+    
+    // Categorize tournaments with safety checks
+    const availableTournaments = tournaments.filter(t => 
+      t && t.status === 'WAITING' && t.createdBy !== user.id
+    );
+    const userTournaments = tournaments.filter(t => 
+      t && t.createdBy === user.id
+    );
+    const activeTournaments = tournaments.filter(t => 
+      t && t.status === 'ACTIVE'
+    );
+    const waitingTournaments = tournaments.filter(t => 
+      t && t.status === 'WAITING'
+    );
+
+    console.log('Categorized tournaments:', {
+      available: availableTournaments.length,
+      user: userTournaments.length,
+      active: activeTournaments.length,
+      waiting: waitingTournaments.length
+    });
+
+    // Update stats
+    updateStats(container, {
+      active: activeTournaments.length,
+      waiting: waitingTournaments.length,
+      user: userTournaments.length
+    });
+
+    // Render tournaments
+    renderTournamentsList(container, availableTournaments, userTournaments);
+
+    // Show content
+    hideElement(loadingState);
+    showElement(tournamentStats);
+    showElement(tournamentContent);
+    showElement(tournamentRules);
+
+  } catch (error) {
+    console.error('Error loading tournaments:', error);
+    
+    // Show error state
+    hideElement(loadingState);
+    showElement(errorState);
+    hideElement(tournamentStats);
+    hideElement(tournamentContent);
+    hideElement(tournamentRules);
+
+    const errorMessage = container.querySelector('#error-message') as HTMLElement;
+    errorMessage.textContent = error instanceof Error ? error.message : 'An unexpected error occurred';
+  }
 }
 
-function createTournamentCard(tournament: any): HTMLElement {
-  const card = document.createElement('div');
-  card.className = 'bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-blue-500 transition-all duration-300 cursor-pointer';
-  
-  const statusColor = tournament.status === 'active' ? 'text-green-400' : 
-                     tournament.status === 'waiting' ? 'text-yellow-400' : 'text-gray-400';
-  
-  const statusText = tournament.status === 'active' ? 'Active' : 
-                    tournament.status === 'waiting' ? 'Waiting for Players' : 'Completed';
+function updateStats(container: HTMLElement, stats: {active: number, waiting: number, user: number}) {
+  const activeCount = container.querySelector('#active-tournaments-count') as HTMLElement;
+  const waitingCount = container.querySelector('#waiting-tournaments-count') as HTMLElement;
+  const userCount = container.querySelector('#user-tournaments-count') as HTMLElement;
 
-  card.innerHTML = `
-    <div class="flex items-center justify-between mb-2">
-      <h3 class="text-lg font-semibold">${tournament.name}</h3>
-      <span class="text-sm ${statusColor} font-medium">${statusText}</span>
-    </div>
-    <div class="flex items-center justify-between text-sm text-gray-300">
-      <span>Players: ${tournament.players}/${tournament.maxPlayers}</span>
-      <span>Created by: ${tournament.createdBy}</span>
-    </div>
-    <div class="mt-3 flex space-x-2">
-      ${tournament.status === 'waiting' ? `
-        <button class="bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-3 rounded transition-colors duration-200">
-          Join Tournament
+  activeCount.textContent = stats.active.toString();
+  waitingCount.textContent = stats.waiting.toString();
+  userCount.textContent = stats.user.toString();
+}
+
+function renderTournamentsList(container: HTMLElement, availableTournaments: TournamentType[], userTournaments: TournamentType[]) {
+  const availableContainer = container.querySelector('#available-tournaments') as HTMLElement;
+  const userContainer = container.querySelector('#user-tournaments') as HTMLElement;
+
+  // Render available tournaments
+  if (availableTournaments.length === 0) {
+    availableContainer.innerHTML = `
+      <div class="text-center py-8 text-gray-400">
+        <p>No tournaments available to join</p>
+        <p class="text-sm mt-2">Create one to get started!</p>
+      </div>
+    `;
+  } else {
+    availableContainer.innerHTML = availableTournaments
+      .map(tournament => renderTournamentCard(tournament, 'join'))
+      .join('');
+  }
+
+  // Render user tournaments
+  if (userTournaments.length === 0) {
+    userContainer.innerHTML = `
+      <div class="text-center py-8 text-gray-400">
+        <p>You haven't created any tournaments yet</p>
+        <p class="text-sm mt-2">Click "Create Tournament" to start one!</p>
+      </div>
+    `;
+  } else {
+    userContainer.innerHTML = userTournaments
+      .map(tournament => renderTournamentCard(tournament, 'manage'))
+      .join('');
+  }
+
+  // Add event listeners for tournament cards
+  setupTournamentCardListeners(container);
+}
+
+function renderTournamentCard(tournament: TournamentType, type: 'join' | 'manage'): string {
+  const statusColor = {
+    'WAITING': 'text-yellow-400',
+    'ACTIVE': 'text-green-400', 
+    'COMPLETED': 'text-blue-400',
+    'CANCELLED': 'text-red-400'
+  }[tournament.status] || 'text-gray-400';
+
+  return `
+    <div class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors duration-200 tournament-card" data-tournament-id="${tournament.id}" data-action="${type}">
+      <div class="flex justify-between items-start mb-3">
+        <h3 class="text-lg font-semibold truncate">${tournament.name}</h3>
+        <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-600 ${statusColor}">
+          ${tournament.status}
+        </span>
+      </div>
+      
+      <p class="text-gray-300 text-sm mb-3 line-clamp-2">${tournament.description || 'No description'}</p>
+      
+             <div class="flex justify-between items-center text-sm text-gray-400 mb-3">
+         <span>Players: ${tournament.currentPlayers || 0}/${tournament.maxPlayers}</span>
+         <span>Type: ${tournament.tournamentType || 'MIXED'}</span>
+       </div>
+      
+      <div class="flex justify-between items-center">
+        <div class="text-xs text-gray-500">
+          Created ${new Date(tournament.createdAt).toLocaleDateString()}
+        </div>
+        <button class="tournament-action-btn px-3 py-1 rounded text-sm font-medium transition-colors ${
+          type === 'join' 
+            ? 'bg-green-600 hover:bg-green-700 text-white' 
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
+        }">
+          ${type === 'join' ? 'Join' : 'View'}
         </button>
-      ` : ''}
-      <button class="bg-gray-600 hover:bg-gray-500 text-white text-sm py-1 px-3 rounded transition-colors duration-200">
-        View Details
-      </button>
+      </div>
     </div>
   `;
-
-  // Add click handlers
-  card.addEventListener('click', () => {
-    // Navigate to tournament details
-    window.history.pushState({}, '', `/tournament/${tournament.id}`);
-    window.dispatchEvent(new Event('popstate'));
-  });
-
-  return card;
 }
 
-function getCurrentUser(): string {
-  // TODO: Get current user from authentication system
-  return 'current_user';
+function setupTournamentCardListeners(container: HTMLElement) {
+  const tournamentCards = container.querySelectorAll('.tournament-card');
+  
+  tournamentCards.forEach(card => {
+    const actionBtn = card.querySelector('.tournament-action-btn') as HTMLButtonElement;
+    const tournamentId = card.getAttribute('data-tournament-id');
+    const action = card.getAttribute('data-action');
+    
+    actionBtn?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      
+      if (!tournamentId) return;
+      
+      if (action === 'join') {
+        await handleJoinTournament(tournamentId, actionBtn);
+      } else {
+        // Navigate to tournament detail
+        window.location.href = `/tournament/${tournamentId}`;
+      }
+    });
+
+    // Make entire card clickable for navigation
+    card.addEventListener('click', () => {
+      if (tournamentId) {
+        window.location.href = `/tournament/${tournamentId}`;
+      }
+    });
+  });
+}
+
+async function handleJoinTournament(tournamentId: string, button: HTMLButtonElement) {
+  const originalText = button.textContent;
+  
+  try {
+    // Show loading state
+    button.disabled = true;
+    button.textContent = 'Joining...';
+    button.classList.add('opacity-75');
+    
+    // Join tournament
+    await tournamentApi.joinTournament(tournamentId);
+    
+    // Success feedback
+    button.textContent = 'Joined!';
+    button.classList.remove('bg-green-600', 'hover:bg-green-700');
+    button.classList.add('bg-blue-600');
+    
+    // Refresh page after short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Error joining tournament:', error);
+    
+    // Show error feedback
+    button.textContent = 'Error';
+    button.classList.remove('bg-green-600', 'hover:bg-green-700');
+    button.classList.add('bg-red-600');
+    
+    // Reset after delay
+    setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+      button.classList.remove('opacity-75', 'bg-red-600');
+      button.classList.add('bg-green-600', 'hover:bg-green-700');
+    }, 2000);
+    
+    // Show error message to user
+    alert(error instanceof Error ? error.message : 'Failed to join tournament');
+  }
+}
+
+function setupEventListeners(container: HTMLElement) {
+  const backButton = container.querySelector('#backButton') as HTMLButtonElement;
+  const createTournamentBtn = container.querySelector('#create-tournament-btn') as HTMLButtonElement;
+  const retryBtn = container.querySelector('#retry-btn') as HTMLButtonElement;
+
+  // Back to dashboard
+  backButton.addEventListener('click', () => {
+    window.location.href = '/dashboard';
+  });
+
+  // Create tournament
+  createTournamentBtn.addEventListener('click', () => {
+    window.location.href = '/tournament/create';
+  });
+
+  // Retry loading
+  retryBtn.addEventListener('click', () => {
+    loadTournaments(container);
+  });
+}
+
+// Utility functions
+function showElement(element: HTMLElement) {
+  element.classList.remove('hidden');
+}
+
+function hideElement(element: HTMLElement) {
+  element.classList.add('hidden');
 }

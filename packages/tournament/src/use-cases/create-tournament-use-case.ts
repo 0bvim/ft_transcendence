@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { TournamentType, AIDifficulty } from '@prisma/client';
+import { blockchainClient } from '../services/blockchain-client';
 
 const prisma = new PrismaClient();
 
@@ -33,7 +34,7 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
     throw new Error('AI difficulty must be specified for mixed tournaments');
   }
 
-  // Create tournament
+  // Create tournament in database
   const tournament = await prisma.tournament.create({
     data: {
       name,
@@ -50,6 +51,25 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
       matches: true
     }
   });
+
+  // Create tournament on blockchain (non-blocking)
+  try {
+    const blockchainResult = await blockchainClient.createTournament({
+      name,
+      description: description || '',
+      maxParticipants: maxPlayers
+    });
+
+    if (blockchainResult) {
+      // Store blockchain tournament ID for future reference
+      // Note: We could add a blockchainTournamentId field to the Tournament model
+      // For now, we'll log it
+      console.log(`Tournament ${tournament.id} created on blockchain with ID: ${blockchainResult.tournamentId}`);
+    }
+  } catch (error) {
+    // Blockchain creation failed, but tournament creation in DB succeeded
+    console.warn(`Failed to create tournament ${tournament.id} on blockchain:`, error);
+  }
 
   // If it's a mixed tournament, add AI participants to fill slots
   if (tournamentType === 'MIXED') {

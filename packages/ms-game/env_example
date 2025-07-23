@@ -12,3 +12,6 @@ LOG_LEVEL=info
 # Game Configuration
 GAME_MODE=pong
 ENABLE_AI=true
+
+# Tournament Integration
+TOURNAMENT_SERVICE_URL=http://tournament:4243
