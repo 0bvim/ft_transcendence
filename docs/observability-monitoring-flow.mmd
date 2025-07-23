@@ -1,0 +1,122 @@
+graph TB
+    %% Application Services
+    subgraph "Application Services"
+        Frontend[Frontend Service<br/>:3010]
+        Auth[Auth Service<br/>:3001]  
+        Tournament[Tournament Service<br/>:3002]
+        Game[Game Service<br/>:3003]
+        Blockchain[Blockchain Service<br/>:3004]
+    end
+    
+    %% Logging Pipeline (ELK Stack)
+    subgraph "Logging Pipeline - ELK Stack"
+        Logstash[Logstash<br/>Log Processing<br/>:5000]
+        Elasticsearch[Elasticsearch<br/>Log Storage & Search<br/>:9200]
+        Kibana[Kibana<br/>Log Visualization<br/>:5601]
+    end
+    
+    %% Metrics Pipeline
+    subgraph "Metrics Pipeline"
+        Prometheus[Prometheus<br/>Metrics Collection<br/>:9090]
+        Grafana[Grafana<br/>Metrics Dashboards<br/>:3000]
+    end
+    
+    %% Application Log Flow
+    Frontend -->|Application Logs<br/>Console.log, Errors| Logstash
+    Auth -->|API Logs<br/>Requests, Auth Events| Logstash
+    Tournament -->|Tournament Logs<br/>Match Events, State Changes| Logstash
+    Game -->|Game Logs<br/>Match Results, Player Actions| Logstash
+    Blockchain -->|Blockchain Logs<br/>Contract Interactions| Logstash
+    
+    %% Metrics Collection
+    Frontend -->|Performance Metrics<br/>Page Load, API Response Times| Prometheus
+    Auth -->|API Metrics<br/>Request Count, Response Time| Prometheus
+    Tournament -->|Business Metrics<br/>Tournament Count, Match Duration| Prometheus
+    Game -->|Game Metrics<br/>Active Games, Player Stats| Prometheus
+    Blockchain -->|Blockchain Metrics<br/>Transaction Count, Gas Usage| Prometheus
+    
+    %% ELK Pipeline Flow
+    Logstash -->|Parsed & Structured Logs| Elasticsearch
+    Kibana -->|Query & Visualize| Elasticsearch
+    
+    %% Metrics Pipeline Flow
+    Grafana -->|Query Metrics| Prometheus
+    
+    %% Log Types and Formats
+    subgraph "Log Types"
+        AppLogs["Application Logs<br/>• Info, Warn, Error levels<br/>• Structured JSON format<br/>• Request/Response logging<br/>• Performance timing"]
+        AccessLogs["Access Logs<br/>• HTTP requests<br/>• Response codes<br/>• User agents<br/>• IP addresses"]
+        ErrorLogs["Error Logs<br/>• Stack traces<br/>• Exception details<br/>• Context information<br/>• User impact"]
+        SecurityLogs["Security Logs<br/>• Authentication attempts<br/>• Authorization failures<br/>• Suspicious activities<br/>• 2FA events"]
+    end
+    
+    %% Metrics Types
+    subgraph "Metrics Types"
+        SystemMetrics["System Metrics<br/>• CPU usage<br/>• Memory consumption<br/>• Disk I/O<br/>• Network traffic"]
+        APIMetrics["API Metrics<br/>• Request rate<br/>• Response time<br/>• Error rate<br/>• Throughput"]
+        BusinessMetrics["Business Metrics<br/>• Active users<br/>• Tournament participation<br/>• Game completion rate<br/>• Blockchain transactions"]
+        CustomMetrics["Custom Metrics<br/>• Match duration<br/>• Player skill ratings<br/>• Tournament brackets<br/>• AI performance"]
+    end
+    
+    %% Dashboards and Alerts
+    subgraph "Monitoring Dashboards"
+        ServiceHealth["Service Health Dashboard<br/>• Service uptime<br/>• API response times<br/>• Error rates<br/>• Resource usage"]
+        UserActivity["User Activity Dashboard<br/>• Active sessions<br/>• Authentication events<br/>• Feature usage<br/>• Geographic distribution"]
+        GameAnalytics["Game Analytics Dashboard<br/>• Match statistics<br/>• Tournament progress<br/>• Player engagement<br/>• AI vs Human performance"]
+        BlockchainStatus["Blockchain Dashboard<br/>• Transaction status<br/>• Gas usage<br/>• Contract interactions<br/>• Network health"]
+    end
+    
+    %% Alert Management
+    subgraph "Alerting System"
+        PrometheusAlerts[Prometheus Alerts<br/>alerts.yml]
+        AlertTypes["Alert Types:<br/>• Service Down<br/>• High Error Rate<br/>• Resource Exhaustion<br/>• Security Incidents<br/>• Blockchain Failures"]
+        NotificationChannels["Notification Channels:<br/>• Email alerts<br/>• Slack integration<br/>• Dashboard notifications<br/>• Log aggregation"]
+    end
+    
+    %% Data Flow Connections
+    Logstash --> AppLogs
+    Logstash --> AccessLogs  
+    Logstash --> ErrorLogs
+    Logstash --> SecurityLogs
+    
+    Prometheus --> SystemMetrics
+    Prometheus --> APIMetrics
+    Prometheus --> BusinessMetrics
+    Prometheus --> CustomMetrics
+    
+    Grafana --> ServiceHealth
+    Grafana --> UserActivity
+    Grafana --> GameAnalytics
+    Grafana --> BlockchainStatus
+    
+    Prometheus --> PrometheusAlerts
+    PrometheusAlerts --> AlertTypes
+    AlertTypes --> NotificationChannels
+    
+    %% Configuration Files
+    subgraph "Configuration"
+        LogstashConfig[logstash.conf<br/>Input/Filter/Output]
+        PrometheusConfig[prometheus.yml<br/>Scrape targets]
+        GrafanaConfig[provisioning/<br/>Dashboards & Datasources]
+        KibanaConfig[kibana.yml<br/>Elasticsearch connection]
+    end
+    
+    Logstash -.-> LogstashConfig
+    Prometheus -.-> PrometheusConfig
+    Grafana -.-> GrafanaConfig
+    Kibana -.-> KibanaConfig
+    
+    %% Styling
+    classDef services fill:#e1f5fe
+    classDef logging fill:#f3e5f5
+    classDef metrics fill:#e8f5e8
+    classDef config fill:#fff3e0
+    classDef dashboards fill:#fce4ec
+    classDef alerts fill:#ffebee
+    
+    class Frontend,Auth,Tournament,Game,Blockchain services
+    class Logstash,Elasticsearch,Kibana logging
+    class Prometheus,Grafana metrics
+    class LogstashConfig,PrometheusConfig,GrafanaConfig,KibanaConfig config
+    class ServiceHealth,UserActivity,GameAnalytics,BlockchainStatus dashboards
+    class PrometheusAlerts,AlertTypes,NotificationChannels alerts 

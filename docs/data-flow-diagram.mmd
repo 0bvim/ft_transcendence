@@ -1,0 +1,117 @@
+graph TD
+    %% User Inputs
+    UserInputs[User Inputs<br/>Registration, Login, Tournament Creation, Game Play]
+    
+    %% Data Processing Layers
+    subgraph "Data Processing Flow"
+        Frontend[Frontend Layer<br/>Data Validation, Formatting]
+        APIGateway[API Gateway<br/>Request Routing, Authentication]
+        BusinessLogic[Business Logic Layer<br/>Use Cases, Domain Rules]
+        DataAccess[Data Access Layer<br/>Repositories, ORM]
+    end
+    
+    %% Data Storage
+    subgraph "Data Storage"
+        AuthDB[(Authentication DB<br/>PostgreSQL<br/>• Users<br/>• Refresh Tokens<br/>• 2FA Credentials<br/>• WebAuthn Data)]
+        TournamentDB[(Tournament DB<br/>SQLite<br/>• Tournaments<br/>• Participants<br/>• Matches<br/>• User Stats)]
+        LocalStorage[Browser LocalStorage<br/>• JWT Tokens<br/>• User Preferences<br/>• Session Data]
+    end
+    
+    %% Blockchain Storage
+    subgraph "Blockchain Layer"
+        SmartContract[Smart Contract<br/>TournamentScoring.sol]
+        AvalancheChain[Avalanche Network<br/>• Tournament Records<br/>• Match Results<br/>• Participant Data<br/>• Immutable History]
+    end
+    
+    %% Data Transformation Points
+    subgraph "Data Transformations"
+        Validation[Input Validation<br/>• Zod Schemas<br/>• Type Checking<br/>• Sanitization]
+        Serialization[Data Serialization<br/>• JSON APIs<br/>• Database Models<br/>• Blockchain Encoding]
+        Encryption[Security Layer<br/>• Password Hashing<br/>• JWT Signing<br/>• 2FA Secrets]
+    end
+    
+    %% User Data Flow
+    UserInputs --> Frontend
+    Frontend --> Validation
+    Validation --> APIGateway
+    APIGateway --> BusinessLogic
+    BusinessLogic --> DataAccess
+    
+    %% Authentication Data Flow
+    DataAccess -->|User Registration/Login| AuthDB
+    DataAccess -->|Store JWT Tokens| LocalStorage
+    BusinessLogic --> Encryption
+    Encryption --> AuthDB
+    
+    %% Tournament Data Flow  
+    DataAccess -->|Tournament CRUD| TournamentDB
+    BusinessLogic -->|Tournament Events| SmartContract
+    SmartContract -->|Blockchain Transactions| AvalancheChain
+    
+    %% Data Retrieval Flow
+    subgraph "Data Retrieval"
+        DatabaseQuery[Database Queries<br/>• User Profile<br/>• Tournament List<br/>• Match History]
+        BlockchainQuery[Blockchain Queries<br/>• Tournament Status<br/>• Match Results<br/>• Verification Data]
+        APIResponse[API Responses<br/>• Formatted JSON<br/>• Error Handling<br/>• Pagination]
+    end
+    
+    AuthDB --> DatabaseQuery
+    TournamentDB --> DatabaseQuery
+    AvalancheChain --> BlockchainQuery
+    DatabaseQuery --> Serialization
+    BlockchainQuery --> Serialization
+    Serialization --> APIResponse
+    APIResponse --> Frontend
+    
+    %% Real-time Data Flow
+    subgraph "Real-time Updates"
+        EventSystem[Event System<br/>• Match Completion<br/>• Tournament Status<br/>• User Actions]
+        Notifications[User Notifications<br/>• Success Messages<br/>• Error Alerts<br/>• Status Updates]
+    end
+    
+    BusinessLogic --> EventSystem
+    EventSystem --> Notifications
+    Notifications --> Frontend
+    
+    %% Data Consistency & Integrity
+    subgraph "Data Integrity"
+        Transactions[Database Transactions<br/>• ACID Properties<br/>• Rollback Capability<br/>• Consistency Checks]
+        BlockchainValidation[Blockchain Validation<br/>• Smart Contract Rules<br/>• Consensus Mechanism<br/>• Immutable Records]
+        DataSync[Data Synchronization<br/>• Off-chain ↔ On-chain<br/>• Event-driven Updates<br/>• Conflict Resolution]
+    end
+    
+    DataAccess --> Transactions
+    SmartContract --> BlockchainValidation
+    BusinessLogic --> DataSync
+    
+    %% Specific Data Types and Flow
+    subgraph "User Data Types"
+        UserProfile["User Profile Data<br/>• Personal Information<br/>• Authentication Credentials<br/>• Preferences<br/>• Activity History"]
+        GameData["Game Data<br/>• Match Results<br/>• Player Statistics<br/>• AI Performance<br/>• Gameplay Events"]
+        TournamentData["Tournament Data<br/>• Tournament Structure<br/>• Participant Lists<br/>• Match Brackets<br/>• Progress Tracking"]
+        BlockchainData["Blockchain Data<br/>• Tournament Registration<br/>• Match Verification<br/>• Prize Distribution<br/>• Audit Trail"]
+    end
+    
+    %% Data Privacy & Security
+    subgraph "Privacy & Security"
+        DataProtection["Data Protection<br/>• GDPR Compliance<br/>• Data Anonymization<br/>• Right to Deletion<br/>• Consent Management"]
+        AccessControl["Access Control<br/>• Role-based Permissions<br/>• JWT Authorization<br/>• API Rate Limiting<br/>• Audit Logging"]
+    end
+    
+    UserProfile --> DataProtection
+    BusinessLogic --> AccessControl
+    
+    %% Styling
+    classDef input fill:#e3f2fd
+    classDef processing fill:#f3e5f5
+    classDef storage fill:#e8f5e8
+    classDef blockchain fill:#fff3e0
+    classDef security fill:#fce4ec
+    classDef realtime fill:#f1f8e9
+    
+    class UserInputs input
+    class Frontend,APIGateway,BusinessLogic,DataAccess processing
+    class AuthDB,TournamentDB,LocalStorage storage
+    class SmartContract,AvalancheChain blockchain
+    class Validation,Encryption,DataProtection,AccessControl security
+    class EventSystem,Notifications realtime 
