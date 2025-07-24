@@ -31,10 +31,6 @@ Getting started with the project
 Technical guides and how-to documentation
 - **[Observability Guide](guides/observability-guide.md)** - Logging, metrics, and monitoring implementation
 
-## 📄 Project Information
-Official project documentation
-- **[Project Subject](project/subject.txt)** - Original project requirements and specifications
-
 ---
 
 ## 🚀 Quick Start
@@ -43,43 +39,6 @@ Official project documentation
 2. **System Overview**: Review [System Architecture](architecture/system-architecture.mmd)
 3. **Infrastructure**: Understand [Deployment Infrastructure](architecture/deployment-infrastructure.mmd)
 4. **API Testing**: Use [API Testing Examples](setup/api-testing-examples.md) to verify functionality
-
-## 🔍 Finding What You Need
-
-| Looking for... | Go to... |
-|----------------|----------|
-| How to set up the project | [Setup](setup/) |
-| System design and architecture | [Architecture](architecture/) |
-| Network and deployment info | [Infrastructure diagrams](architecture/) |
-| Process flows and workflows | [Flows](flows/) |  
-| Implementation guides | [Guides](guides/) |
-| Official project requirements | [Project](project/) |
-
-## 📊 Diagram Formats
-
-This documentation uses [Mermaid](https://mermaid.js.org/) diagrams (`.mmd` files) for visual representations. All diagrams follow a clean, monitoring-tools style with:
-- Consistent color coding by service type
-- Clear port and connection information
-- Neutral theme for better readability
-
-You can:
-- View them directly in GitHub
-- Render them in VS Code with the Mermaid Preview extension
-- Use online tools like [Mermaid Live Editor](https://mermaid.live/)
-
-## 🎨 Diagram Style Guide
-
-Our diagrams use consistent color coding:
-- **🟢 Frontend**: Green (#4caf50)
-- **🟠 Auth Service**: Orange (#ff9800)  
-- **🟣 Tournament Service**: Purple (#9c27b0)
-- **🔴 Game Service**: Pink (#e91e63)
-- **🟦 Blockchain Service**: Teal (#009688)
-- **🟡 Databases**: Yellow (#fbc02d)
-- **⚫ External Services**: Gray (#757575)
-- **🟤 Monitoring Stack**: Various warm colors
-
----
 
 *Last updated: January 2025*  
 *Documentation organized and cleaned up in feature/docs-organization branch* 

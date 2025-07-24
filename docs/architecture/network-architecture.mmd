@@ -23,7 +23,7 @@ flowchart LR
         Prometheus[Prometheus<br/>:9090]
         Grafana[Grafana<br/>:3000]
         ElasticSearch[Elasticsearch<br/>:9200]
-        Logstash[Logstash<br/>:5000]
+        Logstash[Logstash<br/>:5001]
         Kibana[Kibana<br/>:5601]
     end
     
@@ -55,11 +55,11 @@ flowchart LR
     Game -->|HTTP Metrics<br/>9090| Prometheus
     Blockchain -->|HTTP Metrics<br/>9090| Prometheus
     
-    Frontend -->|TCP Logs<br/>5000| Logstash
-    Auth -->|TCP Logs<br/>5000| Logstash
-    Tournament -->|TCP Logs<br/>5000| Logstash
+    Frontend -->|TCP Logs<br/>5001| Logstash
+    Auth -->|TCP Logs<br/>5001| Logstash
+    Tournament -->|TCP Logs<br/>5001| Logstash
     Game -->|TCP Logs<br/>5000| Logstash
-    Blockchain -->|TCP Logs<br/>5000| Logstash
+    Blockchain -->|TCP Logs<br/>5001| Logstash
     
     Logstash -->|HTTP<br/>9200| ElasticSearch
     Kibana -->|HTTP<br/>9200| ElasticSearch
