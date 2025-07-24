@@ -156,9 +156,15 @@ async function loadTournamentData(tournamentId: string) {
     // Show loading state
     showLoadingState();
 
+    console.log('Loading tournament data for ID:', tournamentId);
+
     // Load tournament data from API
-    const response = await tournamentApi.getTournament(tournamentId);
-    const tournament = response.tournament;
+    const tournament = await tournamentApi.getTournament(tournamentId);
+    console.log('Tournament API response:', tournament);
+
+    if (!tournament) {
+      throw new Error('Tournament not found');
+    }
 
     // Hide loading state and display data
     hideLoadingState();
@@ -172,14 +178,23 @@ async function loadTournamentData(tournamentId: string) {
 }
 
 function displayTournamentData(tournament: any) {
+  console.log('Displaying tournament data:', tournament);
+  
+  // Ensure tournament object exists
+  if (!tournament) {
+    console.error('Tournament data is null or undefined');
+    showErrorMessage('Tournament data is not available');
+    return;
+  }
+
   // Update tournament name and status
   const nameElement = document.getElementById('tournament-name');
   const statusElement = document.getElementById('tournament-status');
   
-  if (nameElement) nameElement.textContent = tournament.name;
+  if (nameElement) nameElement.textContent = tournament.name || 'Unknown Tournament';
   if (statusElement) {
-    statusElement.textContent = tournament.status;
-    statusElement.className = `px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(tournament.status)}`;
+    statusElement.textContent = tournament.status || 'Unknown';
+    statusElement.className = `px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(tournament.status || 'UNKNOWN')}`;
   }
 
   // Update tournament details
@@ -199,15 +214,35 @@ function displayTournamentData(tournament: any) {
 }
 
 function updateTournamentDetails(tournament: any) {
-  document.getElementById('player-count')!.textContent = `${tournament.currentParticipants}/${tournament.maxParticipants}`;
-  document.getElementById('creator-name')!.textContent = tournament.createdBy;
+  // Fix: Use correct property names currentPlayers/maxPlayers instead of currentParticipants/maxParticipants
+  document.getElementById('player-count')!.textContent = `${tournament.currentPlayers}/${tournament.maxPlayers}`;
+  
+  // Fix: Get creator's display name from participants instead of showing userId
+  const creatorParticipant = tournament.participants.find((p: any) => p.userId === tournament.createdBy);
+  const creatorDisplayName = creatorParticipant ? creatorParticipant.displayName : tournament.createdBy;
+  document.getElementById('creator-name')!.textContent = creatorDisplayName;
+  
   document.getElementById('created-date')!.textContent = new Date(tournament.createdAt).toLocaleDateString();
-  document.getElementById('tournament-type')!.textContent = tournament.participants.some(p => p.participantType === 'AI') ? 'Mixed (Human + AI)' : 'Humans Only';
+  document.getElementById('tournament-type')!.textContent = tournament.participants.some((p: any) => p.participantType === 'AI') ? 'Mixed (Human + AI)' : 'Humans Only';
 
-  // Show join button if tournament is waiting and not full
+  // Fix: Check if current user is already a participant before showing join button
   const joinBtn = document.getElementById('join-tournament-btn');
-  if (tournament.status === 'waiting' && tournament.currentParticipants < tournament.maxParticipants) {
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUserId = currentUser.id;
+  
+  // Check if current user is already a participant
+  const isUserAlreadyParticipant = tournament.participants.some((p: any) => p.userId === currentUserId);
+  
+  // Show join button only if:
+  // 1. Tournament is waiting for players
+  // 2. Tournament is not full
+  // 3. Current user is not already a participant
+  if (tournament.status === 'WAITING' && 
+      tournament.currentPlayers < tournament.maxPlayers && 
+      !isUserAlreadyParticipant) {
     joinBtn?.classList.remove('hidden');
+  } else {
+    joinBtn?.classList.add('hidden');
   }
 }
 

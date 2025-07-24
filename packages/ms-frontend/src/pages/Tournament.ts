@@ -123,57 +123,81 @@ async function loadTournaments(container: HTMLElement) {
 
     console.log('Loading tournaments...');
 
-    // Load tournaments
-    const response = await tournamentApi.getTournaments({ limit: 50 });
-    console.log('Tournament API response:', response);
-    
-    // Ensure we have a valid tournaments array
-    const tournaments = Array.isArray(response.tournaments) ? response.tournaments : [];
-    console.log('Processed tournaments:', tournaments);
+    // Add timeout to prevent infinite loading
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    // Get current user
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    console.log('Current user:', user);
-    
-    // Categorize tournaments with safety checks
-    const availableTournaments = tournaments.filter(t => 
-      t && t.status === 'WAITING' && t.createdBy !== user.id
-    );
-    const userTournaments = tournaments.filter(t => 
-      t && t.createdBy === user.id
-    );
-    const activeTournaments = tournaments.filter(t => 
-      t && t.status === 'ACTIVE'
-    );
-    const waitingTournaments = tournaments.filter(t => 
-      t && t.status === 'WAITING'
-    );
+    try {
+      // Load tournaments with timeout
+      const response = await Promise.race([
+        tournamentApi.getTournaments({ limit: 50 }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout - please check your connection')), 10000)
+        )
+      ]) as any;
+      
+      clearTimeout(timeoutId);
+      console.log('Tournament API response:', response);
+      
+      // Ensure we have a valid tournaments array
+      const tournaments = Array.isArray(response.tournaments) ? response.tournaments : 
+                         Array.isArray(response.data) ? response.data : 
+                         Array.isArray(response) ? response : [];
+      console.log('Processed tournaments:', tournaments);
 
-    console.log('Categorized tournaments:', {
-      available: availableTournaments.length,
-      user: userTournaments.length,
-      active: activeTournaments.length,
-      waiting: waitingTournaments.length
-    });
+      // Get current user
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('Current user:', user);
+      
+      // Categorize tournaments with safety checks
+      const availableTournaments = tournaments.filter(t => 
+        t && t.status === 'WAITING' && t.createdBy !== user.id
+      );
+      const userTournaments = tournaments.filter(t => 
+        t && t.createdBy === user.id
+      );
+      const activeTournaments = tournaments.filter(t => 
+        t && t.status === 'ACTIVE'
+      );
+      const waitingTournaments = tournaments.filter(t => 
+        t && t.status === 'WAITING'
+      );
 
-    // Update stats
-    updateStats(container, {
-      active: activeTournaments.length,
-      waiting: waitingTournaments.length,
-      user: userTournaments.length
-    });
+      console.log('Categorized tournaments:', {
+        available: availableTournaments.length,
+        user: userTournaments.length,
+        active: activeTournaments.length,
+        waiting: waitingTournaments.length
+      });
 
-    // Render tournaments
-    renderTournamentsList(container, availableTournaments, userTournaments);
+      // Update stats
+      updateStats(container, {
+        active: activeTournaments.length,
+        waiting: waitingTournaments.length,
+        user: userTournaments.length
+      });
 
-    // Show content
-    hideElement(loadingState);
-    showElement(tournamentStats);
-    showElement(tournamentContent);
-    showElement(tournamentRules);
+      // Render tournaments
+      renderTournamentsList(container, availableTournaments, userTournaments);
+
+      // Show content
+      hideElement(loadingState);
+      showElement(tournamentStats);
+      showElement(tournamentContent);
+      showElement(tournamentRules);
+
+    } catch (apiError) {
+      clearTimeout(timeoutId);
+      throw apiError;
+    }
 
   } catch (error) {
     console.error('Error loading tournaments:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      type: typeof error
+    });
     
     // Show error state
     hideElement(loadingState);
@@ -183,7 +207,11 @@ async function loadTournaments(container: HTMLElement) {
     hideElement(tournamentRules);
 
     const errorMessage = container.querySelector('#error-message') as HTMLElement;
-    errorMessage.textContent = error instanceof Error ? error.message : 'An unexpected error occurred';
+    if (errorMessage) {
+      const errorText = error instanceof Error ? error.message : 'An unexpected error occurred';
+      errorMessage.textContent = errorText;
+      console.log('Error message set to:', errorText);
+    }
   }
 }
 

@@ -12,6 +12,7 @@ interface CreateTournamentInput {
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   autoStart: boolean;
   userId: string;
+  displayName: string; // Added missing displayName parameter
 }
 
 export async function createTournamentUseCase(input: CreateTournamentInput) {
@@ -22,7 +23,8 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
     tournamentType,
     aiDifficulty = 'MEDIUM',
     autoStart,
-    userId
+    userId,
+    displayName
   } = input;
 
   // Validate input
@@ -44,11 +46,23 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
       aiDifficulty: aiDifficulty as AIDifficulty,
       autoStart,
       createdBy: userId,
-      status: 'WAITING'
+      status: 'WAITING',
+      currentPlayers: 1 // Start with 1 since creator will be added as participant
     },
     include: {
       participants: true,
       matches: true
+    }
+  });
+
+  // Add the tournament creator as the first participant
+  await prisma.tournamentParticipant.create({
+    data: {
+      tournamentId: tournament.id,
+      userId,
+      displayName,
+      participantType: 'HUMAN',
+      status: 'ACTIVE'
     }
   });
 
@@ -73,14 +87,25 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
 
   // If it's a mixed tournament, add AI participants to fill slots
   if (tournamentType === 'MIXED') {
-    await addAIParticipants(tournament.id, maxPlayers, aiDifficulty);
+    await addAIParticipants(tournament.id, maxPlayers, aiDifficulty, 1); // Pass 1 since creator is already added
   }
 
-  return tournament;
+  // Fetch the updated tournament with all participants
+  const updatedTournament = await prisma.tournament.findUnique({
+    where: { id: tournament.id },
+    include: {
+      participants: true,
+      matches: true
+    }
+  });
+
+  return updatedTournament;
 }
 
-async function addAIParticipants(tournamentId: string, maxPlayers: number, difficulty: string) {
-  const aiCount = Math.floor(maxPlayers / 2); // Fill half the slots with AI initially
+async function addAIParticipants(tournamentId: string, maxPlayers: number, difficulty: string, existingHumanCount = 0) {
+  // Calculate how many AI participants to add
+  // For mixed tournaments, we want to fill about half the slots with AI initially
+  const aiCount = Math.floor(maxPlayers / 2); 
   
   for (let i = 1; i <= aiCount; i++) {
     await prisma.tournamentParticipant.create({
@@ -94,9 +119,9 @@ async function addAIParticipants(tournamentId: string, maxPlayers: number, diffi
     });
   }
 
-  // Update tournament participant count
+  // Update tournament participant count (existing humans + AI)
   await prisma.tournament.update({
     where: { id: tournamentId },
-    data: { currentPlayers: aiCount }
+    data: { currentPlayers: existingHumanCount + aiCount }
   });
 }
