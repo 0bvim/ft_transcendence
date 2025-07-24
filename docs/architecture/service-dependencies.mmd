@@ -1,0 +1,99 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    %% Core Services
+    Frontend[Frontend Service<br/>User Interface<br/>Depends on: All APIs]
+    Auth[Auth Service<br/>Authentication & Users<br/>Independent Core Service]
+    Tournament[Tournament Service<br/>Tournament Management<br/>Depends on: Blockchain]
+    Game[Game Service<br/>Game Engine<br/>Depends on: Tournament]
+    Blockchain[Blockchain Service<br/>Smart Contracts<br/>Independent Core Service]
+    
+    %% Data Dependencies
+    AuthDB[(SQLite<br/>User Data)]
+    TournamentDB[(SQLite<br/>Game Data)]
+    SessionStore[In-Memory Store<br/>WebAuthn Sessions]
+    
+    %% External Dependencies
+    GoogleOAuth[Google OAuth API<br/>External Service]
+    AvalancheNet[Avalanche Network<br/>External Blockchain]
+    
+    %% Monitoring Dependencies
+    Prometheus[Prometheus<br/>Metrics Collection]
+    Logstash[Logstash<br/>Log Aggregation]
+    
+    %% Service Dependency Flow
+    Frontend -->|Requires| Auth
+    Frontend -->|Requires| Tournament
+    Frontend -->|Requires| Game
+    Frontend -->|Requires| Blockchain
+    
+    Tournament -->|Requires| Blockchain
+    Game -->|Requires| Tournament
+    
+    %% Data Dependencies
+    Auth -->|Requires| AuthDB
+    Auth -->|Requires| SessionStore
+    Tournament -->|Requires| TournamentDB
+    
+    %% External Dependencies
+    Auth -->|Requires| GoogleOAuth
+    Blockchain -->|Requires| AvalancheNet
+    
+    %% Monitoring Dependencies
+    Frontend -.->|Sends Data| Prometheus
+    Auth -.->|Sends Data| Prometheus
+    Tournament -.->|Sends Data| Prometheus
+    Game -.->|Sends Data| Prometheus
+    Blockchain -.->|Sends Data| Prometheus
+    
+    Frontend -.->|Sends Logs| Logstash
+    Auth -.->|Sends Logs| Logstash
+    Tournament -.->|Sends Logs| Logstash
+    Game -.->|Sends Logs| Logstash
+    Blockchain -.->|Sends Logs| Logstash
+    
+    %% Dependency Levels
+    subgraph "Level 1 - Independent Services"
+        Level1[Auth Service<br/>Blockchain Service]
+    end
+    
+    subgraph "Level 2 - Dependent Services"
+        Level2[Tournament Service<br/>Game Service]
+    end
+    
+    subgraph "Level 3 - Client Layer"
+        Level3[Frontend Service]
+    end
+    
+    subgraph "Dependencies Legend"
+        Legend["Solid Lines = Hard Dependencies<br/>Dotted Lines = Optional/Monitoring<br/>Services start from Level 1 → Level 3"]
+    end
+    
+    %% Critical Path
+    subgraph "Critical Startup Order"
+        StartupOrder["1️⃣ Databases (SQLite files)<br/>2️⃣ Auth + Blockchain Services<br/>3️⃣ Tournament + Game Services<br/>4️⃣ Frontend Service<br/>5️⃣ Monitoring Stack"]
+    end
+    
+    %% Failure Impact
+    subgraph "Service Failure Impact"
+        FailureImpact["🔴 Auth Down → All services affected<br/>🟡 Tournament Down → Games affected<br/>🟡 Game Down → Only gameplay affected<br/>🟡 Blockchain Down → No scoring/verification<br/>🟠 Frontend Down → No user access"]
+    end
+    
+    %% Styling
+    style Frontend fill:#4caf50,color:#fff,stroke:#2e7d32
+    style Auth fill:#ff9800,color:#fff,stroke:#ef6c00
+    style Tournament fill:#9c27b0,color:#fff,stroke:#6a1b9a
+    style Game fill:#e91e63,color:#fff,stroke:#ad1457
+    style Blockchain fill:#009688,color:#fff,stroke:#00695c
+    style AuthDB fill:#7dd3fc,stroke:#0284c7
+    style TournamentDB fill:#7dd3fc,stroke:#0284c7
+    style SessionStore fill:#e1f5fe,stroke:#0288d1
+    style GoogleOAuth fill:#f5f5f5,stroke:#757575
+    style AvalancheNet fill:#f5f5f5,stroke:#757575
+    style Prometheus fill:#ff6f00,color:#fff,stroke:#e65100
+    style Logstash fill:#607d8b,color:#fff,stroke:#455a64
+    style Level1 fill:#e8f5e8,stroke:#4caf50
+    style Level2 fill:#fff3e0,stroke:#ff9800
+    style Level3 fill:#f3e5f5,stroke:#9c27b0
+    style Legend fill:#f8f9fa,stroke:#6c757d
+    style StartupOrder fill:#e3f2fd,stroke:#1976d2
+    style FailureImpact fill:#ffebee,stroke:#f44336 

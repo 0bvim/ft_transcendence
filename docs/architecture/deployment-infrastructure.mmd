@@ -1,0 +1,82 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    subgraph "Docker Environment"
+        subgraph "Application Services"
+            Frontend[Frontend Service<br/>Node.js + Vite<br/>:3010]
+            Auth[Auth Service<br/>Fastify + Prisma<br/>:3001]
+            Tournament[Tournament Service<br/>Fastify + Prisma<br/>:3002]
+            Game[Game Service<br/>p5.js + Fastify<br/>:3003]
+            Blockchain[Blockchain Service<br/>Hardhat + Express<br/>:3004]
+        end
+        
+        subgraph "Data Layer"
+            AuthDB[(SQLite<br/>Auth Database<br/>File-based)]
+            TournamentDB[(SQLite<br/>Tournament Database<br/>File-based)]
+        end
+        
+        subgraph "Monitoring Stack"
+            Prometheus[Prometheus<br/>Metrics Collection<br/>:9090]
+            Grafana[Grafana<br/>Dashboards<br/>:3000]
+            Elasticsearch[Elasticsearch<br/>Log Storage<br/>:9200]
+            Logstash[Logstash<br/>Log Processing<br/>:5001]
+            Kibana[Kibana<br/>Log Visualization<br/>:5601]
+        end
+        
+
+    end
+    
+    subgraph "External Services"
+        Google[Google OAuth API]
+        Avalanche[Avalanche Blockchain]
+    end
+    
+    %% Request Flow
+    Client[Web Clients] -->|Direct HTTP| Frontend
+    Frontend --> Auth
+    Frontend --> Tournament
+    Frontend --> Game
+    Frontend --> Blockchain
+    
+    %% Database Connections
+    Auth --> AuthDB
+    Tournament --> TournamentDB
+    
+    %% External Integrations
+    Auth --> Google
+    Blockchain --> Avalanche
+    
+    %% Monitoring Connections
+    Frontend -->|Metrics| Prometheus
+    Auth -->|Metrics| Prometheus
+    Tournament -->|Metrics| Prometheus
+    Game -->|Metrics| Prometheus
+    Blockchain -->|Metrics| Prometheus
+    
+    Frontend -->|Logs| Logstash
+    Auth -->|Logs| Logstash
+    Tournament -->|Logs| Logstash
+    Game -->|Logs| Logstash
+    Blockchain -->|Logs| Logstash
+    
+    Logstash --> Elasticsearch
+    Kibana --> Elasticsearch
+    Grafana --> Prometheus
+    
+    %% Styling
+    style Client fill:#e3f2fd,stroke:#1976d2
+
+    style Frontend fill:#4caf50,color:#fff,stroke:#2e7d32
+    style Auth fill:#ff9800,color:#fff,stroke:#ef6c00
+    style Tournament fill:#9c27b0,color:#fff,stroke:#6a1b9a
+    style Game fill:#e91e63,color:#fff,stroke:#ad1457
+    style Blockchain fill:#009688,color:#fff,stroke:#00695c
+    style AuthDB fill:#fbc02d,stroke:#f57f17
+    style TournamentDB fill:#fbc02d,stroke:#f57f17
+
+    style Prometheus fill:#ff6f00,color:#fff,stroke:#e65100
+    style Grafana fill:#ff5722,color:#fff,stroke:#d84315
+    style Elasticsearch fill:#795548,color:#fff,stroke:#5d4037
+    style Logstash fill:#607d8b,color:#fff,stroke:#455a64
+    style Kibana fill:#3f51b5,color:#fff,stroke:#303f9f
+    style Google fill:#f5f5f5,stroke:#757575
+    style Avalanche fill:#f5f5f5,stroke:#757575 

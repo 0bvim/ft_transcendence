@@ -1,0 +1,56 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    %% Client Layer
+    Browser[Web Browser] -->|HTTPS| Frontend[Frontend Service<br/>:3010]
+    
+    %% API Routes
+    Frontend -->|POST /api/auth/*| Auth[Auth Service<br/>:3001]
+    Frontend -->|GET/POST /tournaments*| Tournament[Tournament Service<br/>:3002]
+    Frontend -->|GET /tournament/*/match/*| Game[Game Service<br/>:3003]
+    Frontend -->|POST /api/blockchain/*| Blockchain[Blockchain Service<br/>:3004]
+    
+    %% Database Connections
+    Auth -->|SQL Queries| AuthDB[(SQLite<br/>Users & Tokens)]
+    Tournament -->|SQL Queries| TournamentDB[(SQLite<br/>Tournaments & Matches)]
+    
+    %% External API Integration
+    Auth -->|OAuth 2.0| Google[Google OAuth API]
+    Blockchain -->|JSON-RPC| Avalanche[Avalanche Network]
+    
+    %% Inter-service Communication
+    Tournament -->|Match Results API| Blockchain
+    Game -->|Match Data API| Tournament
+    
+    %% Authentication Flow
+    subgraph "JWT Auth"
+        JWTFlow[JWT Tokens<br/>Access & Refresh<br/>localStorage]
+    end
+    
+    Auth -.->|Issues JWT| JWTFlow
+    JWTFlow -.->|Validates| Tournament
+    JWTFlow -.->|Validates| Game
+    JWTFlow -.->|Validates| Blockchain
+    
+    %% API Response Format
+    subgraph "Standard Response"
+        APIResponse["{<br/>  success: boolean,<br/>  data: T,<br/>  message: string<br/>}"]
+    end
+    
+    Auth -.->|JSON Response| APIResponse
+    Tournament -.->|JSON Response| APIResponse
+    Game -.->|JSON Response| APIResponse
+    Blockchain -.->|JSON Response| APIResponse
+    
+    %% Styling
+    style Browser fill:#e3f2fd,stroke:#1976d2
+    style Frontend fill:#e8f5e8,stroke:#4caf50
+    style Auth fill:#fff3e0,stroke:#ff9800
+    style Tournament fill:#f3e5f5,stroke:#9c27b0
+    style Game fill:#fce4ec,stroke:#e91e63
+    style Blockchain fill:#e0f2f1,stroke:#009688
+    style AuthDB fill:#fff8e1,stroke:#fbc02d
+    style TournamentDB fill:#fff8e1,stroke:#fbc02d
+    style Google fill:#f5f5f5,stroke:#757575
+    style Avalanche fill:#f5f5f5,stroke:#757575
+    style JWTFlow fill:#e1f5fe,stroke:#0288d1
+    style APIResponse fill:#f3e5f5,stroke:#673ab7 
