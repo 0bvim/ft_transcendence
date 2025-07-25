@@ -151,6 +151,7 @@ function generateSingleEliminationBracket(participants: any[]) {
   // Generate matches for each round until we have a winner
   while (currentParticipants.length > 1) {
     const roundMatches = [];
+    const nextRoundParticipants = [];
     
     for (let i = 0; i < currentParticipants.length; i += 2) {
       if (i + 1 < currentParticipants.length) {
@@ -160,6 +161,8 @@ function generateSingleEliminationBracket(participants: any[]) {
           player1Id: currentParticipants[i].id,
           player2Id: currentParticipants[i + 1].id
         });
+        // Add placeholder for winner to advance to next round
+        nextRoundParticipants.push({ id: `winner_${currentRound}_${Math.floor(i / 2) + 1}` });
       } else {
         // Odd number of participants, this one gets a bye
         roundMatches.push({
@@ -169,13 +172,15 @@ function generateSingleEliminationBracket(participants: any[]) {
           player2Id: null, // Bye
           winnerId: currentParticipants[i].id // Automatic win
         });
+        // Bye participant advances to next round
+        nextRoundParticipants.push(currentParticipants[i]);
       }
     }
 
     matches.push(...roundMatches);
     
-    // Calculate next round participants (winners advance)
-    currentParticipants = new Array(Math.ceil(currentParticipants.length / 2));
+    // Fix: Use proper participant tracking instead of creating undefined array
+    currentParticipants = nextRoundParticipants;
     currentRound++;
   }
 
@@ -183,7 +188,7 @@ function generateSingleEliminationBracket(participants: any[]) {
 }
 
 async function startFirstRoundMatches(tournamentId: string) {
-  // Get first round matches
+  // Get all first round matches with participant details
   const firstRoundMatches = await prisma.match.findMany({
     where: {
       tournamentId,
@@ -192,14 +197,56 @@ async function startFirstRoundMatches(tournamentId: string) {
     }
   });
 
-  // Start the first match
-  if (firstRoundMatches.length > 0) {
-    await prisma.match.update({
-      where: { id: firstRoundMatches[0].id },
-      data: {
-        status: 'IN_PROGRESS',
-        startedAt: new Date()
-      }
-    });
+  // Get all participants to check if they're AI or human
+  const participants = await prisma.tournamentParticipant.findMany({
+    where: { tournamentId },
+    select: {
+      id: true,
+      participantType: true,
+      displayName: true
+    }
+  });
+
+  const participantMap = new Map(participants.map(p => [p.id, p]));
+
+  // Process each match
+  for (const match of firstRoundMatches) {
+    const player1 = participantMap.get(match.player1Id!);
+    const player2 = participantMap.get(match.player2Id!);
+
+    // Check if both players are AI
+    if (player1?.participantType === 'AI' && player2?.participantType === 'AI') {
+      // AI vs AI match - automatically resolve with random winner
+      const randomWinner = Math.random() < 0.5 ? match.player1Id : match.player2Id;
+      const randomScore1 = Math.floor(Math.random() * 3) + 1; // Score between 1-3
+      const randomScore2 = Math.floor(Math.random() * 3) + 1;
+      
+      // Ensure winner has higher score
+      const finalScore1 = randomWinner === match.player1Id ? Math.max(randomScore1, randomScore2 + 1) : randomScore1;
+      const finalScore2 = randomWinner === match.player2Id ? Math.max(randomScore2, randomScore1 + 1) : randomScore2;
+
+      await prisma.match.update({
+        where: { id: match.id },
+        data: {
+          status: 'COMPLETED',
+          winnerId: randomWinner,
+          player1Score: finalScore1,
+          player2Score: finalScore2,
+          startedAt: new Date(),
+          completedAt: new Date()
+        }
+      });
+
+
+    } else {
+      // Human vs AI or Human vs Human match - start normally for gameplay
+      await prisma.match.update({
+        where: { id: match.id },
+        data: {
+          status: 'IN_PROGRESS',
+          startedAt: new Date()
+        }
+      });
+    }
   }
 }

@@ -5,7 +5,7 @@ export class Paddle {
 	y: number
 	static readonly height: number = Board.height / 4;
 	static readonly width: number = Board.width / 50;
-	static readonly baseSpeed: number = Board.height / 150;
+	static readonly baseSpeed: number = Board.height / 120; // Slightly faster for better responsiveness
 	goDown = false;
 	goUp = false;
 	private speed: number = 0;
@@ -21,6 +21,8 @@ export class Paddle {
 			this.y -= Paddle.baseSpeed;
 			this.speed = -Paddle.baseSpeed;
 		} else {
+			// Clamp to boundary
+			this.y = 0;
 			this.speed = 0;
 		}
 	}
@@ -30,6 +32,8 @@ export class Paddle {
 			this.y += Paddle.baseSpeed;
 			this.speed = Paddle.baseSpeed;
 		} else {
+			// Clamp to boundary
+			this.y = Board.height - Paddle.height;
 			this.speed = 0;
 		}
 	}
@@ -42,10 +46,17 @@ export class Paddle {
 		} else {
 			this.speed = 0;
 		}
+		
+		// Ensure paddle stays within bounds (safety check)
+		this.y = Math.max(0, Math.min(Board.height - Paddle.height, this.y));
 	}
 
 	scoreUp() {
 		this.score++;
+	}
+
+	reset() {
+		this.score = 0;
 	}
 
 	get currentScore(): number {
@@ -55,5 +66,4 @@ export class Paddle {
 	get currentSpeed(): number {
 		return this.speed;
 	}
-
 }

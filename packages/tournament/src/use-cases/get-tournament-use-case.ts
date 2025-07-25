@@ -74,16 +74,19 @@ export async function getTournamentUseCase(tournamentId: string) {
       ...match,
       player1: player1 ? {
         id: player1.id,
+        userId: player1.userId, // Include userId for frontend logic
         displayName: player1.displayName,
         participantType: player1.participantType
       } : null,
       player2: player2 ? {
         id: player2.id,
+        userId: player2.userId, // Include userId for frontend logic
         displayName: player2.displayName,
         participantType: player2.participantType
       } : null,
       winner: winner ? {
         id: winner.id,
+        userId: winner.userId, // Include userId for frontend logic
         displayName: winner.displayName,
         participantType: winner.participantType
       } : null

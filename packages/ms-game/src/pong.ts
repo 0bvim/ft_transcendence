@@ -74,7 +74,6 @@ const sketch = (p: p5) => {
       // Use a web-safe fallback font instead of loading external font
       retroFont = null; // Will use default font
     } catch (error) {
-      console.warn("Font loading failed, using default font");
       retroFont = null;
     }
   };
@@ -89,7 +88,6 @@ const sketch = (p: p5) => {
     tournamentContext = (window as any).TOURNAMENT_CONTEXT || null;
     
     if (tournamentContext?.isTournamentMatch) {
-      console.log('Loading tournament match:', tournamentContext);
       await loadTournamentMatch();
     } else {
       await loadRegularGame();
@@ -110,7 +108,23 @@ const sketch = (p: p5) => {
       const result = await response.json();
       tournamentMatchData = result.data;
       
-      console.log('Tournament match data loaded:', tournamentMatchData);
+      // Ensure tournamentMatchData is not null
+      if (!tournamentMatchData) {
+        throw new Error('Tournament match data is null');
+      }
+      
+      // Convert difficulty strings to proper format
+      const player1Difficulty = tournamentMatchData.player1.aiDifficulty?.toUpperCase() === 'EASY' ||
+                               tournamentMatchData.player1.aiDifficulty?.toUpperCase() === 'MEDIUM' ||
+                               tournamentMatchData.player1.aiDifficulty?.toUpperCase() === 'HARD'
+                               ? tournamentMatchData.player1.aiDifficulty.toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD'
+                               : 'MEDIUM';
+                               
+      const player2Difficulty = tournamentMatchData.player2.aiDifficulty?.toUpperCase() === 'EASY' ||
+                               tournamentMatchData.player2.aiDifficulty?.toUpperCase() === 'MEDIUM' ||
+                               tournamentMatchData.player2.aiDifficulty?.toUpperCase() === 'HARD'
+                               ? tournamentMatchData.player2.aiDifficulty.toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD'
+                               : 'MEDIUM';
       
       // Create config from tournament data
       config = new Config(
@@ -118,11 +132,12 @@ const sketch = (p: p5) => {
         tournamentMatchData.player2.displayName,
         tournamentMatchData.player1.isAI,
         tournamentMatchData.player2.isAI,
-        1000 // AI update interval
+        1000, // AI update interval
+        player1Difficulty,
+        player2Difficulty
       );
       
     } catch (error) {
-      console.error('Failed to load tournament match:', error);
       // Fallback to regular game
       await loadRegularGame();
     }
@@ -145,10 +160,10 @@ const sketch = (p: p5) => {
     ball = new Ball();
     
     if (config.player1IsAI) {
-      ai1 = new AI(ball, player1, player2);
+      ai1 = new AI(ball, player1, player2, config.player1AIDifficulty);
     }
     if (config.player2IsAI) {
-      ai2 = new AI(ball, player2, player1);
+      ai2 = new AI(ball, player2, player1, config.player2AIDifficulty);
     }
     
     aiUpdateTimer = p.millis();
@@ -203,15 +218,35 @@ const sketch = (p: p5) => {
         countdownStartTime = p.millis();
       }
     }
+    
+    // Add restart functionality on game end
+    if (gameState === GameState.End) {
+      if (p.key === " ") {
+        // Restart the game
+        restartGame();
+      } else if (p.key === "Escape" || p.key.toLowerCase() === "q") {
+        // Return to tournament or home
+        if (tournamentContext?.isTournamentMatch && tournamentMatchData) {
+          window.location.href = `http://localhost:3010/tournament/${tournamentMatchData.tournamentId}`;
+        } else {
+          window.location.href = 'http://localhost:3010/';
+        }
+      }
+    }
+    
     if (!config.player1IsAI) {
       switch (p.key) {
         case "a":
-        case "A": {
+        case "A":
+        case "w":
+        case "W": {
           player1.goUp = true;
           break;
         }
         case "z":
-        case "Z": {
+        case "Z":
+        case "s":
+        case "S": {
           player1.goDown = true;
           break;
         }
@@ -228,6 +263,19 @@ const sketch = (p: p5) => {
           break;
         }
       }
+      // Alternative keys for Player 2
+      switch (p.key) {
+        case "i":
+        case "I": {
+          player2.goUp = true;
+          break;
+        }
+        case "k":
+        case "K": {
+          player2.goDown = true;
+          break;
+        }
+      }
     }
   };
 
@@ -235,12 +283,16 @@ const sketch = (p: p5) => {
     if (!config.player1IsAI) {
       switch (p.key) {
         case "a":
-        case "A": {
+        case "A":
+        case "w":
+        case "W": {
           player1.goUp = false;
           break;
         }
         case "z":
-        case "Z": {
+        case "Z":
+        case "s":
+        case "S": {
           player1.goDown = false;
           break;
         }
@@ -257,8 +309,45 @@ const sketch = (p: p5) => {
           break;
         }
       }
+      // Alternative keys for Player 2
+      switch (p.key) {
+        case "i":
+        case "I": {
+          player2.goUp = false;
+          break;
+        }
+        case "k":
+        case "K": {
+          player2.goDown = false;
+          break;
+        }
+      }
     }
   };
+
+  function restartGame() {
+    // Reset game state
+    gameState = GameState.StartScreen;
+    
+    // Reset paddles and scores
+    player1.reset();
+    player2.reset();
+    
+    // Reset ball to center
+    ball.resetToCenter();
+    
+    // Reset AI if needed
+    if (config.player1IsAI) {
+      ai1 = new AI(ball, player1, player2, config.player1AIDifficulty);
+    }
+    if (config.player2IsAI) {
+      ai2 = new AI(ball, player2, player1, config.player2AIDifficulty);
+    }
+    
+    // Reset timers
+    aiUpdateTimer = p.millis();
+    countdownStartTime = 0;
+  }
 
   function displayLoadingScreen() {
     if (retroFont) {
@@ -310,9 +399,23 @@ const sketch = (p: p5) => {
       p.text(`${config.player1} vs ${config.player2}`, Board.width / 2, Board.height / 2);
       p.text("Press SPACE to Start!", Board.width / 2, Board.height / 2 + textSize / 2);
     } else {
-      p.text("PONG", Board.width / 2, Board.height / 2 - textSize / 2);
+      p.text("PONG", Board.width / 2, Board.height / 2 - textSize);
       p.textSize(textSize / 3);
-      p.text("Press SPACE to Start!", Board.width / 2, Board.height / 2 + textSize / 3);
+      p.text("Press SPACE to Start!", Board.width / 2, Board.height / 2);
+      
+      // Show controls
+      p.textSize(textSize / 6);
+      p.fill(200);
+      let controlsY = Board.height / 2 + textSize / 2;
+      
+      if (!config.player1IsAI && !config.player2IsAI) {
+        p.text("Player 1 (Left): W/S or A/Z keys", Board.width / 2, controlsY + 15);
+        p.text("Player 2 (Right): ↑/↓ Arrow keys or I/K keys", Board.width / 2, controlsY + 30);
+      } else if (!config.player1IsAI) {
+        p.text("Controls: W/S or A/Z keys", Board.width / 2, controlsY + 15);
+      } else if (!config.player2IsAI) {
+        p.text("Controls: ↑/↓ Arrow keys or I/K keys", Board.width / 2, controlsY + 15);
+      }
     }
   }
 
@@ -336,6 +439,12 @@ const sketch = (p: p5) => {
     // Auto-submit tournament result if this is a tournament match
     if (tournamentContext?.isTournamentMatch && tournamentMatchData && gameState === GameState.End) {
       submitTournamentResult();
+    } else {
+      // Show restart options for regular games
+      p.textSize(textSize / 6);
+      p.fill(200);
+      p.text("Press SPACE to Play Again", Board.width / 2, Board.height / 2 + textSize / 2 + 20);
+      p.text("Press Q or ESC to Return to Menu", Board.width / 2, Board.height / 2 + textSize / 2 + 40);
     }
   }
 
@@ -358,8 +467,6 @@ const sketch = (p: p5) => {
         userId: winnerUserId || 'system' // Fallback for AI matches
       };
 
-      console.log('Submitting tournament result:', resultData);
-
       const response = await fetch('/api/tournament/match/result', {
         method: 'POST',
         headers: {
@@ -373,18 +480,16 @@ const sketch = (p: p5) => {
       }
 
       const result = await response.json();
-      console.log('Tournament result submitted successfully:', result);
 
       // Show success message and redirect
       setTimeout(() => {
-        window.location.href = `/tournament/${tournamentMatchData!.tournamentId}`;
+        window.location.href = `http://localhost:3010/tournament/${tournamentMatchData!.tournamentId}`;
       }, 3000);
 
     } catch (error) {
-      console.error('Failed to submit tournament result:', error);
       // Show error and allow manual retry or redirect
       setTimeout(() => {
-        window.location.href = `/tournament/${tournamentMatchData!.tournamentId}`;
+        window.location.href = `http://localhost:3010/tournament/${tournamentMatchData!.tournamentId}`;
       }, 5000);
     }
   }

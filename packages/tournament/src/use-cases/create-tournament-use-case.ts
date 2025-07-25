@@ -8,21 +8,21 @@ interface CreateTournamentInput {
   name: string;
   description?: string;
   maxPlayers: number;
-  tournamentType: 'HUMANS_ONLY' | 'MIXED';
-  aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+  aiDifficulty: 'EASY' | 'MEDIUM' | 'HARD'; // Always required since we only support MIXED
   autoStart: boolean;
   userId: string;
+  displayName: string; // Added missing displayName parameter
 }
 
-export async function createTournamentUseCase(input: CreateTournamentInput) {
+export async function createTournamentUseCase(input: CreateTournamentInput, logger?: any) {
   const {
     name,
     description,
     maxPlayers,
-    tournamentType,
-    aiDifficulty = 'MEDIUM',
+    aiDifficulty,
     autoStart,
-    userId
+    userId,
+    displayName
   } = input;
 
   // Validate input
@@ -30,25 +30,50 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
     throw new Error('Tournament must have between 4 and 8 players');
   }
 
-  if (tournamentType === 'MIXED' && !aiDifficulty) {
-    throw new Error('AI difficulty must be specified for mixed tournaments');
-  }
+  logger?.info({
+    action: 'tournament_creation_started',
+    userId,
+    tournamentName: name,
+    maxPlayers,
+    aiDifficulty,
+    autoStart
+  }, `Tournament creation started: ${name} by user ${userId}`);
 
-  // Create tournament in database
+  // Create tournament in database (always MIXED type)
   const tournament = await prisma.tournament.create({
     data: {
       name,
       description,
       maxPlayers,
-      tournamentType: tournamentType as TournamentType,
+      tournamentType: 'MIXED', // Always MIXED
       aiDifficulty: aiDifficulty as AIDifficulty,
       autoStart,
       createdBy: userId,
-      status: 'WAITING'
+      status: 'WAITING',
+      currentPlayers: maxPlayers // Always full since we auto-fill with AI
     },
     include: {
       participants: true,
       matches: true
+    }
+  });
+
+  logger?.info({
+    action: 'tournament_created',
+    tournamentId: tournament.id,
+    userId,
+    tournamentName: name,
+    maxPlayers
+  }, `Tournament created successfully: ${tournament.id}`);
+
+  // Add the tournament creator as the first participant
+  await prisma.tournamentParticipant.create({
+    data: {
+      tournamentId: tournament.id,
+      userId,
+      displayName,
+      participantType: 'HUMAN',
+      status: 'ACTIVE'
     }
   });
 
@@ -61,28 +86,59 @@ export async function createTournamentUseCase(input: CreateTournamentInput) {
     });
 
     if (blockchainResult) {
+      logger?.info({
+        action: 'tournament_blockchain_created',
+        tournamentId: tournament.id,
+        blockchainTournamentId: blockchainResult.tournamentId
+      }, `Tournament registered on blockchain: ${blockchainResult.tournamentId}`);
       // Store blockchain tournament ID for future reference
       // Note: We could add a blockchainTournamentId field to the Tournament model
-      // For now, we'll log it
-      console.log(`Tournament ${tournament.id} created on blockchain with ID: ${blockchainResult.tournamentId}`);
     }
   } catch (error) {
     // Blockchain creation failed, but tournament creation in DB succeeded
-    console.warn(`Failed to create tournament ${tournament.id} on blockchain:`, error);
+    logger?.warn({
+      action: 'tournament_blockchain_failed',
+      tournamentId: tournament.id,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, `Failed to register tournament ${tournament.id} on blockchain`);
+    // Log silently or handle gracefully without exposing debug info
   }
 
-  // If it's a mixed tournament, add AI participants to fill slots
-  if (tournamentType === 'MIXED') {
-    await addAIParticipants(tournament.id, maxPlayers, aiDifficulty);
-  }
+  // Always add AI participants to fill remaining slots
+  await addAIParticipants(tournament.id, maxPlayers, aiDifficulty, 1, logger); // Pass 1 since creator is already added
 
-  return tournament;
+  // Fetch the updated tournament with all participants
+  const updatedTournament = await prisma.tournament.findUnique({
+    where: { id: tournament.id },
+    include: {
+      participants: true,
+      matches: true
+    }
+  });
+
+  logger?.info({
+    action: 'tournament_setup_completed',
+    tournamentId: tournament.id,
+    totalParticipants: updatedTournament?.participants.length,
+    humanParticipants: updatedTournament?.participants.filter(p => p.participantType === 'HUMAN').length,
+    aiParticipants: updatedTournament?.participants.filter(p => p.participantType === 'AI').length
+  }, `Tournament setup completed: ${tournament.id} with ${updatedTournament?.participants.length} participants`);
+
+  return updatedTournament;
 }
 
-async function addAIParticipants(tournamentId: string, maxPlayers: number, difficulty: string) {
-  const aiCount = Math.floor(maxPlayers / 2); // Fill half the slots with AI initially
+async function addAIParticipants(tournamentId: string, maxPlayers: number, difficulty: string, existingHumanCount = 0, logger?: any) {
+  // Calculate how many AI participants to add - fill ALL remaining slots
+  const remainingSlots = maxPlayers - existingHumanCount;
   
-  for (let i = 1; i <= aiCount; i++) {
+  logger?.debug({
+    action: 'adding_ai_participants',
+    tournamentId,
+    remainingSlots,
+    difficulty
+  }, `Adding ${remainingSlots} AI participants to tournament ${tournamentId}`);
+  
+  for (let i = 1; i <= remainingSlots; i++) {
     await prisma.tournamentParticipant.create({
       data: {
         tournamentId,
@@ -94,9 +150,9 @@ async function addAIParticipants(tournamentId: string, maxPlayers: number, diffi
     });
   }
 
-  // Update tournament participant count
+  // Update tournament participant count (existing humans + AI to fill all slots)
   await prisma.tournament.update({
     where: { id: tournamentId },
-    data: { currentPlayers: aiCount }
+    data: { currentPlayers: maxPlayers } // Always fill to max capacity
   });
 }

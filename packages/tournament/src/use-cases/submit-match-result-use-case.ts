@@ -81,10 +81,10 @@ export async function submitMatchResultUseCase(input: SubmitMatchResultInput) {
     });
 
     if (blockchainResult) {
-      console.log(`Match ${matchId} result recorded on blockchain: ${blockchainResult.transactionHash}`);
+      // Blockchain result recorded successfully
     }
   } catch (error) {
-    console.warn(`Failed to record match ${matchId} result on blockchain:`, error);
+    // Blockchain recording failed, continue silently
   }
 
   // Update user stats

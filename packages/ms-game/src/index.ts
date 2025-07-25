@@ -48,36 +48,75 @@ const MatchResultSchema = z.object({
 
 // Initialize async setup
 const initializeApp = async () => {
-  // Logging for service startup
-  app.log.info("Game service starting up");
-
   // Tournament API endpoints
   await registerTournamentRoutes();
 
-  // Register static file serving (much simpler!)
-  await app.register(require("@fastify/static"), {
-    root: path.join(__dirname, "../dist/game"),
-    prefix: "/",
+  // SPA fallback with tournament context injection via URL parameters and static file serving
+  app.get('/game/*', async (request: FastifyRequest, reply: FastifyReply) => {
+    const url = request.url;
+    
+    // Handle static files first (CSS, JS, images, etc.)
+    if (url.includes('.')) {
+      const filePath = path.join(__dirname, "../dist/game", url.replace('/game/', ''));
+      
+      try {
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath);
+          const ext = path.extname(filePath).toLowerCase();
+          
+          // Set appropriate content type
+          let contentType = 'text/plain';
+          switch (ext) {
+            case '.html': contentType = 'text/html'; break;
+            case '.js': contentType = 'application/javascript'; break;
+            case '.css': contentType = 'text/css'; break;
+            case '.png': contentType = 'image/png'; break;
+            case '.jpg': case '.jpeg': contentType = 'image/jpeg'; break;
+            case '.svg': contentType = 'image/svg+xml'; break;
+            case '.json': contentType = 'application/json'; break;
+          }
+          
+          return reply.type(contentType).send(content);
+        }
+      } catch (error) {
+        // File not found, fall through to SPA handling
+      }
+    }
+    
+    // SPA fallback - serve index.html with tournament context injection
+    const indexPath = path.join(__dirname, "../dist/game/index.html");
+    let content = fs.readFileSync(indexPath, 'utf8');
+    
+    // Check for tournament parameters
+    const tournamentId = (request.query as any)?.tournament as string;
+    const matchId = (request.query as any)?.match as string;
+    
+    if (tournamentId && matchId) {
+      // Create tournament context
+      const tournamentContext = {
+        matchId,
+        tournamentId,
+        isTournamentMatch: true,
+        gameServiceUrl: `http://${request.headers.host}`
+      };
+      
+      // Inject tournament context script
+      const tournamentScript = `
+        <script>
+          window.TOURNAMENT_CONTEXT = ${JSON.stringify(tournamentContext)};
+        </script>`;
+      
+      // Append the tournament script to the content
+      content = content + tournamentScript;
+    }
+    
+    return reply.type("text/html").send(content);
   });
 
-  // SPA fallback route - serve index.html for unknown routes
-  app.setNotFoundHandler(
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      app.log.info(
-        {
-          action: "spa_fallback",
-          path: request.url,
-          ip: request.ip,
-          userAgent: request.headers["user-agent"],
-        },
-        "SPA fallback to index.html",
-      );
-
-      const indexPath = path.join(__dirname, "../dist/game/index.html");
-      const content = fs.readFileSync(indexPath);
-      return reply.type("text/html").send(content);
-    },
-  );
+  // Root route redirect to game
+  app.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+    return reply.redirect('/game/');
+  });
 };
 
 // Tournament API routes
@@ -147,15 +186,14 @@ async function registerTournamentRoutes() {
     try {
       const matchResult = MatchResultSchema.parse(request.body);
       
-      app.log.info('Submitting match result to tournament service', {
-        action: 'submit_match_result',
+      app.log.info({
+        action: 'match_result_submission_started',
         matchId: matchResult.matchId,
         winnerId: matchResult.winnerId,
-        scores: {
-          player1: matchResult.player1Score,
-          player2: matchResult.player2Score
-        }
-      });
+        player1Score: matchResult.player1Score,
+        player2Score: matchResult.player2Score,
+        userId: matchResult.userId
+      }, `Match result submission started for match ${matchResult.matchId}`);
       
       // Submit result to tournament service
       const tournamentServiceUrl = process.env.TOURNAMENT_SERVICE_URL || 'http://tournament:4243';
@@ -174,10 +212,13 @@ async function registerTournamentRoutes() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})) as any;
-        app.log.error('Tournament service rejected match result', {
+        
+        app.log.error({
+          action: 'match_result_submission_rejected',
+          matchId: matchResult.matchId,
           status: response.status,
-          error: errorData
-        });
+          error: errorData.message || 'Unknown error'
+        }, `Tournament service rejected match result for ${matchResult.matchId}`);
         
         return reply.status(response.status).send({
           success: false,
@@ -187,11 +228,12 @@ async function registerTournamentRoutes() {
       
       const result = await response.json() as any;
       
-      app.log.info('Match result submitted successfully', {
-        action: 'submit_match_result_success',
+      app.log.info({
+        action: 'match_result_submission_success',
         matchId: matchResult.matchId,
-        result: result
-      });
+        winnerId: matchResult.winnerId,
+        scores: `${matchResult.player1Score}-${matchResult.player2Score}`
+      }, `Match result submitted successfully for ${matchResult.matchId}`);
       
       return reply.status(200).send({
         success: true,
@@ -200,7 +242,10 @@ async function registerTournamentRoutes() {
       });
       
     } catch (error) {
-      app.log.error('Error submitting match result:', error);
+      app.log.error({
+        action: 'match_result_submission_failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 'Failed to submit match result');
       
       if (error instanceof z.ZodError) {
         return reply.status(400).send({
@@ -214,47 +259,6 @@ async function registerTournamentRoutes() {
         success: false,
         error: 'Failed to submit match result'
       });
-    }
-  });
-
-  // Serve tournament match game with context
-  app.get('/tournament/:tournamentId/match/:matchId', async (request: FastifyRequest<{ 
-    Params: { tournamentId: string, matchId: string }
-  }>, reply: FastifyReply) => {
-    try {
-      const { tournamentId, matchId } = request.params;
-      
-      app.log.info('Serving tournament match game', {
-        action: 'serve_tournament_game',
-        tournamentId,
-        matchId
-      });
-      
-      // Serve the game HTML with tournament context
-      const indexPath = path.join(__dirname, "../dist/game/index.html");
-      let content = fs.readFileSync(indexPath, 'utf8');
-      
-      // Inject tournament context into the HTML
-      const tournamentContext = {
-        matchId,
-        tournamentId,
-        isTournamentMatch: true,
-        gameServiceUrl: `http://${request.headers.host}`
-      };
-      
-      content = content.replace(
-        '<div id="pong"></div>',
-        `<div id="pong"></div>
-        <script>
-          window.TOURNAMENT_CONTEXT = ${JSON.stringify(tournamentContext)};
-        </script>`
-      );
-      
-      return reply.type("text/html").send(content);
-      
-    } catch (error) {
-      app.log.error('Error serving tournament match game:', error);
-      return reply.status(500).send('Failed to load tournament match');
     }
   });
 }

@@ -8,8 +8,15 @@ interface JoinTournamentInput {
   displayName: string;
 }
 
-export async function joinTournamentUseCase(input: JoinTournamentInput) {
+export async function joinTournamentUseCase(input: JoinTournamentInput, logger?: any) {
   const { tournamentId, userId, displayName } = input;
+
+  logger?.info({
+    action: 'tournament_join_started',
+    tournamentId,
+    userId,
+    displayName
+  }, `User ${userId} attempting to join tournament ${tournamentId}`);
 
   // Check if tournament exists and get current state
   const tournament = await prisma.tournament.findUnique({
@@ -20,29 +27,59 @@ export async function joinTournamentUseCase(input: JoinTournamentInput) {
   });
 
   if (!tournament) {
+    logger?.warn({
+      action: 'tournament_join_failed',
+      tournamentId,
+      userId,
+      reason: 'tournament_not_found'
+    }, `Tournament ${tournamentId} not found for join attempt by ${userId}`);
     throw new Error('Tournament not found');
   }
 
   // Check if tournament is still accepting players
   if (tournament.status !== 'WAITING') {
+    logger?.warn({
+      action: 'tournament_join_failed',
+      tournamentId,
+      userId,
+      reason: 'tournament_not_accepting',
+      tournamentStatus: tournament.status
+    }, `Tournament ${tournamentId} not accepting players (status: ${tournament.status})`);
     throw new Error('Tournament already started or completed');
-  }
-
-  // Check if tournament is full
-  if (tournament.participants.length >= tournament.maxPlayers) {
-    throw new Error('Tournament is full');
   }
 
   // Check if user already joined this tournament
   const existingParticipant = tournament.participants.find(p => p.userId === userId);
   if (existingParticipant) {
+    logger?.warn({
+      action: 'tournament_join_failed',
+      tournamentId,
+      userId,
+      reason: 'already_joined'
+    }, `User ${userId} already joined tournament ${tournamentId}`);
     throw new Error('Already joined this tournament');
   }
 
-  // Add participant to tournament
-  const participant = await prisma.tournamentParticipant.create({
-    data: {
+  // Replace an AI participant with the human player (tournaments are always MIXED)
+  const aiParticipants = tournament.participants.filter(p => p.participantType === 'AI');
+  
+  if (aiParticipants.length === 0) {
+    logger?.warn({
+      action: 'tournament_join_failed',
       tournamentId,
+      userId,
+      reason: 'no_ai_slots_available',
+      totalParticipants: tournament.participants.length
+    }, `No AI slots available in tournament ${tournamentId} for user ${userId}`);
+    throw new Error('Tournament is full - no AI participants available to replace');
+  }
+
+  // Replace the first AI participant with the human player
+  const aiToReplace = aiParticipants[0];
+  
+  await prisma.tournamentParticipant.update({
+    where: { id: aiToReplace.id },
+    data: {
       userId,
       displayName,
       participantType: 'HUMAN',
@@ -50,101 +87,43 @@ export async function joinTournamentUseCase(input: JoinTournamentInput) {
     }
   });
 
-  // Update tournament participant count
-  const updatedTournament = await prisma.tournament.update({
+  logger?.info({
+    action: 'tournament_join_success',
+    tournamentId,
+    userId,
+    displayName,
+    replacedAiSlot: aiToReplace.displayName
+  }, `User ${userId} successfully joined tournament ${tournamentId}, replacing ${aiToReplace.displayName}`);
+
+  // Get updated tournament data
+  const updatedTournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
-    data: {
-      currentPlayers: tournament.participants.length + 1
-    },
     include: {
       participants: true
     }
   });
 
-  // Check if we should auto-start the tournament
-  if (updatedTournament.autoStart && updatedTournament.currentPlayers >= 4) {
-    // Auto-start tournament if it has enough players
-    await autoStartTournament(tournamentId);
-  }
-
   // Initialize or update user stats
-  await initializeUserStats(userId, displayName);
+  await initializeUserStats(userId, displayName, logger);
+
+  const humanParticipants = updatedTournament!.participants.filter(p => p.participantType === 'HUMAN').length;
+  const aiParticipants_count = updatedTournament!.participants.filter(p => p.participantType === 'AI').length;
+  
+  logger?.info({
+    action: 'tournament_participant_stats',
+    tournamentId,
+    humanParticipants,
+    aiParticipants: aiParticipants_count,
+    totalParticipants: updatedTournament!.participants.length
+  }, `Tournament ${tournamentId} now has ${humanParticipants} humans and ${aiParticipants_count} AIs`);
 
   return {
-    participant,
-    tournament: updatedTournament
+    participant: updatedTournament!.participants.find(p => p.userId === userId),
+    tournament: updatedTournament!
   };
 }
 
-async function autoStartTournament(tournamentId: string) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    include: {
-      participants: true
-    }
-  });
-
-  if (!tournament || tournament.status !== 'WAITING') {
-    return;
-  }
-
-  // Generate bracket and matches
-  const matches = generateSingleEliminationBracket(tournament.participants);
-  
-  // Create matches in database
-  for (const match of matches) {
-    await prisma.match.create({
-      data: {
-        tournamentId,
-        round: match.round,
-        matchNumber: match.matchNumber,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-        status: 'WAITING'
-      }
-    });
-  }
-
-  // Update tournament status
-  await prisma.tournament.update({
-    where: { id: tournamentId },
-    data: {
-      status: 'ACTIVE',
-      startedAt: new Date()
-    }
-  });
-}
-
-function generateSingleEliminationBracket(participants: any[]) {
-  const matches = [];
-  let currentRound = 1;
-  let currentParticipants = [...participants];
-
-  while (currentParticipants.length > 1) {
-    const roundMatches = [];
-    
-    for (let i = 0; i < currentParticipants.length; i += 2) {
-      if (i + 1 < currentParticipants.length) {
-        roundMatches.push({
-          round: currentRound,
-          matchNumber: Math.floor(i / 2) + 1,
-          player1Id: currentParticipants[i].id,
-          player2Id: currentParticipants[i + 1].id
-        });
-      }
-    }
-
-    matches.push(...roundMatches);
-    
-    // Calculate next round participants (winners advance)
-    currentParticipants = new Array(Math.ceil(currentParticipants.length / 2));
-    currentRound++;
-  }
-
-  return matches;
-}
-
-async function initializeUserStats(userId: string, displayName: string) {
+async function initializeUserStats(userId: string, displayName: string, logger?: any) {
   const existingStats = await prisma.userStats.findUnique({
     where: { userId }
   });
@@ -157,6 +136,12 @@ async function initializeUserStats(userId: string, displayName: string) {
         totalTournaments: 1
       }
     });
+    
+    logger?.debug({
+      action: 'user_stats_created',
+      userId,
+      displayName
+    }, `Created user stats for ${userId}`);
   } else {
     await prisma.userStats.update({
       where: { userId },
@@ -165,5 +150,12 @@ async function initializeUserStats(userId: string, displayName: string) {
         displayName // Update display name in case it changed
       }
     });
+    
+    logger?.debug({
+      action: 'user_stats_updated',
+      userId,
+      displayName,
+      totalTournaments: existingStats.totalTournaments + 1
+    }, `Updated user stats for ${userId}`);
   }
 }
