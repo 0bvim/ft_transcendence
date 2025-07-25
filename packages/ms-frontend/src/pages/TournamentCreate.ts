@@ -75,50 +75,15 @@ export default function TournamentCreate(): HTMLElement {
             <label class="block text-sm font-medium text-gray-300 mb-2">
               Tournament Type
             </label>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="relative">
-                <input
-                  type="radio"
-                  id="humans-only"
-                  name="tournamentType"
-                  value="humans-only"
-                  class="sr-only"
-                />
-                <label
-                  for="humans-only"
-                  class="block bg-gray-700 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors duration-200"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <h3 class="font-semibold text-white">Humans Only</h3>
-                      <p class="text-sm text-gray-400">Only human players</p>
-                    </div>
-                    <div class="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
-                  </div>
-                </label>
+            <div class="bg-gray-700 border border-blue-500 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-semibold text-white">Mixed Tournament</h3>
+                  <p class="text-sm text-gray-400">AI auto-fills remaining slots. Humans can join and replace AI players.</p>
+                </div>
+                <div class="w-4 h-4 bg-blue-500 border-2 border-blue-500 rounded-full"></div>
               </div>
-              <div class="relative">
-                <input
-                  type="radio"
-                  id="mixed-tournament"
-                  name="tournamentType"
-                  value="mixed"
-                  checked
-                  class="sr-only"
-                />
-                <label
-                  for="mixed-tournament"
-                  class="block bg-gray-700 border border-blue-500 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors duration-200"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <h3 class="font-semibold text-white">Mixed Tournament</h3>
-                      <p class="text-sm text-gray-400">Humans + AI opponents</p>
-                    </div>
-                    <div class="w-4 h-4 bg-blue-500 border-2 border-blue-500 rounded-full"></div>
-                  </div>
-                </label>
-              </div>
+              <input type="hidden" name="tournamentType" value="mixed" />
             </div>
           </div>
 
@@ -371,17 +336,6 @@ function updateTournamentPreview() {
 
 async function handleFormSubmit(form: HTMLFormElement) {
   const formData = new FormData(form);
-  
-  // Debug: Log what we're extracting from the form
-  console.log('=== FRONTEND FORM DATA DEBUG ===');
-  console.log('tournamentName:', formData.get('tournamentName'));
-  console.log('tournamentDescription:', formData.get('tournamentDescription'));
-  console.log('maxPlayers:', formData.get('maxPlayers'));
-  console.log('tournamentType:', formData.get('tournamentType'));
-  console.log('aiDifficulty:', formData.get('aiDifficulty'));
-  console.log('autoStart:', formData.has('autoStart'));
-  
-  // Convert form values to proper format
   const tournamentTypeValue = formData.get('tournamentType') as string;
   const aiDifficultyValue = formData.get('aiDifficulty') as string;
   
@@ -389,12 +343,10 @@ async function handleFormSubmit(form: HTMLFormElement) {
     name: formData.get('tournamentName') as string,
     description: formData.get('tournamentDescription') as string || '',
     maxPlayers: parseInt(formData.get('maxPlayers') as string),
-    tournamentType: tournamentTypeValue === 'humans-only' ? 'HUMANS_ONLY' : 'MIXED',
+    tournamentType: 'MIXED', // Always MIXED since humans-only option was removed
     autoStart: formData.has('autoStart'),
     aiDifficulty: aiDifficultyValue ? aiDifficultyValue.toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD' : 'MEDIUM'
   };
-  
-  console.log('Final tournament data:', JSON.stringify(tournamentData, null, 2));
 
   try {
     // Submit to tournament API
@@ -409,7 +361,6 @@ async function handleFormSubmit(form: HTMLFormElement) {
     }, 2000);
     
   } catch (error) {
-    console.error('Error creating tournament:', error);
     showErrorMessage('Failed to create tournament. Please try again.');
   }
 }

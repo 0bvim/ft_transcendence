@@ -30,7 +30,15 @@ export class Ball {
 		this.xSpeed = Ball.randomBetween(0.5 * Ball.startSpeed, 0.8 * Ball.startSpeed);
 		this.ySpeed = Math.sqrt(Ball.startSpeed ** 2 - this.xSpeed ** 2);
 		this.xSpeed *= side === Side.Right ? 1 : -1;
-		this.ySpeed *= Math.random() < 0.5 ? -1 : 1;
+		this.ySpeed *= Math.random() > 0.5 ? -1 : 1;
+		this.nBounces = 0;
+	}
+
+	resetToCenter() {
+		this.x = Board.width / 2 - Ball.radius;
+		this.y = Board.height / 2 - Ball.radius;
+		this.xSpeed = 0;
+		this.ySpeed = 0;
 		this.nBounces = 0;
 	}
 

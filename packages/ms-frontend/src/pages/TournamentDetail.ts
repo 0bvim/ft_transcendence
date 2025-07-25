@@ -29,6 +29,9 @@ export default function TournamentDetail(): HTMLElement {
           <button id="join-tournament-btn" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hidden">
             Join Tournament
           </button>
+          <button id="start-tournament-btn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hidden">
+            Start Tournament
+          </button>
         </div>
       </div>
 
@@ -130,6 +133,7 @@ export default function TournamentDetail(): HTMLElement {
 function setupEventListeners(container: HTMLElement, tournamentId: string | undefined) {
   const backBtn = container.querySelector('#back-btn');
   const joinBtn = container.querySelector('#join-tournament-btn');
+  const startBtn = container.querySelector('#start-tournament-btn');
   const watchBtn = container.querySelector('#watch-match-btn');
 
   backBtn?.addEventListener('click', () => {
@@ -140,9 +144,12 @@ function setupEventListeners(container: HTMLElement, tournamentId: string | unde
     handleJoinTournament(tournamentId);
   });
 
+  startBtn?.addEventListener('click', () => {
+    handleStartTournament(tournamentId);
+  });
+
   watchBtn?.addEventListener('click', () => {
     // TODO: Navigate to game view
-    console.log('Watching live match...');
   });
 }
 
@@ -156,11 +163,8 @@ async function loadTournamentData(tournamentId: string) {
     // Show loading state
     showLoadingState();
 
-    console.log('Loading tournament data for ID:', tournamentId);
-
     // Load tournament data from API
     const tournament = await tournamentApi.getTournament(tournamentId);
-    console.log('Tournament API response:', tournament);
 
     if (!tournament) {
       throw new Error('Tournament not found');
@@ -171,18 +175,14 @@ async function loadTournamentData(tournamentId: string) {
     displayTournamentData(tournament);
 
   } catch (error) {
-    console.error('Error loading tournament data:', error);
     hideLoadingState();
     showErrorMessage('Failed to load tournament data. Please try again.');
   }
 }
 
 function displayTournamentData(tournament: any) {
-  console.log('Displaying tournament data:', tournament);
-  
   // Ensure tournament object exists
   if (!tournament) {
-    console.error('Tournament data is null or undefined');
     showErrorMessage('Tournament data is not available');
     return;
   }
@@ -207,10 +207,10 @@ function displayTournamentData(tournament: any) {
   updateProgress(tournament);
   
   // Render matches
-  renderMatches(tournament.matches || []);
+  renderMatches(tournament.matches || [], tournament.id);
   
   // Check for live match
-  checkForLiveMatch(tournament.matches || []);
+  checkForLiveMatch(tournament.matches || [], tournament.id);
 }
 
 function updateTournamentDetails(tournament: any) {
@@ -223,26 +223,36 @@ function updateTournamentDetails(tournament: any) {
   document.getElementById('creator-name')!.textContent = creatorDisplayName;
   
   document.getElementById('created-date')!.textContent = new Date(tournament.createdAt).toLocaleDateString();
-  document.getElementById('tournament-type')!.textContent = tournament.participants.some((p: any) => p.participantType === 'AI') ? 'Mixed (Human + AI)' : 'Humans Only';
+  document.getElementById('tournament-type')!.textContent = 'Mixed (Human + AI)';
 
   // Fix: Check if current user is already a participant before showing join button
   const joinBtn = document.getElementById('join-tournament-btn');
+  const startBtn = document.getElementById('start-tournament-btn');
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const currentUserId = currentUser.id;
   
   // Check if current user is already a participant
   const isUserAlreadyParticipant = tournament.participants.some((p: any) => p.userId === currentUserId);
   
-  // Show join button only if:
-  // 1. Tournament is waiting for players
-  // 2. Tournament is not full
-  // 3. Current user is not already a participant
-  if (tournament.status === 'WAITING' && 
-      tournament.currentPlayers < tournament.maxPlayers && 
-      !isUserAlreadyParticipant) {
-    joinBtn?.classList.remove('hidden');
-  } else {
+  // Check if current user is the tournament creator
+  const isUserCreator = tournament.createdBy === currentUserId;
+  
+  // Show appropriate button based on user role and tournament status
+  if (isUserCreator && tournament.status === 'WAITING') {
+    // Show start button for creator when tournament is waiting
     joinBtn?.classList.add('hidden');
+    startBtn?.classList.remove('hidden');
+  } else if (tournament.status === 'WAITING' && 
+             tournament.currentPlayers < tournament.maxPlayers && 
+             !isUserAlreadyParticipant &&
+             !isUserCreator) {
+    // Show join button for non-creators who haven't joined and tournament has space
+    joinBtn?.classList.remove('hidden');
+    startBtn?.classList.add('hidden');
+  } else {
+    // Hide both buttons in all other cases
+    joinBtn?.classList.add('hidden');
+    startBtn?.classList.add('hidden');
   }
 }
 
@@ -254,7 +264,7 @@ function updatePlayersList(players: any[]) {
     const playerDiv = document.createElement('div');
     playerDiv.className = 'flex items-center justify-between p-2 bg-gray-700 rounded';
     
-    const playerIcon = player.participantType === 'AI' ? '��' : '👤';
+    const playerIcon = player.participantType === 'AI' ? '' : '👤';
     const statusColor = player.eliminated ? 'text-gray-400' : 'text-green-400';
     
     playerDiv.innerHTML = `
@@ -287,7 +297,7 @@ function updateProgress(tournament: any) {
   }
 }
 
-function renderMatches(matches: any[]) {
+function renderMatches(matches: any[], tournamentId: string) {
   const matchesList = document.getElementById('matches-list');
   if (!matchesList) return;
 
@@ -318,7 +328,7 @@ function renderMatches(matches: any[]) {
         <div class="mb-6">
           <h3 class="text-lg font-semibold mb-3 text-purple-400">Round ${round}</h3>
           <div class="space-y-3">
-            ${matchesByRound[round].map((match: any) => renderMatchCard(match)).join('')}
+            ${matchesByRound[round].map((match: any) => renderMatchCard(match, tournamentId)).join('')}
           </div>
         </div>
       `;
@@ -327,10 +337,10 @@ function renderMatches(matches: any[]) {
   matchesList.innerHTML = matchesHtml;
   
   // Add event listeners for play buttons
-  setupMatchEventListeners();
+  setupMatchEventListeners(tournamentId);
 }
 
-function renderMatchCard(match: any): string {
+function renderMatchCard(match: any, tournamentId: string): string {
   const player1Name = match.player1?.displayName || 'TBD';
   const player2Name = match.player2?.displayName || 'TBD';
   
@@ -352,7 +362,7 @@ function renderMatchCard(match: any): string {
         actionButton = `
           <button class="play-match-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200" 
                   data-match-id="${match.id}" 
-                  data-tournament-id="${match.tournamentId}">
+                  data-tournament-id="${tournamentId}">
             Play Match
           </button>
         `;
@@ -390,7 +400,7 @@ function renderMatchCard(match: any): string {
   `;
 }
 
-function setupMatchEventListeners() {
+function setupMatchEventListeners(tournamentId: string) {
   const playButtons = document.querySelectorAll('.play-match-btn');
   
   playButtons.forEach(button => {
@@ -399,15 +409,15 @@ function setupMatchEventListeners() {
       const tournamentId = (e.target as HTMLElement).getAttribute('data-tournament-id');
       
       if (matchId && tournamentId) {
-        // Navigate to game service with tournament context
-        const gameUrl = `http://${window.location.hostname}:3003/tournament/${tournamentId}/match/${matchId}`;
-        window.location.href = gameUrl;
+        // Navigate to game service with tournament context via URL parameters
+        const gameUrl = `http://${window.location.hostname}:3003/game/?tournament=${tournamentId}&match=${matchId}`;
+        window.open(gameUrl, '_blank');
       }
     });
   });
 }
 
-function checkForLiveMatch(matches: any[]) {
+function checkForLiveMatch(matches: any[], tournamentId: string) {
   const liveMatchSection = document.getElementById('live-match-section');
   const liveMatchContent = document.getElementById('live-match-content');
   
@@ -439,7 +449,7 @@ function checkForLiveMatch(matches: any[]) {
     liveMatchSection.classList.remove('hidden');
     
     // Setup event listener for the live match button
-    setupMatchEventListeners();
+    setupMatchEventListeners(tournamentId);
   } else {
     liveMatchSection.classList.add('hidden');
   }
@@ -572,8 +582,26 @@ async function handleJoinTournament(tournamentId: string | undefined) {
       loadTournamentData(tournamentId);
     }, 1000);
   } catch (error) {
-    console.error('Error joining tournament:', error);
     showErrorMessage('Failed to join tournament. Please try again.');
+  }
+}
+
+async function handleStartTournament(tournamentId: string | undefined) {
+  if (!tournamentId) {
+    showErrorMessage('Tournament ID not found');
+    return;
+  }
+
+  try {
+    await tournamentApi.startTournament(tournamentId);
+    showSuccessMessage('Successfully started tournament!');
+    
+    // Reload tournament data to reflect changes
+    setTimeout(() => {
+      loadTournamentData(tournamentId);
+    }, 1000);
+  } catch (error) {
+    showErrorMessage('Failed to start tournament. Please try again.');
   }
 }
 

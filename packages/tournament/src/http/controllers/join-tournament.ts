@@ -7,20 +7,20 @@ const joinTournamentParamsSchema = z.object({
 });
 
 const joinTournamentBodySchema = z.object({
-  userId: z.string().min(1, 'User ID is required'), // TODO: Get from auth middleware
-  displayName: z.string().min(1, 'Display name is required').max(50, 'Display name too long'),
+  userId: z.string().min(1, 'User ID is required'),
+  displayName: z.string().min(1, 'Display name is required'),
 });
 
 export async function joinTournament(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const { id } = joinTournamentParamsSchema.parse(request.params);
+    const { id: tournamentId } = joinTournamentParamsSchema.parse(request.params);
     const { userId, displayName } = joinTournamentBodySchema.parse(request.body);
     
     const result = await joinTournamentUseCase({
-      tournamentId: id,
+      tournamentId,
       userId,
-      displayName,
-    });
+      displayName
+    }, request.log);
     
     return reply.status(200).send({
       success: true,
@@ -37,41 +37,27 @@ export async function joinTournament(request: FastifyRequest, reply: FastifyRepl
       });
     }
     
-    // Handle specific business logic errors
-    if (error instanceof Error) {
-      if (error.message.includes('Tournament not found')) {
-        return reply.status(404).send({
-          success: false,
-          error: 'Tournament not found'
-        });
-      }
-      
-      if (error.message.includes('Tournament is full')) {
-        return reply.status(409).send({
-          success: false,
-          error: 'Tournament is full'
-        });
-      }
-      
-      if (error.message.includes('Already joined')) {
-        return reply.status(409).send({
-          success: false,
-          error: 'Already joined this tournament'
-        });
-      }
-      
-      if (error.message.includes('Tournament already started')) {
-        return reply.status(409).send({
-          success: false,
-          error: 'Tournament has already started'
-        });
-      }
+    // Handle business logic errors with appropriate HTTP status
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    let statusCode = 500;
+    if (errorMessage.includes('not found')) {
+      statusCode = 404;
+    } else if (errorMessage.includes('already') || errorMessage.includes('full')) {
+      statusCode = 409; // Conflict
+    } else if (errorMessage.includes('started') || errorMessage.includes('completed')) {
+      statusCode = 400; // Bad request
     }
     
-    request.log.error('Error joining tournament:', error);
-    return reply.status(500).send({
+    request.log.error({
+      action: 'tournament_join_controller_error',
+      error: errorMessage,
+      statusCode
+    }, 'Error in join tournament controller');
+    
+    return reply.status(statusCode).send({
       success: false,
-      error: 'Internal server error'
+      error: errorMessage
     });
   }
 }

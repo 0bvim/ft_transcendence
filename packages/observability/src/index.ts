@@ -42,7 +42,9 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
 
     const flushQueuedLogs = () => {
       if (logstashStream && logstashStream.writable && logQueue.length > 0) {
-        console.log(`📤 Flushing ${logQueue.length} queued logs to Logstash`);
+        // Use structured logging instead of console.log for internal operations
+        const logger = pino({ name: serviceName });
+        logger.debug(`Flushing ${logQueue.length} queued logs to Logstash`);
         logQueue.forEach((logEntry) => {
           logstashStream.write(logEntry + "\n");
         });
@@ -60,16 +62,15 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
           logstashStream.setKeepAlive(true, 30000); // Keep alive for 30 seconds
 
           logstashStream.connect(logstashPort, logstashHost, () => {
-            console.log(
-              `✅ Connected to Logstash at ${logstashHost}:${logstashPort}`,
-            );
+            // Log connection success only at debug level to reduce noise
+            const logger = pino({ name: serviceName, level: 'info' });
+            logger.info(`Connected to Logstash at ${logstashHost}:${logstashPort}`);
             flushQueuedLogs();
           });
 
           logstashStream.on("error", (err: Error) => {
-            console.log(
-              `⚠️  Logstash connection error: ${err.message} (continuing with console logging)`,
-            );
+            const logger = pino({ name: serviceName });
+            logger.warn(`Logstash connection error: ${err.message} (continuing with console logging)`);
             logstashStream = null;
 
             // Retry connection after 5 seconds if under 3 attempts
@@ -82,7 +83,8 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
           });
 
           logstashStream.on("close", () => {
-            console.log(`🔌 Logstash connection closed`);
+            const logger = pino({ name: serviceName });
+            logger.debug(`Logstash connection closed`);
             logstashStream = null;
 
             // Retry connection after 10 seconds if under 3 attempts
@@ -94,9 +96,8 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
             }
           });
         } catch (error) {
-          console.log(
-            `⚠️  Could not connect to Logstash (continuing with console logging)`,
-          );
+          const logger = pino({ name: serviceName });
+          logger.warn(`Could not connect to Logstash (continuing with console logging)`);
           logstashStream = null;
         }
       };
@@ -105,7 +106,7 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
     };
 
     // Try to connect immediately, then retry if needed
-    setTimeout(connectToLogstash, 500); // 500ms initial delay to allow other services to start
+    setTimeout(connectToLogstash, 500);
 
     streams.push({
       stream: {
@@ -127,7 +128,9 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
               }
             }
           } catch (error) {
-            console.log(`⚠️  Error writing to Logstash:`, error);
+            // Only log Logstash errors at debug level to reduce noise
+            const logger = pino({ name: serviceName, level: 'debug' });
+            logger.debug(`Error writing to Logstash:`, error);
           }
         },
       },
@@ -233,52 +236,76 @@ const setupMetrics = (
 const setupRequestLogging = (
   fastify: FastifyInstance,
   serviceName: string,
+  metricsPath: string = "/metrics",
+  healthPath: string = "/health",
 ): void => {
-  console.log(
-    `🔧 Setting up request logging hooks for service: ${serviceName}`,
-  );
+  // Only log setup completion at info level
+  fastify.log.info(`Request logging configured for service: ${serviceName}`);
 
-  // Add request logging hook
+  // Add request logging hook - but filter out noisy endpoints
   fastify.addHook(
     "onRequest",
     async (request: FastifyRequest, reply: FastifyReply) => {
-      console.log(
-        `📥 onRequest hook triggered: ${request.method} ${request.url}`,
-      );
-      fastify.log.info(
-        {
-          method: request.method,
-          url: request.url,
-          userAgent: request.headers["user-agent"],
-          ip: request.ip,
-          service: serviceName,
-        },
-        `Incoming request: ${request.method} ${request.url}`,
-      );
+      const url = request.url;
+      
+      // Skip logging for monitoring endpoints to reduce noise
+      if (url === metricsPath || url === healthPath) {
+        return;
+      }
+
+      // Only log important requests (API calls, not static assets)
+      if (url.startsWith('/api/') || url.startsWith('/auth/') || url.startsWith('/tournament/')) {
+        fastify.log.info(
+          {
+            method: request.method,
+            url: request.url,
+            userAgent: request.headers["user-agent"],
+            ip: request.ip,
+            service: serviceName,
+          },
+          `API request: ${request.method} ${request.url}`,
+        );
+      }
     },
   );
 
   fastify.addHook(
     "onResponse",
     async (request: FastifyRequest, reply: FastifyReply) => {
-      console.log(
-        `📤 onResponse hook triggered: ${request.method} ${request.url} - ${reply.statusCode}`,
-      );
-      fastify.log.info(
-        {
-          method: request.method,
-          url: request.url,
-          statusCode: reply.statusCode,
-          responseTime: reply.elapsedTime,
-          service: serviceName,
-        },
-        `Request completed: ${request.method} ${request.url} - ${reply.statusCode} (${reply.elapsedTime}ms)`,
-      );
-    },
-  );
+      const url = request.url;
+      
+      // Skip logging for monitoring endpoints
+      if (url === metricsPath || url === healthPath) {
+        return;
+      }
 
-  console.log(
-    `✅ Request logging hooks registered for service: ${serviceName}`,
+      // Log all responses with status >= 400 (errors) for debugging
+      // Log info for important API endpoints with successful responses
+      if (reply.statusCode >= 400) {
+        fastify.log.warn(
+          {
+            method: request.method,
+            url: request.url,
+            statusCode: reply.statusCode,
+            responseTime: reply.elapsedTime,
+            service: serviceName,
+          },
+          `Error response: ${request.method} ${request.url} - ${reply.statusCode} (${reply.elapsedTime}ms)`,
+        );
+      } else if (url.startsWith('/api/') || url.startsWith('/auth/') || url.startsWith('/tournament/')) {
+        // Only log successful API calls at debug level to reduce noise
+        fastify.log.debug(
+          {
+            method: request.method,
+            url: request.url,
+            statusCode: reply.statusCode,
+            responseTime: reply.elapsedTime,
+            service: serviceName,
+          },
+          `API response: ${request.method} ${request.url} - ${reply.statusCode} (${reply.elapsedTime}ms)`,
+        );
+      }
+    },
   );
 };
 
@@ -341,8 +368,8 @@ export const setupObservability = (
   // Set up Fastify logger
   fastify.log = logger;
 
-  // Set up request logging
-  setupRequestLogging(fastify, serviceName);
+  // Set up request logging with filtering
+  setupRequestLogging(fastify, serviceName, metricsPath, healthPath);
 
   let metricsRegistry: promClient.Registry;
   if (enableMetrics) {

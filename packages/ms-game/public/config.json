@@ -3,5 +3,7 @@
   "player2": "",
   "player1IsAI": false,
   "player2IsAI": true,
+  "player1AIDifficulty": "MEDIUM",
+  "player2AIDifficulty": "MEDIUM",
   "aiUpdateInterval": 1000
 }
