@@ -8,11 +8,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3010,
+    port: 3000,
     host: true,
     proxy: {
       '/api/tournament': {
-        target: 'http://tournament:4243',
+        target: 'http://tournament:3003',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/tournament/, '')
       },

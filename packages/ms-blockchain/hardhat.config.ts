@@ -23,7 +23,7 @@ const config: HardhatUserConfig = {
       chainId: 1337,
     },
     localhost: {
-      url: "http://blockchain-node:8545",
+      url: "http://blockchain-node:3005",
       chainId: 1337,
     },
     fuji: {

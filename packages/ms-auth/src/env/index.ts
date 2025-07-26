@@ -25,7 +25,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   HOST: z.string().default("localhost"),
   FRONTEND_HOST: z.string().default("localhost"),
-  FRONTEND_PORT: z.coerce.number().default(3010),
+  FRONTEND_PORT: z.coerce.number().default(3000),
 
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string(),
@@ -56,7 +56,7 @@ export const env = {
   // Override with dynamic values if not provided
   GOOGLE_REDIRECT_URI: parsedEnv.GOOGLE_REDIRECT_URI || buildUrl('http', dynamicHost, 3001, '/auth/google/callback'),
   WEBAUTHN_RP_ID: parsedEnv.WEBAUTHN_RP_ID || dynamicHost,
-  WEBAUTHN_ORIGIN: parsedEnv.WEBAUTHN_ORIGIN || buildUrl('http', dynamicHost, 3010),
+  WEBAUTHN_ORIGIN: parsedEnv.WEBAUTHN_ORIGIN || buildUrl('http', dynamicHost, 3000),
 };
 
 // Log the configuration for debugging
