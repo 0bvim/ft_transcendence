@@ -29,7 +29,4 @@ scrape_configs:
     static_configs:
       - targets: ["tournament:3003"]
     metrics_path: "/metrics"
-  - job_name: "ms-blockchain-node"
-    static_configs:
-      - targets: ["blockchain-node:3005"]
-    metrics_path: "/metrics"
+

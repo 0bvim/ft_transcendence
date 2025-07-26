@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "ts-node src/server.ts",
     "build": "hardhat compile && tsc",
-    "build:contracts": "hardhat compile",
+    "build:contracts": "npx hardhat compile",
     "build:server": "npx tsc",
     "clean": "hardhat clean && rm -rf dist",
     "test": "hardhat test",
