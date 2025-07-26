@@ -27,7 +27,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/blockchain/, '')
       },
       '/api/game': {
-        target: 'http://game:3003',
+        target: 'http://game:3002',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/game/, '')
       }
