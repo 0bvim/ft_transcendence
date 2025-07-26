@@ -227,9 +227,9 @@ const sketch = (p: p5) => {
       } else if (p.key === "Escape" || p.key.toLowerCase() === "q") {
         // Return to tournament or home
         if (tournamentContext?.isTournamentMatch && tournamentMatchData) {
-          window.location.href = `http://localhost:3010/tournament/${tournamentMatchData.tournamentId}`;
+          window.location.href = `http://localhost:3000/tournament/${tournamentMatchData.tournamentId}`;
         } else {
-          window.location.href = 'http://localhost:3010/';
+          window.location.href = 'http://localhost:3000/';
         }
       }
     }
