@@ -188,7 +188,7 @@ services:
       elasticsearch:
         condition: service_healthy
     ports:
-      - "${LOGSTASH_TCP_PORT:-5001}:5001"
+      - "${LOGSTASH_HTTPS_PORT:-5001}:5001"
       - "${LOGSTASH_HTTP_PORT:-9600}:9600"
     environment:
       - LS_JAVA_OPTS=${LOGSTASH_JAVA_OPTS:--Xmx256m -Xms256m}
@@ -196,6 +196,7 @@ services:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./devops/logstash/config:/usr/share/logstash/config
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
       interval: 30s
