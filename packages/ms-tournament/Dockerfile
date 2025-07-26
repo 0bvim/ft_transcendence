@@ -8,13 +8,13 @@ RUN apt-get update && apt-get install -y make openssl && rm -rf /var/lib/apt/lis
 COPY ./observability ./observability
 RUN cd observability && npm install && npm run build && npm pack
 
-COPY ./tournament/prisma/schema.prisma ./prisma/schema.prisma
-COPY ./tournament/prisma/migrations ./prisma/migrations
-COPY ./tournament/src ./src
-COPY ./tournament/package.json ./package.json
-COPY ./tournament/tsconfig.json ./tsconfig.json
-COPY ./tournament/Makefile Makefile
-COPY ./tournament/.env ./.env
+COPY ./ms-tournament/prisma/schema.prisma ./prisma/schema.prisma
+COPY ./ms-tournament/prisma/migrations ./prisma/migrations
+COPY ./ms-tournament/src ./src
+COPY ./ms-tournament/package.json ./package.json
+COPY ./ms-tournament/tsconfig.json ./tsconfig.json
+COPY ./ms-tournament/Makefile Makefile
+COPY ./ms-tournament/.env ./.env
 
 RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
 

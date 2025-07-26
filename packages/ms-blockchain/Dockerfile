@@ -8,14 +8,14 @@ RUN apk add --no-cache make
 COPY ./observability ./observability
 RUN cd observability && npm install && npm run build && npm pack
 
-COPY ./blockchain/src ./src
-COPY ./blockchain/contracts ./contracts
-COPY ./blockchain/scripts ./scripts
-COPY ./blockchain/package.json ./package.json
-COPY ./blockchain/tsconfig.json ./tsconfig.json
-COPY ./blockchain/hardhat.config.ts ./hardhat.config.ts
-COPY ./blockchain/Makefile Makefile
-COPY ./blockchain/.env .env
+COPY ./ms-blockchain/src ./src
+COPY ./ms-blockchain/contracts ./contracts
+COPY ./ms-blockchain/scripts ./scripts
+COPY ./ms-blockchain/package.json ./package.json
+COPY ./ms-blockchain/tsconfig.json ./tsconfig.json
+COPY ./ms-blockchain/hardhat.config.ts ./hardhat.config.ts
+COPY ./ms-blockchain/Makefile Makefile
+COPY ./ms-blockchain/.env .env
 
 # Install all dependencies including Hardhat
 RUN npm install
