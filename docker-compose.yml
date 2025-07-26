@@ -63,7 +63,7 @@ services:
       - .env
       - ./packages/ms-game/.env
     ports:
-      - "${GAME_PORT:-3006}:3006"
+      - "${GAME_PORT:-3006}:3002"
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
