@@ -5,13 +5,13 @@ import { appRoutes } from "./http/routes";
 import { setupObservability } from "@ft-transcendence/observability";
 import { ZodError } from "zod";
 import { env } from "./env";
-import selfsigned from "selfsigned";
+import path from "path";
+import fs from "fs";
 
-const pems = selfsigned.generate([{ name: "commonName", value: "localhost" }], {
-  days: 365,
-  algorithm: "sha256",
-  keySize: 2048,
-});
+const pems = {
+  private: fs.readFileSync(path.join(__dirname, "../certs/key.pem")),
+  cert: fs.readFileSync(path.join(__dirname, "../certs/cert.pem")),
+};
 
 const app = fastify({
   https: {

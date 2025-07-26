@@ -1,8 +1,28 @@
 # Core application services (without monitoring UI: kibana, prometheus, grafana)
 DEV_SERVICES = ms-frontend ms-auth ms-game tournament blockchain-node blockchain logstash elasticsearch
 
-up:
-	@echo "Starting services in detached mode..."
+# Services paths
+MS-AUTH=packages/ms-auth
+# MS-BLOCKCHAIN=packages/ms-blockchain
+MS-FRONTEND=packages/ms-frontend
+MS-GAME=packages/ms-game
+# MS-OBSERVABILITY=packages/ms-observability
+# MS-TOURNAMENT=packages/ms-tournament
+
+# All Services
+# SERVICES_PATH=$(MS-AUTH) $(MS-BLOCKCHAIN) $(MS-FRONTEND) $(MS-GAME) $(MS-OBSERVABILITY) $(MS-TOURNAMENT)
+SERVICES_PATH=$(MS-AUTH) $(MS-FRONTEND) $(MS-GAME)
+
+# Default to Linux
+OS := Linux
+
+# Check for macOS (Darwin kernel)
+ifeq ($(shell uname -s), Darwin)
+    OS := macOS
+endif
+
+up: generate-certs
+	@echo "🚀 Starting services in detached mode..."
 	docker compose up -d --build
 
 dev:
@@ -67,4 +87,31 @@ help:
 	@echo "make clean       - Full cleanup (remove containers, volumes, images)"
 	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
-.PHONY: up dev down dev-clean restart logs clean metrics
+define create_certificates
+	for service in $(SERVICES_PATH); do \
+		mkdir -p $$service/certs; \
+		mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
+	done
+endef
+
+define install_mkcert
+	if command -v mkcert > /dev/null; then \
+		echo "✅ mkcert already installed"; \
+	else \
+		echo "⚙️ Installing mkcert..."; \
+		if [ "$(OS)" = "Linux" ]; then \
+			sudo apt-get install mkcert; \
+		elif [ "$(OS)" = "macOS" ]; then \
+			brew install mkcert; \
+		else \
+			echo "🅧 Could not detect package manager. Please install mkcert manually."; \
+		fi \
+	fi
+endef
+
+generate-certs:
+	@echo "⏲️ Generating SSL certificates..."
+	@$(call install_mkcert)
+	@$(call create_certificates)
+
+.PHONY: up dev down dev-clean restart logs clean metrics generate-certs

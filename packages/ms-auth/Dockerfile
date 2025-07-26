@@ -14,6 +14,7 @@ COPY ./ms-auth/package.json ./package.json
 COPY ./ms-auth/tsconfig.json ./tsconfig.json
 COPY ./ms-auth/Makefile Makefile
 COPY ./ms-auth/.env .env
+COPY ./ms-auth/certs ./certs
 
 RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
 
