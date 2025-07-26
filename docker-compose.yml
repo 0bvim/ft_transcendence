@@ -8,6 +8,9 @@ services:
       context: ./packages
       dockerfile: ./ms-frontend/Dockerfile
       target: development
+    env_file:
+      - .env
+      - ./packages/ms-frontend/.env
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     volumes:
@@ -31,6 +34,9 @@ services:
       target: development
     ports:
       - "3001:3001"
+    env_file:
+      - .env
+      - ./packages/ms-auth/.env
     environment:
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -53,7 +59,9 @@ services:
     build:
       context: ./packages
       dockerfile: ./ms-game/Dockerfile
-    env_file: ./packages/ms-game/.env
+    env_file:
+      - .env
+      - ./packages/ms-game/.env
     ports:
       - "${GAME_PORT:-3002}:3002"
     networks:
@@ -68,6 +76,9 @@ services:
       context: ./packages
       dockerfile: ./ms-tournament/Dockerfile
       target: development
+    env_file:
+      - .env
+      - ./packages/ms-tournament/.env
     ports:
       - "${TOURNAMENT_PORT:-3003}:3003"
     environment:
@@ -95,6 +106,9 @@ services:
       dockerfile: ./ms-blockchain/Dockerfile
       target: development
     command: npx hardhat node --hostname 0.0.0.0 --port 3005
+    env_file:
+      - .env
+      - ./packages/ms-blockchain/.env
     ports:
       - "${BLOCKCHAIN_NODE_PORT:-3005}:3005"
     environment:
@@ -114,6 +128,9 @@ services:
       context: ./packages
       dockerfile: ./ms-blockchain/Dockerfile
       target: development
+    env_file:
+      - .env
+      - ./packages/ms-blockchain/.env
     ports:
       - "${BLOCKCHAIN_PORT:-3004}:3004"
     environment:
