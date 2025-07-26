@@ -1,13 +1,14 @@
-import { verifyRegistrationResponse } from '@simplewebauthn/server';
-import { UsersRepository } from '../repositories/users-repository';
-import { WebAuthnCredentialsRepository } from '../repositories/webauthn-credentials-repository';
-import { UserNotFoundError } from './errors/user-not-found-error';
-import { InvalidCredentialsError } from './errors/invalid-credentials-error';
-import { env } from '../env';
-import { WebAuthnCredential } from '@prisma/client';
+import { verifyRegistrationResponse } from "@simplewebauthn/server";
+import { UsersRepository } from "../repositories/users-repository";
+import { WebAuthnCredentialsRepository } from "../repositories/webauthn-credentials-repository";
+import { UserNotFoundError } from "./errors/user-not-found-error";
+import { InvalidCredentialsError } from "./errors/invalid-credentials-error";
+import { env } from "../env";
+import { WebAuthnCredential } from "@prisma/client";
 
 interface VerifyWebAuthnRegistrationUseCaseRequest {
   userId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   registrationResponse: any;
   expectedChallenge: string;
   name?: string;
@@ -50,15 +51,18 @@ export class VerifyWebAuthnRegistrationUseCase {
       throw new InvalidCredentialsError();
     }
 
-    const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+    const { credentialID, credentialPublicKey, counter } =
+      verification.registrationInfo;
 
     // Convert credentialID to base64url string if it's not already
-    const credentialIdString = typeof credentialID === 'string' 
-      ? credentialID 
-      : Buffer.from(credentialID).toString('base64url');
+    const credentialIdString =
+      typeof credentialID === "string"
+        ? credentialID
+        : Buffer.from(credentialID).toString("base64url");
 
     // Convert public key to base64url string
-    const publicKeyString = Buffer.from(credentialPublicKey).toString('base64url');
+    const publicKeyString =
+      Buffer.from(credentialPublicKey).toString("base64url");
 
     // Store the credential
     const credential = await this.webAuthnCredentialsRepository.create({
@@ -67,8 +71,8 @@ export class VerifyWebAuthnRegistrationUseCase {
       publicKey: publicKeyString,
       counter,
       name: name || null,
-      transports: registrationResponse.response.transports 
-        ? JSON.stringify(registrationResponse.response.transports) 
+      transports: registrationResponse.response.transports
+        ? JSON.stringify(registrationResponse.response.transports)
         : null,
     });
 
@@ -77,4 +81,4 @@ export class VerifyWebAuthnRegistrationUseCase {
       verified: true,
     };
   }
-} 
+}

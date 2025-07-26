@@ -1,14 +1,15 @@
-import { generateAuthenticationOptions } from '@simplewebauthn/server';
-import { UsersRepository } from '../repositories/users-repository';
-import { WebAuthnCredentialsRepository } from '../repositories/webauthn-credentials-repository';
-import { UserNotFoundError } from './errors/user-not-found-error';
-import { env } from '../env';
+import { generateAuthenticationOptions } from "@simplewebauthn/server";
+import { UsersRepository } from "../repositories/users-repository";
+import { WebAuthnCredentialsRepository } from "../repositories/webauthn-credentials-repository";
+import { UserNotFoundError } from "./errors/user-not-found-error";
+import { env } from "../env";
 
 interface GenerateWebAuthnAuthenticationOptionsUseCaseRequest {
   userId: string;
 }
 
 interface GenerateWebAuthnAuthenticationOptionsUseCaseResponse {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options: any;
 }
 
@@ -29,15 +30,16 @@ export class GenerateWebAuthnAuthenticationOptionsUseCase {
     }
 
     // Get user's existing credentials
-    const userCredentials = await this.webAuthnCredentialsRepository.findByUserId(userId);
+    const userCredentials =
+      await this.webAuthnCredentialsRepository.findByUserId(userId);
 
     const options = await generateAuthenticationOptions({
       rpID: env.WEBAUTHN_RP_ID,
       timeout: 60000,
-      userVerification: 'preferred',
-      allowCredentials: userCredentials.map(cred => ({
+      userVerification: "preferred",
+      allowCredentials: userCredentials.map((cred) => ({
         id: cred.credentialID,
-        type: 'public-key' as const,
+        type: "public-key" as const,
         transports: cred.transports ? JSON.parse(cred.transports) : undefined,
       })),
     });
@@ -46,4 +48,4 @@ export class GenerateWebAuthnAuthenticationOptionsUseCase {
       options,
     };
   }
-} 
+}

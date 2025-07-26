@@ -4,7 +4,6 @@ WORKDIR /app
 
 RUN apk add --no-cache make
 
-# First, build the observability package
 COPY ./observability ./observability
 RUN cd observability && npm install && npm run build && npm pack
 
@@ -20,7 +19,6 @@ RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
 
 FROM build AS development
 
-# CMD ["tail", "-f", "/dev/null"]
 CMD ["make", "dev"]
 
 FROM build AS prod
