@@ -15,7 +15,7 @@ scrape_configs:
     metrics_path: "/metrics"
   - job_name: "game-service"
     static_configs:
-      - targets: ["game:3002"]
+      - targets: ["game:3006"]
     metrics_path: "/metrics"
   - job_name: "ms-auth"
     static_configs:
