@@ -1,5 +1,5 @@
 # Core application services (without monitoring UI: kibana, prometheus, grafana)
-DEV_SERVICES = ms-frontend ms-auth ms-game ms-tournament ms-blockchain-node ms-blockchain logstash elasticsearch
+DEV_SERVICES = ms-frontend ms-auth ms-game ms-tournament ms-blockchain-node ms-blockchain 
 
 # Services paths
 MS-AUTH=packages/ms-auth
