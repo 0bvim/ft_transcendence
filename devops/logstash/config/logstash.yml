@@ -1,5 +1,6 @@
 # Pipeline settings
 config.reload.automatic: true
 
-# HTTP API
-http.host: "0.0.0.0"
+# HTTP API settings
+api.http.host: "0.0.0.0"
+api.http.port: 9600

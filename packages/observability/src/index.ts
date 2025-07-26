@@ -30,83 +30,90 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
     level,
   });
 
-  // Add Logstash output for ELK stack (simplified)
+  // Add Logstash HTTP output for ELK stack (Docker internal communication)
   const logstashHost = process.env.LOGSTASH_HOST || "logstash";
   const logstashPort = parseInt(process.env.LOGSTASH_PORT || "5001", 10);
+  const logstashProtocol = process.env.LOGSTASH_PROTOCOL || "http";
 
   if (logstashHost && logstashPort) {
-    const net = require("net");
-    let logstashStream: any = null;
-    let connectionAttempted = false;
+    const https = require("https");
+    const http = require("http");
     let logQueue: string[] = [];
+    let isProcessingQueue = false;
 
-    const flushQueuedLogs = () => {
-      if (logstashStream && logstashStream.writable && logQueue.length > 0) {
-        // Use structured logging instead of console.log for internal operations
-        const logger = pino({ name: serviceName });
-        logger.debug(`Flushing ${logQueue.length} queued logs to Logstash`);
-        logQueue.forEach((logEntry) => {
-          logstashStream.write(logEntry + "\n");
+    const sendLogToLogstash = async (logEntry: any): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const postData = JSON.stringify(logEntry);
+        const client = logstashProtocol === 'https' ? https : http;
+        
+        const options = {
+          hostname: logstashHost,
+          port: logstashPort,
+          path: '/',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+          },
+          // For HTTPS, allow self-signed certificates in development
+          rejectUnauthorized: process.env.NODE_ENV === 'production',
+        };
+
+        const req = client.request(options, (res: any) => {
+          let data = '';
+          res.on('data', (chunk: any) => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              resolve();
+            } else {
+              reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+            }
+          });
         });
-        logQueue = [];
-      }
+
+        req.on('error', (error: any) => {
+          reject(error);
+        });
+
+        req.setTimeout(5000, () => {
+          req.destroy();
+          reject(new Error('Request timeout'));
+        });
+
+        req.write(postData);
+        req.end();
+      });
     };
 
-    const connectToLogstash = () => {
-      if (connectionAttempted) return;
-      connectionAttempted = true;
-
-      const attemptConnection = (retryCount = 0) => {
+    const processLogQueue = async () => {
+      if (isProcessingQueue || logQueue.length === 0) return;
+      
+      isProcessingQueue = true;
+      const logger = pino({ name: serviceName });
+      
+      while (logQueue.length > 0) {
+        const logEntry = logQueue.shift();
+        if (!logEntry) continue;
+        
         try {
-          logstashStream = new net.Socket();
-          logstashStream.setKeepAlive(true, 30000); // Keep alive for 30 seconds
-
-          logstashStream.connect(logstashPort, logstashHost, () => {
-            // Log connection success only at debug level to reduce noise
-            const logger = pino({ name: serviceName, level: 'info' });
-            logger.info(`Connected to Logstash at ${logstashHost}:${logstashPort}`);
-            flushQueuedLogs();
-          });
-
-          logstashStream.on("error", (err: Error) => {
-            const logger = pino({ name: serviceName });
-            logger.warn(`Logstash connection error: ${err.message} (continuing with console logging)`);
-            logstashStream = null;
-
-            // Retry connection after 5 seconds if under 3 attempts
-            if (retryCount < 3) {
-              setTimeout(() => {
-                connectionAttempted = false;
-                attemptConnection(retryCount + 1);
-              }, 5000);
-            }
-          });
-
-          logstashStream.on("close", () => {
-            const logger = pino({ name: serviceName });
-            logger.debug(`Logstash connection closed`);
-            logstashStream = null;
-
-            // Retry connection after 10 seconds if under 3 attempts
-            if (retryCount < 3) {
-              setTimeout(() => {
-                connectionAttempted = false;
-                attemptConnection(retryCount + 1);
-              }, 10000);
-            }
-          });
+          await sendLogToLogstash(JSON.parse(logEntry));
         } catch (error) {
-          const logger = pino({ name: serviceName });
-          logger.warn(`Could not connect to Logstash (continuing with console logging)`);
-          logstashStream = null;
+          logger.debug(`Failed to send log to Logstash: ${error}`);
+          // Re-queue the log entry for retry (but limit retries)
+          if (logQueue.length < 500) {
+            logQueue.unshift(logEntry);
+          }
+          break; // Stop processing on error to avoid flooding
         }
-      };
-
-      attemptConnection();
+      }
+      
+      isProcessingQueue = false;
     };
 
-    // Try to connect immediately, then retry if needed
-    setTimeout(connectToLogstash, 500);
+    // Process queue periodically
+    setInterval(processLogQueue, 1000);
 
     streams.push({
       stream: {
@@ -117,20 +124,16 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
             logEntry.service = logEntry.name || serviceName;
             const formattedLog = JSON.stringify(logEntry);
 
-            if (logstashStream && logstashStream.writable) {
-              logstashStream.write(formattedLog + "\n");
-            } else {
-              // Queue the log if Logstash is not connected yet
-              logQueue.push(formattedLog);
-              // Limit queue size to prevent memory issues
-              if (logQueue.length > 1000) {
-                logQueue.shift(); // Remove oldest log
-              }
+            // Queue the log for HTTPS processing
+            logQueue.push(formattedLog);
+            // Limit queue size to prevent memory issues
+            if (logQueue.length > 1000) {
+              logQueue.shift(); // Remove oldest log
             }
           } catch (error) {
             // Only log Logstash errors at debug level to reduce noise
             const logger = pino({ name: serviceName, level: 'debug' });
-            logger.debug(`Error writing to Logstash:`, error);
+            logger.debug(`Error formatting log for Logstash:`, error);
           }
         },
       },
@@ -144,7 +147,7 @@ const setupLogging = (serviceName: string, logLevel?: string): Logger => {
       level,
       timestamp: pino.stdTimeFunctions.isoTime,
       formatters: {
-        level: (label) => {
+        level: (label: any) => {
           return { level: label };
         },
       },
