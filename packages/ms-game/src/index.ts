@@ -139,7 +139,7 @@ async function registerTournamentRoutes() {
       const { matchId } = request.params;
       
       // Get match details from tournament service
-      const tournamentServiceUrl = process.env.TOURNAMENT_SERVICE_URL || 'http://tournament:4243';
+      const tournamentServiceUrl = process.env.TOURNAMENT_SERVICE_URL || 'http://tournament:3003';
       const response = await fetch(`${tournamentServiceUrl}/matches/${matchId}`);
       
       if (!response.ok) {
@@ -196,7 +196,7 @@ async function registerTournamentRoutes() {
       }, `Match result submission started for match ${matchResult.matchId}`);
       
       // Submit result to tournament service
-      const tournamentServiceUrl = process.env.TOURNAMENT_SERVICE_URL || 'http://tournament:4243';
+      const tournamentServiceUrl = process.env.TOURNAMENT_SERVICE_URL || 'http://tournament:3003';
       const response = await fetch(`${tournamentServiceUrl}/matches/${matchResult.matchId}/result`, {
         method: 'POST',
         headers: {

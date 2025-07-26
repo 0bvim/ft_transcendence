@@ -17,7 +17,7 @@ const AVALANCHE_RPC_URL =
 const TOURNAMENT_SCORING_CONTRACT_ADDRESS =
   process.env.TOURNAMENT_SCORING_CONTRACT_ADDRESS || "";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3010";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 // Initialize Fastify server
 const server = fastify({
@@ -49,7 +49,7 @@ async function startServer() {
   try {
     // Register CORS
     await server.register(cors, {
-      origin: [FRONTEND_URL, "http://localhost:3010"],
+      origin: [FRONTEND_URL, "http://localhost:3000"],
       credentials: true,
     });
 
