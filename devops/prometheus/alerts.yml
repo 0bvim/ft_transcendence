@@ -31,7 +31,7 @@ groups:
   - name: frontend_alerts
     rules:
       - alert: FrontendDown
-        expr: up{job="ms-frontend:3010"} == 0
+        expr: up{job="ms-frontend:3000"} == 0
         for: 1m
         labels:
           severity: critical
@@ -40,7 +40,7 @@ groups:
           description: "Frontend service has been down for more than 1 minute."
 
       - alert: FrontendHighResponseTime
-        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="frontend:3010"}[5m])) > 1000
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="frontend:3000"}[5m])) > 1000
         for: 2m
         labels:
           severity: warning

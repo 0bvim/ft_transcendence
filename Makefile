@@ -1,5 +1,5 @@
 # Core application services (without monitoring UI: kibana, prometheus, grafana)
-DEV_SERVICES = ms-frontend ms-auth ms-game tournament blockchain-node blockchain logstash elasticsearch
+DEV_SERVICES = ms-frontend ms-auth ms-game ms-tournament ms-blockchain-node ms-blockchain logstash elasticsearch
 
 # Services paths
 MS-AUTH=packages/ms-auth
@@ -47,14 +47,14 @@ restart:
 run:
 	@echo "Opening application services..."
 	@if command -v xdg-open > /dev/null; then \
-			xdg-open http://localhost:3010 & \
+			xdg-open http://localhost:3000 & \
 			xdg-open http://localhost:3003; \
 		elif command -v open > /dev/null; then \
-			open http://localhost:3010 & \
+			open http://localhost:3000 & \
 			open http://localhost:3003; \
 		else \
 			echo "Could not detect browser opener. Please manually open:"; \
-			echo "  Frontend: http://localhost:3010"; \
+			echo "  Frontend: http://localhost:3000"; \
 			echo "  Game: http://localhost:3003"; \
 		fi
 
