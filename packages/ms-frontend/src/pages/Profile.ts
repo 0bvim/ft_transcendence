@@ -13,7 +13,9 @@ function getAvatarUrl(avatarUrl: string | null | undefined): string {
   }
   
   const authServiceUrl = `https://${window.location.hostname}:3001`;
-  return `${authServiceUrl}${avatarUrl}`;
+  const timestamp = new Date().getTime();
+  const separator = avatarUrl.includes('?') ? '&' : '?';
+  return `${authServiceUrl}${avatarUrl}${separator}t=${timestamp}`;
 }
 
 export default function Profile(): HTMLElement {
@@ -309,7 +311,15 @@ async function loadProfileData(container: HTMLElement) {
 function updateProfileDisplay(container: HTMLElement, user: User) {
   // Update avatar
   const avatarImage = container.querySelector('#avatarImage') as HTMLImageElement;
-  avatarImage.src = getAvatarUrl(user.avatarUrl);
+  const avatarUrl = getAvatarUrl(user.avatarUrl);
+  
+  // Add error handler to fall back to default avatar if image fails to load
+  avatarImage.onerror = () => {
+    console.warn('Failed to load avatar image, falling back to default');
+    avatarImage.src = '/assets/wishes.png';
+  };
+  
+  avatarImage.src = avatarUrl;
 
   // Update display info
   const displayName = container.querySelector('#displayName') as HTMLElement;
@@ -443,9 +453,20 @@ function setupEventListeners(container: HTMLElement) {
       setLoading(container, true);
       const { user, avatarUrl } = await authApi.uploadAvatar(file);
       
-      // Update avatar display with correct URL
+      // Update avatar display with correct URL and force refresh
       const avatarImage = container.querySelector('#avatarImage') as HTMLImageElement;
-      avatarImage.src = getAvatarUrl(avatarUrl);
+      const newAvatarUrl = getAvatarUrl(user.avatarUrl);
+      
+      // Force image refresh by creating a new image element first
+      const tempImg = new Image();
+      tempImg.onload = () => {
+        avatarImage.src = newAvatarUrl;
+      };
+      tempImg.onerror = () => {
+        console.error('Failed to load new avatar image');
+        showError(container, 'Failed to load new avatar image. Please try refreshing the page.');
+      };
+      tempImg.src = newAvatarUrl;
       
       // Update localStorage with new user data
       localStorage.setItem('user', JSON.stringify(user));
@@ -533,7 +554,14 @@ function setupEventListeners(container: HTMLElement) {
       try {
         setLoading(container, true);
         const { user } = await authApi.removeAvatar();
-        updateProfileDisplay(container, user);
+        
+        // Force immediate update to default avatar
+        const avatarImage = container.querySelector('#avatarImage') as HTMLImageElement;
+        avatarImage.src = '/assets/wishes.png';
+        
+        // Update localStorage with new user data
+        localStorage.setItem('user', JSON.stringify(user));
+        
         showSuccess(container);
       } catch (error) {
         console.error('Failed to remove avatar:', error);
@@ -655,5 +683,3 @@ async function setupTOTP(container: HTMLElement, user: any) {
   
   modal.show();
 }
-
-// Old 2FA setup functions removed - now using TwoFactorSetupModal component
