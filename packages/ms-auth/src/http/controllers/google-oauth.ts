@@ -71,11 +71,6 @@ export async function googleOAuthCallback(
     const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
-    console.log("User info received:", {
-      email: userInfo.email,
-      id: userInfo.id,
-    });
-
     if (!userInfo.email || !userInfo.id) {
       console.error("Missing user information from Google:", userInfo);
       return reply
