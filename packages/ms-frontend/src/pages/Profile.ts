@@ -1,5 +1,6 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
 import { TwoFactorSetupModal } from '../components/TwoFactorSetup';
+import { TwoFactorManageModal } from '../components/TwoFactorManageModal';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
@@ -7,11 +8,11 @@ function getAvatarUrl(avatarUrl: string | null | undefined): string {
     return '/assets/wishes.png';
   }
   
-  if (avatarUrl.startsWith('http')) {
+  if (avatarUrl.startsWith('https')) {
     return avatarUrl;
   }
   
-  const authServiceUrl = `http://${window.location.hostname}:3001`;
+  const authServiceUrl = `https://${window.location.hostname}:3001`;
   return `${authServiceUrl}${avatarUrl}`;
 }
 
@@ -512,26 +513,12 @@ function setupEventListeners(container: HTMLElement) {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     
     if (user.twoFactorEnabled) {
-      // If 2FA is enabled, show management options
-      if (confirm('Do you want to disable Two-Factor Authentication? This will make your account less secure.')) {
-        try {
-          setLoading(container, true);
-          await authApi.disableTwoFactor(user.id);
-          
-          // Update user in localStorage
-          const updatedUser = { ...user, twoFactorEnabled: false };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          
-          // Update display
-          updateProfileDisplay(container, updatedUser);
-          showSuccess(container);
-        } catch (error) {
-          console.error('Failed to disable 2FA:', error);
-          showError(container, 'Failed to disable 2FA');
-        } finally {
-          setLoading(container, false);
-        }
-      }
+      // If 2FA is enabled, show management modal
+      const manageModal = new TwoFactorManageModal(user, container, (updatedUser) => {
+        console.log('✅ 2FA management completed, updating profile display');
+        updateProfileDisplay(container, updatedUser);
+      });
+      manageModal.show();
     } else {
       // If 2FA is disabled, directly setup TOTP
       if (confirm('Enable Two-Factor Authentication with an authenticator app? This will add an extra layer of security to your account.')) {
