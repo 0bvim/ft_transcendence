@@ -11,9 +11,7 @@ function getAvatarUrl(avatarUrl: string | null | undefined): string {
     return avatarUrl;
   }
   
-  // Use HTTPS instead of HTTP since the auth service uses SSL certificates
   const authServiceUrl = `https://${window.location.hostname}:3001`;
-  // Add cache busting parameter to prevent browser caching old avatars
   const timestamp = new Date().getTime();
   const separator = avatarUrl.includes('?') ? '&' : '?';
   return `${authServiceUrl}${avatarUrl}${separator}t=${timestamp}`;
@@ -698,5 +696,3 @@ async function setupTOTP(container: HTMLElement, user: any) {
   
   modal.show();
 }
-
-// Old 2FA setup functions removed - now using TwoFactorSetupModal component
