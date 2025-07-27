@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import path from "path";
+import fs from "fs";
 
 export default defineConfig({
   resolve: {
@@ -10,6 +11,10 @@ export default defineConfig({
   server: {
     port: 3010,
     host: true,
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, "certs/key.pem")),
+      cert: fs.readFileSync(path.resolve(__dirname, "certs/cert.pem"))
+    },
     proxy: {
       '/api/tournament': {
         target: 'http://tournament:4243',

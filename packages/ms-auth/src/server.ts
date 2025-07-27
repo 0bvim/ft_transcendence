@@ -5,8 +5,20 @@ import { appRoutes } from "./http/routes";
 import { setupObservability } from "@ft-transcendence/observability";
 import { ZodError } from "zod";
 import { env } from "./env";
+import path from "path";
+import fs from "fs";
 
-const app = fastify();
+const pems = {
+  private: fs.readFileSync(path.join(__dirname, "../certs/key.pem")),
+  cert: fs.readFileSync(path.join(__dirname, "../certs/cert.pem")),
+};
+
+const app = fastify({
+  https: {
+    key: pems.private,
+    cert: pems.cert,
+  },
+});
 
 //Setup Observability
 setupObservability(app, {
@@ -29,8 +41,8 @@ app.register(fastifyCors, {
 app.register(fastifyMultipart, {
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB instead of 5MB
-    files: 1
-  }
+    files: 1,
+  },
 });
 
 app.register(appRoutes);

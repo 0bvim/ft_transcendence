@@ -20,10 +20,10 @@ COPY ./ms-frontend/tailwind.config.js ./tailwind.config.js
 COPY ./ms-frontend/postcss.config.js ./postcss.config.js
 COPY ./ms-frontend/index.html ./index.html
 COPY ./ms-frontend/Makefile Makefile
+COPY ./ms-frontend/certs/ ./certs
 
 FROM build AS development
 
-# CMD ["tail", "-f", "/dev/null"]
 CMD ["make", "dev"]
 
 FROM build AS prod

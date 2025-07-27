@@ -27,7 +27,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:3010/auth/google/callback}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://localhost:3010/auth/google/callback}
       - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-localhost}
       - WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-ft_transcendence}
       - WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-http://localhost:3010}
@@ -94,7 +94,13 @@ services:
     networks:
       - ${NETWORK_NAME:-ft-net}
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8545 || exit 1"]
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:8545 || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10

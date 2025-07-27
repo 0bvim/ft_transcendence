@@ -5,7 +5,6 @@ import { PrismaUsersRepository } from "../../repositories/prisma/prisma-users-re
 import { UserAlreadyExistsError } from "../../use-cases/errors/user-already-exists-error";
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {
-  // NOTE: Define the expected request body schema using ZOD
   const registerBodySchema = z.object({
     username: z.string().min(3),
     email: z.string().email(),
@@ -13,15 +12,19 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
   });
 
   try {
-    console.log('Registration attempt received:', { 
-      body: request.body, 
-      headers: request.headers 
+    console.log("Registration attempt received:", {
+      body: request.body,
+      headers: request.headers,
     });
 
-    // NOTE: Parse and validate the request body against the schema
-    const { username, email, password } = registerBodySchema.parse(request.body);
+    const { username, email, password } = registerBodySchema.parse(
+      request.body,
+    );
 
-    console.log('Registration request parsed successfully:', { username, email });
+    console.log("Registration request parsed successfully:", {
+      username,
+      email,
+    });
 
     const usersRepository = new PrismaUsersRepository();
     const registerUseCase = new RegisterUseCase(usersRepository);
@@ -32,10 +35,10 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
       password,
     });
 
-    console.log('User registered successfully:', { username, email });
+    console.log("User registered successfully:", { username, email });
   } catch (err) {
-    console.error('Registration error:', err);
-    
+    console.error("Registration error:", err);
+
     if (err instanceof UserAlreadyExistsError) {
       return reply
         .status(409)
@@ -43,13 +46,13 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     }
 
     if (err instanceof z.ZodError) {
-      console.error('Validation error:', err.format());
+      console.error("Validation error:", err.format());
       return reply
         .status(400)
         .send({ error: "Invalid input data", details: err.format() });
     }
 
-    throw err; // Re-throw the error if it's not a UserAlreadyExistsError
+    throw err;
   }
 
   return reply.status(201).send();

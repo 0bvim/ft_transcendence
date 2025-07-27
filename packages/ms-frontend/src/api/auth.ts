@@ -4,7 +4,7 @@ import axios from "axios";
 const getApiBaseUrl = () => {
   const hostname = window.location.hostname;
   const port = 3001; // Auth service port
-  return `http://${hostname}:${port}`;
+  return `https://${hostname}:${port}`;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -17,18 +17,20 @@ const api = axios.create({
 });
 
 // Request interceptor to add auth token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+api.interceptors.request.use(
+  (config: { headers: { Authorization: string } }) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+);
 
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  (response: any) => response,
+  async (error: { config: any; response: { status: number } }) => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -136,18 +138,22 @@ export const authApi = {
     return response.data;
   },
 
-  updateProfile: async (data: UpdateProfileRequest): Promise<{ user: User }> => {
+  updateProfile: async (
+    data: UpdateProfileRequest,
+  ): Promise<{ user: User }> => {
     const response = await api.put("/profile", data);
     return response.data;
   },
 
-  uploadAvatar: async (file: File): Promise<{ user: User; avatarUrl: string }> => {
+  uploadAvatar: async (
+    file: File,
+  ): Promise<{ user: User; avatarUrl: string }> => {
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append("avatar", file);
 
     const response = await api.post("/profile/avatar", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data;
@@ -203,10 +209,11 @@ export const authApi = {
     return response.data;
   },
 
-  generateWebAuthnAuthenticationOptions: async (data: {
-    userId: string;
-  }) => {
-    const response = await api.post("/2fa/webauthn/authentication-options", data);
+  generateWebAuthnAuthenticationOptions: async (data: { userId: string }) => {
+    const response = await api.post(
+      "/2fa/webauthn/authentication-options",
+      data,
+    );
     return response.data;
   },
 
@@ -214,13 +221,18 @@ export const authApi = {
     sessionId: string;
     authenticationResponse: any;
   }) => {
-    const response = await api.post("/2fa/webauthn/verify-authentication", data);
+    const response = await api.post(
+      "/2fa/webauthn/verify-authentication",
+      data,
+    );
     return response.data;
   },
 
   // 2FA Authentication APIs
-  enableTwoFactor: async (userId: string): Promise<{ 
-    setup: boolean; 
+  enableTwoFactor: async (
+    userId: string,
+  ): Promise<{
+    setup: boolean;
     backupCodes: string[];
     totpSecret: string;
     qrCodeUrl: string;
@@ -229,30 +241,33 @@ export const authApi = {
     return response.data;
   },
 
-  completeTwoFactorSetup: async (userId: string, code: string): Promise<{
+  completeTwoFactorSetup: async (
+    userId: string,
+    code: string,
+  ): Promise<{
     enabled: boolean;
     user: User;
     message: string;
   }> => {
-    console.log('🔍 Frontend API call details:', {
-      url: '/2fa/complete-setup',
-      method: 'POST',
+    console.log("🔍 Frontend API call details:", {
+      url: "/2fa/complete-setup",
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')?.substring(0, 20)}...`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("accessToken")?.substring(0, 20)}...`,
       },
       body: { userId, code },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     const response = await api.post("/2fa/complete-setup", { userId, code });
-    
-    console.log('🔍 Frontend API response:', {
+
+    console.log("🔍 Frontend API response:", {
       status: response.status,
       data: response.data,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     return response.data;
   },
 
@@ -263,20 +278,21 @@ export const authApi = {
 
   verify2FA: async (data: {
     userId: string;
-    method: 'webauthn' | 'backup_code' | 'totp' | 'sms' | 'email';
+    method: "webauthn" | "backup_code" | "totp" | "sms" | "email";
     sessionId?: string;
     authenticationResponse?: any;
     backupCode?: string;
     totpCode?: string;
-    smsCode?: string;
-    emailCode?: string;
   }): Promise<AuthResponse> => {
     const response = await api.post("/verify-2fa", data);
     return response.data;
   },
 
-  verifyTotpCode: async (userId: string, code: string): Promise<{ 
-    verified: boolean; 
+  verifyTotpCode: async (
+    userId: string,
+    code: string,
+  ): Promise<{
+    verified: boolean;
     user: User;
   }> => {
     const response = await api.post("/2fa/verify-totp", { userId, code });

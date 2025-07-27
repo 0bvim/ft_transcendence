@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "fastify": "^5.4.0",
+    "selfsigned": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/selfsigned": "^2.0.4"
+  }
+}

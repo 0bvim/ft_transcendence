@@ -1,6 +1,7 @@
 export default function GoogleCallback(): HTMLElement {
-  const container = document.createElement('div');
-  container.className = 'min-h-screen flex items-center justify-center bg-gray-50';
+  const container = document.createElement("div");
+  container.className =
+    "min-h-screen flex items-center justify-center bg-gray-50";
 
   container.innerHTML = `
     <div class="max-w-md w-full space-y-8">
@@ -15,7 +16,7 @@ export default function GoogleCallback(): HTMLElement {
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
         </div>
       </div>
-      
+
       <div id="errorMessage" class="hidden text-red-600 text-sm text-center"></div>
     </div>
   `;
@@ -26,39 +27,42 @@ export default function GoogleCallback(): HTMLElement {
   async function processGoogleCallback() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const error = urlParams.get('error');
+      const code = urlParams.get("code");
+      const error = urlParams.get("error");
 
       if (error) {
         showError(`Google authentication failed: ${error}`);
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = "/login";
         }, 3000);
         return;
       }
 
       if (!code) {
-        showError('No authorization code received from Google');
+        showError("No authorization code received from Google");
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = "/login";
         }, 3000);
         return;
       }
 
       // Make request to our backend to complete the OAuth flow
       const hostname = window.location.hostname;
-      const authServiceUrl = `http://${hostname}:3001`;
-      const response = await fetch(`${authServiceUrl}/auth/google/callback?` + urlParams.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+      const authServiceUrl = `https://${hostname}:3001`;
+      const response = await fetch(
+        `${authServiceUrl}/auth/google/callback?` + urlParams.toString(),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        throw new Error(data.error || "Authentication failed");
       }
 
       if (data.requiresTwoFactor) {
@@ -68,27 +72,29 @@ export default function GoogleCallback(): HTMLElement {
         window.location.href = "/verify-2fa";
       } else {
         // Store tokens and user data
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
 
         // Redirect to dashboard
-        window.location.href = '/dashboard';
+        window.location.href = "/dashboard";
       }
     } catch (error: any) {
-      console.error('Google callback error:', error);
-      showError(error.message || 'Authentication failed');
+      console.error("Google callback error:", error);
+      showError(error.message || "Authentication failed");
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = "/login";
       }, 3000);
     }
   }
 
   function showError(message: string) {
-    const errorElement = container.querySelector('#errorMessage') as HTMLDivElement;
+    const errorElement = container.querySelector(
+      "#errorMessage",
+    ) as HTMLDivElement;
     errorElement.textContent = message;
-    errorElement.classList.remove('hidden');
+    errorElement.classList.remove("hidden");
   }
 
   return container;
-} 
+}

@@ -18,7 +18,10 @@ import { UserNotFoundError } from "../../use-cases/errors/user-not-found-error";
 import { InvalidCredentialsError } from "../../use-cases/errors/invalid-credentials-error";
 import { sessionStore } from "../../lib/session-store";
 
-export async function registerWebAuthnCredential(request: FastifyRequest, reply: FastifyReply) {
+export async function registerWebAuthnCredential(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const registerCredentialBodySchema = z.object({
     userId: z.string(),
     credentialId: z.string(),
@@ -29,15 +32,17 @@ export async function registerWebAuthnCredential(request: FastifyRequest, reply:
   });
 
   try {
-    const { userId, credentialId, publicKey, counter, name, transports } = 
+    const { userId, credentialId, publicKey, counter, name, transports } =
       registerCredentialBodySchema.parse(request.body);
 
     const usersRepository = new PrismaUsersRepository();
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
-    const registerWebAuthnCredentialUseCase = new RegisterWebAuthnCredentialUseCase(
-      usersRepository,
-      webAuthnCredentialsRepository,
-    );
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
+    const registerWebAuthnCredentialUseCase =
+      new RegisterWebAuthnCredentialUseCase(
+        usersRepository,
+        webAuthnCredentialsRepository,
+      );
 
     const { credential } = await registerWebAuthnCredentialUseCase.execute({
       userId,
@@ -53,7 +58,9 @@ export async function registerWebAuthnCredential(request: FastifyRequest, reply:
         id: credential.id,
         credentialID: credential.credentialID,
         name: credential.name,
-        transports: credential.transports ? JSON.parse(credential.transports) : null,
+        transports: credential.transports
+          ? JSON.parse(credential.transports)
+          : null,
         createdAt: credential.createdAt,
       },
     });
@@ -61,30 +68,39 @@ export async function registerWebAuthnCredential(request: FastifyRequest, reply:
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
-    console.error('Register WebAuthn credential error:', err);
-    return reply.status(500).send({ error: "Failed to register WebAuthn credential" });
+
+    console.error("Register WebAuthn credential error:", err);
+    return reply
+      .status(500)
+      .send({ error: "Failed to register WebAuthn credential" });
   }
 }
 
-export async function verifyWebAuthnCredential(request: FastifyRequest, reply: FastifyReply) {
+export async function verifyWebAuthnCredential(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const verifyCredentialBodySchema = z.object({
     credentialId: z.string(),
     counter: z.number(),
   });
 
   try {
-    const { credentialId, counter } = verifyCredentialBodySchema.parse(request.body);
+    const { credentialId, counter } = verifyCredentialBodySchema.parse(
+      request.body,
+    );
 
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
     const verifyWebAuthnCredentialUseCase = new VerifyWebAuthnCredentialUseCase(
       webAuthnCredentialsRepository,
     );
 
-    const { verified, credential } = await verifyWebAuthnCredentialUseCase.execute({
-      credentialId,
-      counter,
-    });
+    const { verified, credential } =
+      await verifyWebAuthnCredentialUseCase.execute({
+        credentialId,
+        counter,
+      });
 
     return reply.status(200).send({
       verified,
@@ -98,13 +114,18 @@ export async function verifyWebAuthnCredential(request: FastifyRequest, reply: F
     if (err instanceof InvalidCredentialsError) {
       return reply.status(401).send({ error: "Invalid WebAuthn credential" });
     }
-    
-    console.error('Verify WebAuthn credential error:', err);
-    return reply.status(500).send({ error: "Failed to verify WebAuthn credential" });
+
+    console.error("Verify WebAuthn credential error:", err);
+    return reply
+      .status(500)
+      .send({ error: "Failed to verify WebAuthn credential" });
   }
 }
 
-export async function enableTwoFactor(request: FastifyRequest, reply: FastifyReply) {
+export async function enableTwoFactor(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const enableTwoFactorBodySchema = z.object({
     userId: z.string(),
   });
@@ -128,13 +149,16 @@ export async function enableTwoFactor(request: FastifyRequest, reply: FastifyRep
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
-    console.error('Enable 2FA error:', err);
+
+    console.error("Enable 2FA error:", err);
     return reply.status(500).send({ error: "Failed to enable 2FA" });
   }
 }
 
-export async function disableTwoFactor(request: FastifyRequest, reply: FastifyReply) {
+export async function disableTwoFactor(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const disableTwoFactorBodySchema = z.object({
     userId: z.string(),
   });
@@ -143,7 +167,8 @@ export async function disableTwoFactor(request: FastifyRequest, reply: FastifyRe
     const { userId } = disableTwoFactorBodySchema.parse(request.body);
 
     const usersRepository = new PrismaUsersRepository();
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
     const backupCodesRepository = new PrismaBackupCodesRepository();
     const disableTwoFactorUseCase = new DisableTwoFactorUseCase(
       usersRepository,
@@ -162,13 +187,16 @@ export async function disableTwoFactor(request: FastifyRequest, reply: FastifyRe
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
-    console.error('Disable 2FA error:', err);
+
+    console.error("Disable 2FA error:", err);
     return reply.status(500).send({ error: "Failed to disable 2FA" });
   }
 }
 
-export async function generateBackupCodes(request: FastifyRequest, reply: FastifyReply) {
+export async function generateBackupCodes(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const generateBackupCodesBodySchema = z.object({
     userId: z.string(),
   });
@@ -194,13 +222,16 @@ export async function generateBackupCodes(request: FastifyRequest, reply: Fastif
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
-    console.error('Generate backup codes error:', err);
+
+    console.error("Generate backup codes error:", err);
     return reply.status(500).send({ error: "Failed to generate backup codes" });
   }
 }
 
-export async function verifyBackupCode(request: FastifyRequest, reply: FastifyReply) {
+export async function verifyBackupCode(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const verifyBackupCodeBodySchema = z.object({
     code: z.string(),
   });
@@ -227,31 +258,38 @@ export async function verifyBackupCode(request: FastifyRequest, reply: FastifyRe
     });
   } catch (err) {
     if (err instanceof InvalidCredentialsError) {
-      return reply.status(401).send({ error: "Invalid or already used backup code" });
+      return reply
+        .status(401)
+        .send({ error: "Invalid or already used backup code" });
     }
-    
-    console.error('Verify backup code error:', err);
+
+    console.error("Verify backup code error:", err);
     return reply.status(500).send({ error: "Failed to verify backup code" });
   }
 }
 
-// New WebAuthn endpoints with proper challenge handling
-
-export async function generateWebAuthnRegistrationOptions(request: FastifyRequest, reply: FastifyReply) {
+export async function generateWebAuthnRegistrationOptions(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const generateOptionsBodySchema = z.object({
     userId: z.string(),
     userDisplayName: z.string().optional(),
   });
 
   try {
-    const { userId, userDisplayName } = generateOptionsBodySchema.parse(request.body);
+    const { userId, userDisplayName } = generateOptionsBodySchema.parse(
+      request.body,
+    );
 
     const usersRepository = new PrismaUsersRepository();
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
-    const generateOptionsUseCase = new GenerateWebAuthnRegistrationOptionsUseCase(
-      usersRepository,
-      webAuthnCredentialsRepository,
-    );
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
+    const generateOptionsUseCase =
+      new GenerateWebAuthnRegistrationOptionsUseCase(
+        usersRepository,
+        webAuthnCredentialsRepository,
+      );
 
     const { options } = await generateOptionsUseCase.execute({
       userId,
@@ -263,7 +301,7 @@ export async function generateWebAuthnRegistrationOptions(request: FastifyReques
     sessionStore.set(sessionId, {
       challenge: options.challenge,
       userId,
-      type: 'registration',
+      type: "registration",
     });
 
     return reply.status(200).send({
@@ -274,13 +312,18 @@ export async function generateWebAuthnRegistrationOptions(request: FastifyReques
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
-    console.error('Generate WebAuthn registration options error:', err);
-    return reply.status(500).send({ error: "Failed to generate registration options" });
+
+    console.error("Generate WebAuthn registration options error:", err);
+    return reply
+      .status(500)
+      .send({ error: "Failed to generate registration options" });
   }
 }
 
-export async function verifyWebAuthnRegistration(request: FastifyRequest, reply: FastifyReply) {
+export async function verifyWebAuthnRegistration(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const verifyRegistrationBodySchema = z.object({
     sessionId: z.string(),
     registrationResponse: z.any(),
@@ -288,16 +331,18 @@ export async function verifyWebAuthnRegistration(request: FastifyRequest, reply:
   });
 
   try {
-    const { sessionId, registrationResponse, name } = verifyRegistrationBodySchema.parse(request.body);
+    const { sessionId, registrationResponse, name } =
+      verifyRegistrationBodySchema.parse(request.body);
 
     // Get the session data
     const sessionData = sessionStore.get(sessionId);
-    if (!sessionData || sessionData.type !== 'registration') {
+    if (!sessionData || sessionData.type !== "registration") {
       return reply.status(400).send({ error: "Invalid or expired session" });
     }
 
     const usersRepository = new PrismaUsersRepository();
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
     const verifyRegistrationUseCase = new VerifyWebAuthnRegistrationUseCase(
       usersRepository,
       webAuthnCredentialsRepository,
@@ -319,7 +364,9 @@ export async function verifyWebAuthnRegistration(request: FastifyRequest, reply:
         id: credential.id,
         credentialID: credential.credentialID,
         name: credential.name,
-        transports: credential.transports ? JSON.parse(credential.transports) : null,
+        transports: credential.transports
+          ? JSON.parse(credential.transports)
+          : null,
         createdAt: credential.createdAt,
       },
     });
@@ -327,13 +374,18 @@ export async function verifyWebAuthnRegistration(request: FastifyRequest, reply:
     if (err instanceof InvalidCredentialsError) {
       return reply.status(401).send({ error: "Invalid WebAuthn registration" });
     }
-    
-    console.error('Verify WebAuthn registration error:', err);
-    return reply.status(500).send({ error: "Failed to verify WebAuthn registration" });
+
+    console.error("Verify WebAuthn registration error:", err);
+    return reply
+      .status(500)
+      .send({ error: "Failed to verify WebAuthn registration" });
   }
 }
 
-export async function generateWebAuthnAuthenticationOptions(request: FastifyRequest, reply: FastifyReply) {
+export async function generateWebAuthnAuthenticationOptions(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const generateOptionsBodySchema = z.object({
     userId: z.string(),
   });
@@ -342,11 +394,13 @@ export async function generateWebAuthnAuthenticationOptions(request: FastifyRequ
     const { userId } = generateOptionsBodySchema.parse(request.body);
 
     const usersRepository = new PrismaUsersRepository();
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
-    const generateOptionsUseCase = new GenerateWebAuthnAuthenticationOptionsUseCase(
-      usersRepository,
-      webAuthnCredentialsRepository,
-    );
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
+    const generateOptionsUseCase =
+      new GenerateWebAuthnAuthenticationOptionsUseCase(
+        usersRepository,
+        webAuthnCredentialsRepository,
+      );
 
     const { options } = await generateOptionsUseCase.execute({
       userId,
@@ -357,7 +411,7 @@ export async function generateWebAuthnAuthenticationOptions(request: FastifyRequ
     sessionStore.set(sessionId, {
       challenge: options.challenge,
       userId,
-      type: 'authentication',
+      type: "authentication",
     });
 
     return reply.status(200).send({
@@ -368,28 +422,35 @@ export async function generateWebAuthnAuthenticationOptions(request: FastifyRequ
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
-    console.error('Generate WebAuthn authentication options error:', err);
-    return reply.status(500).send({ error: "Failed to generate authentication options" });
+
+    console.error("Generate WebAuthn authentication options error:", err);
+    return reply
+      .status(500)
+      .send({ error: "Failed to generate authentication options" });
   }
 }
 
-export async function verifyWebAuthnAuthentication(request: FastifyRequest, reply: FastifyReply) {
+export async function verifyWebAuthnAuthentication(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const verifyAuthenticationBodySchema = z.object({
     sessionId: z.string(),
     authenticationResponse: z.any(),
   });
 
   try {
-    const { sessionId, authenticationResponse } = verifyAuthenticationBodySchema.parse(request.body);
+    const { sessionId, authenticationResponse } =
+      verifyAuthenticationBodySchema.parse(request.body);
 
     // Get the session data
     const sessionData = sessionStore.get(sessionId);
-    if (!sessionData || sessionData.type !== 'authentication') {
+    if (!sessionData || sessionData.type !== "authentication") {
       return reply.status(400).send({ error: "Invalid or expired session" });
     }
 
-    const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
+    const webAuthnCredentialsRepository =
+      new PrismaWebAuthnCredentialsRepository();
     const verifyAuthenticationUseCase = new VerifyWebAuthnAuthenticationUseCase(
       webAuthnCredentialsRepository,
     );
@@ -413,10 +474,14 @@ export async function verifyWebAuthnAuthentication(request: FastifyRequest, repl
     });
   } catch (err) {
     if (err instanceof InvalidCredentialsError) {
-      return reply.status(401).send({ error: "Invalid WebAuthn authentication" });
+      return reply
+        .status(401)
+        .send({ error: "Invalid WebAuthn authentication" });
     }
-    
-    console.error('Verify WebAuthn authentication error:', err);
-    return reply.status(500).send({ error: "Failed to verify WebAuthn authentication" });
+
+    console.error("Verify WebAuthn authentication error:", err);
+    return reply
+      .status(500)
+      .send({ error: "Failed to verify WebAuthn authentication" });
   }
-} 
+}

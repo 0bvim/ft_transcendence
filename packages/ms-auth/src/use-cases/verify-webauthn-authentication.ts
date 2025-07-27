@@ -1,10 +1,11 @@
-import { verifyAuthenticationResponse } from '@simplewebauthn/server';
-import { WebAuthnCredentialsRepository } from '../repositories/webauthn-credentials-repository';
-import { InvalidCredentialsError } from './errors/invalid-credentials-error';
-import { env } from '../env';
-import { WebAuthnCredential } from '@prisma/client';
+import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import { WebAuthnCredentialsRepository } from "../repositories/webauthn-credentials-repository";
+import { InvalidCredentialsError } from "./errors/invalid-credentials-error";
+import { env } from "../env";
+import { WebAuthnCredential } from "@prisma/client";
 
 interface VerifyWebAuthnAuthenticationUseCaseRequest {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   authenticationResponse: any;
   expectedChallenge: string;
   userId?: string;
@@ -29,7 +30,8 @@ export class VerifyWebAuthnAuthenticationUseCase {
     const credentialID = authenticationResponse.id;
 
     // Find the credential
-    const credential = await this.webAuthnCredentialsRepository.findByCredentialId(credentialID);
+    const credential =
+      await this.webAuthnCredentialsRepository.findByCredentialId(credentialID);
 
     if (!credential) {
       throw new InvalidCredentialsError();
@@ -41,7 +43,7 @@ export class VerifyWebAuthnAuthenticationUseCase {
     }
 
     // Convert stored public key back to Uint8Array
-    const publicKey = Buffer.from(credential.publicKey, 'base64url');
+    const publicKey = Buffer.from(credential.publicKey, "base64url");
 
     // Verify the authentication response
     const verification = await verifyAuthenticationResponse({
@@ -53,7 +55,9 @@ export class VerifyWebAuthnAuthenticationUseCase {
         credentialID: credential.credentialID,
         credentialPublicKey: publicKey,
         counter: credential.counter,
-        transports: credential.transports ? JSON.parse(credential.transports) : undefined,
+        transports: credential.transports
+          ? JSON.parse(credential.transports)
+          : undefined,
       },
       requireUserVerification: false,
     });
@@ -63,10 +67,11 @@ export class VerifyWebAuthnAuthenticationUseCase {
     }
 
     // Update the credential counter and last used time
-    const updatedCredential = await this.webAuthnCredentialsRepository.updateCounter(
-      credential.id,
-      verification.authenticationInfo.newCounter,
-    );
+    const updatedCredential =
+      await this.webAuthnCredentialsRepository.updateCounter(
+        credential.id,
+        verification.authenticationInfo.newCounter,
+      );
 
     await this.webAuthnCredentialsRepository.updateLastUsed(credential.id);
 
@@ -75,4 +80,4 @@ export class VerifyWebAuthnAuthenticationUseCase {
       verified: true,
     };
   }
-} 
+}

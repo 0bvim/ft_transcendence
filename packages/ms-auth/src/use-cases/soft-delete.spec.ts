@@ -16,7 +16,10 @@ describe("Soft Delete Use Case", () => {
   beforeEach(async () => {
     usersRepository = new InMemoryUsersRepository();
     refreshTokensRepository = new InMemoryRefreshTokensRepository();
-    softDeleteUseCase = new SoftDeleteUseCase(usersRepository, refreshTokensRepository);
+    softDeleteUseCase = new SoftDeleteUseCase(
+      usersRepository,
+      refreshTokensRepository,
+    );
 
     // create a user for testing
     await usersRepository.create({
@@ -37,7 +40,7 @@ describe("Soft Delete Use Case", () => {
     expect(result.user.id).toEqual(user.id);
     expect(result.user.deletedAt).toBeInstanceOf(Date);
     expect(result.user.deletedAt).not.toBeNull();
-    
+
     // Verify user is soft deleted in repository
     const deletedUser = await usersRepository.findById(user.id);
     expect(deletedUser?.deletedAt).toBeInstanceOf(Date);
@@ -47,10 +50,9 @@ describe("Soft Delete Use Case", () => {
     const users = usersRepository.items;
     const user = users[0];
 
-    // Create some refresh tokens for the user
     const token1 = createHash("sha256").update("token1").digest("hex");
     const token2 = createHash("sha256").update("token2").digest("hex");
-    
+
     await refreshTokensRepository.create({
       userId: user.id,
       hashedToken: token1,
@@ -65,7 +67,7 @@ describe("Soft Delete Use Case", () => {
 
     // Verify tokens are not revoked initially
     const initialTokens = refreshTokensRepository.items.filter(
-      (token) => token.userId === user.id && !token.revoked
+      (token) => token.userId === user.id && !token.revoked,
     );
     expect(initialTokens).toHaveLength(2);
 
@@ -76,7 +78,7 @@ describe("Soft Delete Use Case", () => {
 
     // Verify all tokens are revoked
     const revokedTokens = refreshTokensRepository.items.filter(
-      (token) => token.userId === user.id && token.revoked
+      (token) => token.userId === user.id && token.revoked,
     );
     expect(revokedTokens).toHaveLength(2);
   });
@@ -105,4 +107,4 @@ describe("Soft Delete Use Case", () => {
       }),
     ).rejects.toBeInstanceOf(UserAlreadyDeletedError);
   });
-}); 
+});

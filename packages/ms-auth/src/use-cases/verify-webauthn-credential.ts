@@ -21,24 +21,22 @@ export class VerifyWebAuthnCredentialUseCase {
     credentialId,
     counter,
   }: VerifyWebAuthnCredentialUseCaseRequest): Promise<VerifyWebAuthnCredentialUseCaseResponse> {
-    // Find the credential
-    const credential = await this.webAuthnCredentialsRepository.findByCredentialId(credentialId);
+    const credential =
+      await this.webAuthnCredentialsRepository.findByCredentialId(credentialId);
 
     if (!credential) {
       throw new InvalidCredentialsError();
     }
 
-    // In a real implementation, you would verify the signature using the public key
-    // For now, we'll just check if the counter is greater than the stored counter
     if (counter <= credential.counter) {
       throw new InvalidCredentialsError();
     }
 
-    // Update the credential counter and last used time
-    const updatedCredential = await this.webAuthnCredentialsRepository.updateCounter(
-      credential.id,
-      counter,
-    );
+    const updatedCredential =
+      await this.webAuthnCredentialsRepository.updateCounter(
+        credential.id,
+        counter,
+      );
 
     await this.webAuthnCredentialsRepository.updateLastUsed(credential.id);
 
@@ -47,4 +45,4 @@ export class VerifyWebAuthnCredentialUseCase {
       credential: updatedCredential,
     };
   }
-} 
+}

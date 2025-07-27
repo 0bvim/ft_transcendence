@@ -30,20 +30,16 @@ export class GoogleSignInUseCase {
     email,
     linkAccount = false,
   }: GoogleSignInUseCaseRequest): Promise<GoogleSignInUseCaseResponse> {
-    // Check if user already exists by Google ID
     let user = await this.usersRepository.findByGoogleId(googleId);
 
     if (user) {
-      // Check if user is deleted
       if (user.deletedAt) {
         throw new UserAlreadyExistsError();
       }
 
-      // User exists, proceed with sign-in
       return this.generateTokens(user);
     }
 
-    // Check if user exists by email
     const existingUserByEmail = await this.usersRepository.findByEmail(email);
 
     if (existingUserByEmail) {
@@ -52,14 +48,12 @@ export class GoogleSignInUseCase {
       }
 
       if (linkAccount) {
-        // Link Google account to existing user
         user = await this.usersRepository.update(existingUserByEmail.id, {
           googleId,
         });
 
         return this.generateTokens(user);
       } else {
-        // Email already exists with different account
         throw new UserAlreadyExistsError();
       }
     }
@@ -117,4 +111,4 @@ export class GoogleSignInUseCase {
 
     return username;
   }
-} 
+}

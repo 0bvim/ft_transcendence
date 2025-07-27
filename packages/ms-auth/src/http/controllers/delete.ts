@@ -16,13 +16,15 @@ export async function deleteUser(request: FastifyRequest, reply: FastifyReply) {
   try {
     const usersRepository = new PrismaUsersRepository();
     const refreshTokensRepository = new PrismaRefreshTokensRepository();
-    const softDeleteUseCase = new SoftDeleteUseCase(usersRepository, refreshTokensRepository);
+    const softDeleteUseCase = new SoftDeleteUseCase(
+      usersRepository,
+      refreshTokensRepository,
+    );
 
     const { user } = await softDeleteUseCase.execute({
       userId: id,
     });
 
-    // Remove password from response
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
@@ -40,4 +42,4 @@ export async function deleteUser(request: FastifyRequest, reply: FastifyReply) {
 
     throw err;
   }
-} 
+}
