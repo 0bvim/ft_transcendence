@@ -12,8 +12,12 @@ function getAvatarUrl(avatarUrl: string | null | undefined): string {
     return avatarUrl;
   }
   
-  const authServiceUrl = `http://${window.location.hostname}:3001`;
-  return `${authServiceUrl}${avatarUrl}`;
+  // Use HTTPS instead of HTTP since the auth service uses SSL certificates
+  const authServiceUrl = `https://${window.location.hostname}:3001`;
+  // Add cache busting parameter to prevent browser caching old avatars
+  const timestamp = new Date().getTime();
+  const separator = avatarUrl.includes('?') ? '&' : '?';
+  return `${authServiceUrl}${avatarUrl}${separator}t=${timestamp}`;
 }
 
 export default function Dashboard(): HTMLElement {
@@ -123,7 +127,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
               <p class="text-xs text-secondary-500">@${user.username}</p>
             </div>
             <div class="avatar avatar-md">
-              <img src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-2 border-white shadow-soft" />
+              <img id="navAvatar" src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-2 border-white shadow-soft" />
             </div>
             <button id="logoutButton" class="btn btn-ghost btn-sm">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +258,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <!-- Profile Card -->
           <div class="card-gradient p-6 text-center">
             <div class="avatar avatar-xl mx-auto mb-4">
-              <img src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-4 border-white shadow-medium" />
+              <img id="profileAvatar" src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" class="avatar-img border-4 border-white shadow-medium" />
             </div>
             <h3 class="text-lg font-semibold text-secondary-900 mb-1">${user.displayName || user.username}</h3>
             <p class="text-secondary-600 mb-2">@${user.username}</p>
@@ -343,6 +347,24 @@ function renderDashboardContent(container: HTMLElement, user: User) {
       </div>
     </main>
   `;
+
+  // Add error handlers for avatar images after HTML is rendered
+  const navAvatar = container.querySelector('#navAvatar') as HTMLImageElement;
+  const profileAvatar = container.querySelector('#profileAvatar') as HTMLImageElement;
+  
+  if (navAvatar) {
+    navAvatar.onerror = () => {
+      console.warn('Failed to load navigation avatar image, falling back to default');
+      navAvatar.src = '/assets/wishes.png';
+    };
+  }
+  
+  if (profileAvatar) {
+    profileAvatar.onerror = () => {
+      console.warn('Failed to load profile card avatar image, falling back to default');
+      profileAvatar.src = '/assets/wishes.png';
+    };
+  }
 }
 
 async function setupEventListeners(container: HTMLElement) {
