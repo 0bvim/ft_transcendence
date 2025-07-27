@@ -135,7 +135,6 @@ services:
     environment:
       - discovery.type=${ELASTICSEARCH_DISCOVERY_TYPE:-single-node}
       - ES_JAVA_OPTS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
-      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
       - "_JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTIONS:--XX:UseSVE=0}"
     ports:
       - "${ELASTICSEARCH_PORT:-9200}:9200"
@@ -143,9 +142,11 @@ services:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ${ELASTICSEARCH_DATA_VOLUME:-esdata}:/usr/share/elasticsearch/data
+      - ./devops/certs:/usr/share/elasticsearch/config/certs
+      - ./devops/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     healthcheck:
       test:
-        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+        ["CMD-SHELL", "curl -k -f https://localhost:9200/_cluster/health || exit 1"]
       interval: ${ELASTICSEARCH_HEALTH_CHECK_INTERVAL:-30s}
       timeout: ${ELASTICSEARCH_HEALTH_CHECK_TIMEOUT:-10s}
       retries: ${ELASTICSEARCH_HEALTH_CHECK_RETRIES:-5}
@@ -157,11 +158,13 @@ services:
       elasticsearch:
         condition: service_healthy
     environment:
-      - ELASTICSEARCH_HOSTS=${KIBANA_ELASTICSEARCH_HOSTS:-http://elasticsearch:9200}
       - xpack.security.enabled=${KIBANA_SECURITY_ENABLED:-false}
       - "_JAVA_OPTIONS=${KIBANA_JAVA_OPTIONS:--XX:UseSVE=0}"
     ports:
       - "${KIBANA_PORT:-5601}:5601"
+    volumes:
+      - ./devops/kibana/config:/usr/share/kibana/config
+      - ./devops/certs:/usr/share/kibana/config/certs
     networks:
       - ${NETWORK_NAME:-ft-net}
 
@@ -181,8 +184,9 @@ services:
     volumes:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
       - ./devops/logstash/config:/usr/share/logstash/config
+      - ./devops/certs:/usr/share/logstash/config/certs
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      test: ["CMD-SHELL", "curl -k -f https://localhost:9600/_node/stats || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -196,6 +200,15 @@ services:
     volumes:
       - ${PROMETHEUS_CONFIG_PATH:-./devops/prometheus/prometheus.yml}:/etc/prometheus/prometheus.yml
       - ${PROMETHEUS_ALERTS_PATH:-./devops/prometheus/alerts.yml}:/etc/prometheus/alerts.yml
+      - ./devops/prometheus/web-config.yml:/etc/prometheus/web-config.yml
+      - ./devops/certs:/etc/prometheus/certs
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.config.file=/etc/prometheus/web-config.yml'
+      - '--web.enable-lifecycle'
     networks:
       - ${NETWORK_NAME:-ft-net}
 
@@ -207,10 +220,14 @@ services:
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana
+      - ./devops/certs:/etc/grafana/certs
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGN_UP:-false}
+      - GF_SERVER_PROTOCOL=https
+      - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
+      - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
     depends_on:
       - prometheus
       - elasticsearch
