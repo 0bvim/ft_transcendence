@@ -4,3 +4,8 @@ config.reload.automatic: true
 # HTTP API settings
 api.http.host: "0.0.0.0"
 api.http.port: 9600
+
+# SSL Configuration for HTTP API
+api.ssl.enabled: true
+api.ssl.keystore.path: "/usr/share/logstash/config/certs/logstash.p12"
+api.ssl.keystore.password: "logstash"

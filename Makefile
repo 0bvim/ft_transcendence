@@ -1,5 +1,5 @@
 # Core application services (without monitoring UI: kibana, prometheus, grafana)
-DEV_SERVICES = ms-frontend ms-auth ms-game ms-tournament ms-blockchain-node ms-blockchain 
+DEV_SERVICES = ms-frontend ms-auth ms-game tournament blockchain-node blockchain logstash elasticsearch
 
 # Services paths
 MS-AUTH=packages/ms-auth
@@ -47,14 +47,14 @@ restart:
 run:
 	@echo "Opening application services..."
 	@if command -v xdg-open > /dev/null; then \
-			xdg-open http://localhost:3000 & \
+			xdg-open http://localhost:3010 & \
 			xdg-open http://localhost:3003; \
 		elif command -v open > /dev/null; then \
-			open http://localhost:3000 & \
+			open http://localhost:3010 & \
 			open http://localhost:3003; \
 		else \
 			echo "Could not detect browser opener. Please manually open:"; \
-			echo "  Frontend: http://localhost:3000"; \
+			echo "  Frontend: http://localhost:3010"; \
 			echo "  Game: http://localhost:3003"; \
 		fi
 
@@ -89,6 +89,7 @@ help:
 	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
 define create_certificates
+	# Generate certificates for microservices
 	for service in $(SERVICES_PATH); do \
 		if [ ! -d $$service/certs ]; then \
 			mkdir -p $$service/certs; \
@@ -100,6 +101,33 @@ define create_certificates
 			mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
 		fi; \
 	done
+
+	# Generate certificates for observability stack
+	if [ ! -d devops/certs ]; then \
+		mkdir -p devops/certs; \
+	fi; \
+	for service in elasticsearch kibana logstash prometheus grafana; do \
+		if [ -f devops/certs/$$service.crt ] && [ -f devops/certs/$$service.key ]; then \
+			if openssl x509 -checkend 86400 -noout -in devops/certs/$$service.crt > /dev/null 2>&1; then \
+				echo "✅ Valid certificates already exist for $$service"; \
+			else \
+				echo "🔧 Regenerating expired certificates for $$service"; \
+				mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key localhost 127.0.0.1; \
+			fi; \
+		else \
+			echo "🔧 Creating new certificates for $$service"; \
+			mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key localhost 127.0.0.1; \
+		fi; \
+	done; \
+	# Generate PKCS12 keystore for Logstash SSL \
+	if [ -f devops/certs/logstash.crt ] && [ -f devops/certs/logstash.key ]; then \
+		echo "🔧 Creating PKCS12 keystore for Logstash"; \
+		openssl pkcs12 -export -out devops/certs/logstash.p12 -inkey devops/certs/logstash.key -in devops/certs/logstash.crt -password pass:logstash 2>/dev/null || true; \
+	fi; \
+	# Fix permissions for certificate files to ensure containers can read them \
+	chmod 644 devops/certs/*.crt 2>/dev/null || true; \
+	chmod 644 devops/certs/*.key 2>/dev/null || true; \
+	chmod 644 devops/certs/*.p12 2>/dev/null || true
 endef
 
 define install_mkcert
