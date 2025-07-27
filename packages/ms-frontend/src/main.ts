@@ -1,5 +1,6 @@
 import './style.css';
 import { Router } from './router/index';
+import { AudioControl } from './components/AudioControl';
 
 // Get the app container
 const appContainer = document.getElementById('app');
@@ -7,6 +8,10 @@ const appContainer = document.getElementById('app');
 if (!appContainer) {
   throw new Error('App container not found');
 }
+
+// Initialize audio control
+const audioControl = new AudioControl();
+audioControl.mount(document.body);
 
 // Create router instance
 const router = new Router(appContainer);
@@ -107,3 +112,22 @@ if (currentPath === '/') {
 
 // Start the router
 router.start(); 
+
+// Add synthwave visual effects to the page
+function addSynthwaveEffects() {
+  // Add scan line effect
+  const scanLine = document.createElement('div');
+  scanLine.className = 'scan-line';
+  document.body.appendChild(scanLine);
+
+  // Add horizon line effect (optional, can be added to specific pages)
+  // const horizonLine = document.createElement('div');
+  // horizonLine.className = 'horizon-line';
+  // document.body.appendChild(horizonLine);
+}
+
+// Initialize synthwave effects
+addSynthwaveEffects();
+
+// Export audio control for potential external use
+export { audioControl }; 
