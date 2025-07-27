@@ -24,8 +24,8 @@ COPY ./ms-game/certs ./certs
 RUN npm run build
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3003/health || exit 1
+    CMD curl -f http://localhost:3002/health || exit 1
 
-EXPOSE 3003
+EXPOSE 3002
 
 CMD ["npm", "start"]
