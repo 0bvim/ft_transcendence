@@ -130,3 +130,6 @@ temp/
 # Test artifacts
 junit.xml
 test-results/
+
+# Certs
+certs/

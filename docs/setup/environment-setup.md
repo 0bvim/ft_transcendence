@@ -6,7 +6,7 @@
    ```bash
    # Main environment (optional - has defaults)
    cp env.example .env
-   
+
    # Game service environment
    cp packages/ms-game/env_example packages/ms-game/.env
    ```
@@ -18,8 +18,8 @@
    - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
    - Set Application type to "Web application"
    - Add authorized redirect URIs:
-     - For localhost: `http://localhost:3001/auth/google/callback`
-     - For your IP: `http://YOUR_IP_ADDRESS:3001/auth/google/callback` (replace YOUR_IP_ADDRESS with your actual IP)
+     - For localhost: `https://localhost:3001/auth/google/callback`
+     - For your IP: `https://YOUR_IP_ADDRESS:3001/auth/google/callback` (replace YOUR_IP_ADDRESS with your actual IP)
    - Copy Client ID and Client Secret to your `.env` file
 
 3. **Start all services:**
@@ -42,7 +42,7 @@ To access your application from different machines on the network:
    ```bash
    # On macOS/Linux
    ifconfig | grep "inet " | grep -v 127.0.0.1
-   
+
    # On Windows
    ipconfig | findstr "IPv4"
    ```
@@ -98,7 +98,7 @@ Features:
 JWT_SECRET=your-super-secret-jwt-key-here
 GOOGLE_CLIENT_ID=your-google-client-id-here
 GOOGLE_CLIENT_SECRET=your-google-client-secret-here
-GOOGLE_REDIRECT_URI=http://localhost:3010/auth/google/callback
+GOOGLE_REDIRECT_URI=https://localhost:3010/auth/google/callback
 ```
 
 ### Game Service (ms-game) - Port 3003
@@ -316,7 +316,7 @@ JWT_SECRET=your_jwt_secret
    ```bash
    # Get the OAuth URL
    curl http://YOUR_IP:3001/auth/google
-   
+
    # Should return: {"authUrl": "https://accounts.google.com/oauth/authorize?..."}
    ```
 
@@ -337,7 +337,7 @@ docker-compose logs authentication
    ```bash
    # On macOS/Linux
    ifconfig | grep "inet " | grep -v 127.0.0.1
-   
+
    # On Windows
    ipconfig | findstr "IPv4"
    ```

@@ -20,7 +20,7 @@ COPY ./ms-frontend/tailwind.config.js ./tailwind.config.js
 COPY ./ms-frontend/postcss.config.js ./postcss.config.js
 COPY ./ms-frontend/index.html ./index.html
 COPY ./ms-frontend/Makefile Makefile
-COPY ./ms-frontend/certs/ .
+COPY ./ms-frontend/certs/ ./certs
 
 FROM build AS development
 

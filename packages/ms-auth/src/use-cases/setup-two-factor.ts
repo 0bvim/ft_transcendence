@@ -1,9 +1,9 @@
-import { randomBytes } from 'crypto';
-import { UsersRepository } from '../repositories/users-repository';
-import { BackupCodesRepository } from '../repositories/backup-codes-repository';
-import { UserNotFoundError } from './errors/user-not-found-error';
-import * as speakeasy from 'speakeasy';
-import { env } from '../env';
+import { randomBytes } from "crypto";
+import { UsersRepository } from "../repositories/users-repository";
+import { BackupCodesRepository } from "../repositories/backup-codes-repository";
+import { UserNotFoundError } from "./errors/user-not-found-error";
+import * as speakeasy from "speakeasy";
+import { env } from "../env";
 
 interface SetupTwoFactorUseCaseRequest {
   userId: string;
@@ -33,25 +33,24 @@ export class SetupTwoFactorUseCase {
 
     // Generate TOTP secret for authenticator apps
     const secret = speakeasy.generateSecret({
-      name: `${env.WEBAUTHN_RP_NAME || 'ft_transcendence'}:${user.email}`,
-      issuer: env.WEBAUTHN_RP_NAME || 'ft_transcendence',
+      name: `${env.WEBAUTHN_RP_NAME || "ft_transcendence"}:${user.email}`,
+      issuer: env.WEBAUTHN_RP_NAME || "ft_transcendence",
       length: 32,
     });
 
     // Construct proper OTP Auth URL
-    const issuer = encodeURIComponent(env.WEBAUTHN_RP_NAME || 'ft_transcendence');
+    const issuer = encodeURIComponent(
+      env.WEBAUTHN_RP_NAME || "ft_transcendence",
+    );
     const accountName = encodeURIComponent(user.email);
     const secretKey = secret.base32;
-    
+
     const otpAuthUrl = `otpauth://totp/${issuer}:${accountName}?secret=${secretKey}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
 
-    // Store the TOTP secret but don't enable 2FA yet
     await this.usersRepository.update(userId, {
       totpSecret: secret.base32,
-      // Note: we don't set twoFactorEnabled: true yet
     });
 
-    // Generate backup codes (but they won't be active until 2FA is enabled)
     const backupCodes = await this.generateBackupCodes(userId);
 
     return {
@@ -63,15 +62,14 @@ export class SetupTwoFactorUseCase {
 
   private async generateBackupCodes(userId: string): Promise<string[]> {
     const codes: string[] = [];
-    
-    // Delete existing backup codes
+
     await this.backupCodesRepository.deleteByUserId(userId);
-    
+
     // Generate 8 backup codes
     for (let i = 0; i < 8; i++) {
-      const code = randomBytes(4).toString('hex').toUpperCase();
+      const code = randomBytes(4).toString("hex").toUpperCase();
       codes.push(code);
-      
+
       // Store the backup code in the database
       await this.backupCodesRepository.create({
         userId,
@@ -81,4 +79,4 @@ export class SetupTwoFactorUseCase {
 
     return codes;
   }
-} 
+}

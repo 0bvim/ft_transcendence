@@ -3,9 +3,10 @@ DEV_SERVICES = ms-frontend ms-auth ms-game tournament blockchain-node blockchain
 
 # Services paths
 MS-AUTH=packages/ms-auth
-# MS-BLOCKCHAIN=packages/ms-blockchain
 MS-FRONTEND=packages/ms-frontend
 MS-GAME=packages/ms-game
+# unlock after finish implementation of services
+# MS-BLOCKCHAIN=packages/ms-blockchain
 # MS-OBSERVABILITY=packages/ms-observability
 # MS-TOURNAMENT=packages/ms-tournament
 
@@ -89,8 +90,15 @@ help:
 
 define create_certificates
 	for service in $(SERVICES_PATH); do \
-		mkdir -p $$service/certs; \
-		mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
+		if [ ! -d $$service/certs ]; then \
+			mkdir -p $$service/certs; \
+		fi; \
+		if [ -f $$service/certs/cert.pem ] && [ -f $$service/certs/key.pem ]; then \
+				echo "✅ Certificates already exist for $$service"; \
+		else \
+			echo "🔧 Creating new certificates for $$service"; \
+			mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
+		fi; \
 	done
 endef
 

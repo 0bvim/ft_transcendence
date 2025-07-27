@@ -28,52 +28,60 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
   });
 
   try {
-    const { 
-      userId, 
-      method, 
-      sessionId, 
-      authenticationResponse, 
-      backupCode, 
+    const {
+      userId,
+      method,
+      sessionId,
+      authenticationResponse,
+      backupCode,
       totpCode,
       smsCode,
-      emailCode 
+      emailCode,
     } = verify2FABodySchema.parse(request.body);
 
     const usersRepository = new PrismaUsersRepository();
     const refreshTokensRepository = new PrismaRefreshTokensRepository();
 
-    // Check if user exists and has 2FA enabled
     const user = await usersRepository.findById(userId);
     if (!user || !user.twoFactorEnabled) {
-      return reply.status(401).send({ error: "Invalid user or 2FA not enabled" });
+      return reply
+        .status(401)
+        .send({ error: "Invalid user or 2FA not enabled" });
     }
 
     let verified = false;
 
     if (method === "webauthn") {
       if (!sessionId || !authenticationResponse) {
-        return reply.status(400).send({ error: "Session ID and authentication response required for WebAuthn" });
+        return reply.status(400).send({
+          error: "Session ID and authentication response required for WebAuthn",
+        });
       }
 
-      // Get the session data
       const sessionData = sessionStore.get(sessionId);
-      if (!sessionData || sessionData.type !== 'authentication' || sessionData.userId !== userId) {
+      if (
+        !sessionData ||
+        sessionData.type !== "authentication" ||
+        sessionData.userId !== userId
+      ) {
         return reply.status(400).send({ error: "Invalid or expired session" });
       }
 
-      const webAuthnCredentialsRepository = new PrismaWebAuthnCredentialsRepository();
+      const webAuthnCredentialsRepository =
+        new PrismaWebAuthnCredentialsRepository();
       const verifyWebAuthnUseCase = new VerifyWebAuthnAuthenticationUseCase(
         webAuthnCredentialsRepository,
       );
 
-      const { verified: webAuthnVerified } = await verifyWebAuthnUseCase.execute({
-        authenticationResponse,
-        expectedChallenge: sessionData.challenge,
-        userId,
-      });
+      const { verified: webAuthnVerified } =
+        await verifyWebAuthnUseCase.execute({
+          authenticationResponse,
+          expectedChallenge: sessionData.challenge,
+          userId,
+        });
 
       verified = webAuthnVerified;
-      
+
       // Clean up session
       sessionStore.delete(sessionId);
     } else if (method === "backup_code") {
@@ -86,9 +94,10 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
         backupCodesRepository,
       );
 
-      const { verified: backupCodeVerified } = await verifyBackupCodeUseCase.execute({
-        code: backupCode,
-      });
+      const { verified: backupCodeVerified } =
+        await verifyBackupCodeUseCase.execute({
+          code: backupCode,
+        });
 
       verified = backupCodeVerified;
     } else if (method === "totp") {
@@ -96,9 +105,7 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
         return reply.status(400).send({ error: "TOTP code required" });
       }
 
-      const verifyTotpUseCase = new VerifyTotpCodeUseCase(
-        usersRepository,
-      );
+      const verifyTotpUseCase = new VerifyTotpCodeUseCase(usersRepository);
 
       const { verified: totpVerified } = await verifyTotpUseCase.execute({
         userId,
@@ -106,35 +113,12 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
       });
 
       verified = totpVerified;
-    } else if (method === "sms") {
-      if (!smsCode) {
-        return reply.status(400).send({ error: "SMS code required" });
-      }
-
-      // In a real implementation, you would:
-      // 1. Retrieve the stored SMS code from cache/session
-      // 2. Compare with the provided code
-      // 3. Check expiration time
-      // For demo purposes, we'll accept a specific code
-      verified = smsCode === "123456"; // Demo code
-    } else if (method === "email") {
-      if (!emailCode) {
-        return reply.status(400).send({ error: "Email code required" });
-      }
-
-      // In a real implementation, you would:
-      // 1. Retrieve the stored email code from cache/session
-      // 2. Compare with the provided code
-      // 3. Check expiration time
-      // For demo purposes, we'll accept a specific code
-      verified = emailCode === "123456"; // Demo code
     }
 
     if (!verified) {
       return reply.status(401).send({ error: "Invalid 2FA verification" });
     }
 
-    // Generate tokens after successful 2FA verification
     const accessToken = sign({ username: user.username }, env.JWT_SECRET, {
       subject: user.id,
       expiresIn: "15m",
@@ -165,7 +149,7 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
     if (err instanceof UserNotFoundError) {
       return reply.status(404).send({ error: "User not found" });
     }
-    
+
     if (err instanceof InvalidCredentialsError) {
       return reply.status(401).send({ error: "Invalid 2FA verification" });
     }
@@ -173,4 +157,4 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
     console.error("2FA verification error:", err);
     return reply.status(500).send({ error: "2FA verification failed" });
   }
-} 
+}

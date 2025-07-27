@@ -7,71 +7,82 @@ import { GoogleSignInUseCase } from "../../use-cases/google-signin";
 import { UserAlreadyExistsError } from "../../use-cases/errors/user-already-exists-error";
 import { env } from "../../env";
 
-// Initialize Google OAuth2 client
 const oauth2Client = new google.auth.OAuth2(
   env.GOOGLE_CLIENT_ID,
   env.GOOGLE_CLIENT_SECRET,
-  env.GOOGLE_REDIRECT_URI
+  env.GOOGLE_REDIRECT_URI,
 );
 
-console.log('Google OAuth2 Client initialized with:');
-console.log('- Redirect URI:', env.GOOGLE_REDIRECT_URI);
-console.log('- Client ID:', env.GOOGLE_CLIENT_ID ? `${env.GOOGLE_CLIENT_ID.substring(0, 20)}...` : 'NOT SET');
+console.log("Google OAuth2 Client initialized with:");
+console.log("- Redirect URI:", env.GOOGLE_REDIRECT_URI);
+console.log(
+  "- Client ID:",
+  env.GOOGLE_CLIENT_ID
+    ? `${env.GOOGLE_CLIENT_ID.substring(0, 20)}...`
+    : "NOT SET",
+);
 
-export async function googleOAuthInitiate(request: FastifyRequest, reply: FastifyReply) {
+export async function googleOAuthInitiate(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
-    // Generate the authorization URL
     const authUrl = oauth2Client.generateAuthUrl({
-      access_type: 'offline',
+      access_type: "offline",
       scope: [
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'https://www.googleapis.com/auth/userinfo.email'
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
       ],
       include_granted_scopes: true,
     });
 
-    console.log('Generated Google OAuth URL:', authUrl);
+    console.log("Generated Google OAuth URL:", authUrl);
 
     return reply.status(200).send({
       authUrl,
     });
   } catch (err) {
-    console.error('Google OAuth initiate error:', err);
+    console.error("Google OAuth initiate error:", err);
     return reply.status(500).send({ error: "Failed to initiate OAuth" });
   }
 }
 
-export async function googleOAuthCallback(request: FastifyRequest, reply: FastifyReply) {
+export async function googleOAuthCallback(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const callbackQuerySchema = z.object({
     code: z.string(),
     state: z.string().optional(),
   });
 
   try {
-    console.log('Google OAuth callback received query:', request.query);
-    
+    console.log("Google OAuth callback received query:", request.query);
+
     const { code } = callbackQuerySchema.parse(request.query);
 
-    console.log('Exchanging authorization code for tokens...');
-    
-    // Exchange authorization code for tokens
+    console.log("Exchanging authorization code for tokens...");
+
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    console.log('Tokens received, fetching user info...');
+    console.log("Tokens received, fetching user info...");
 
-    // Get user info from Google
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
-    console.log('User info received:', { email: userInfo.email, id: userInfo.id });
+    console.log("User info received:", {
+      email: userInfo.email,
+      id: userInfo.id,
+    });
 
     if (!userInfo.email || !userInfo.id) {
-      console.error('Missing user information from Google:', userInfo);
-      return reply.status(400).send({ error: "Failed to get user information from Google" });
+      console.error("Missing user information from Google:", userInfo);
+      return reply
+        .status(400)
+        .send({ error: "Failed to get user information from Google" });
     }
 
-    // Sign in or create user
     const usersRepository = new PrismaUsersRepository();
     const refreshTokensRepository = new PrismaRefreshTokensRepository();
     const googleSignInUseCase = new GoogleSignInUseCase(
@@ -79,17 +90,16 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
       refreshTokensRepository,
     );
 
-    const { user, accessToken, refreshToken } = await googleSignInUseCase.execute({
-      googleId: userInfo.id,
-      email: userInfo.email,
-    });
+    const { user, accessToken, refreshToken } =
+      await googleSignInUseCase.execute({
+        googleId: userInfo.id,
+        email: userInfo.email,
+      });
 
-    // Check if user has 2FA enabled
     if (user.twoFactorEnabled) {
-      // Don't return tokens, instead return 2FA challenge
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...userWithoutPassword } = user;
-      
+
       return reply.status(200).send({
         user: userWithoutPassword,
         requiresTwoFactor: true,
@@ -108,17 +118,21 @@ export async function googleOAuthCallback(request: FastifyRequest, reply: Fastif
     });
   } catch (err) {
     if (err instanceof UserAlreadyExistsError) {
-      return reply.status(409).send({ 
-        error: "Email already exists with different account. Please link your accounts or use a different email." 
+      return reply.status(409).send({
+        error:
+          "Email already exists with different account. Please link your accounts or use a different email.",
       });
     }
-    
-    console.error('OAuth callback error:', err);
+
+    console.error("OAuth callback error:", err);
     return reply.status(500).send({ error: "OAuth authentication failed" });
   }
 }
 
-export async function googleOAuthLink(request: FastifyRequest, reply: FastifyReply) {
+export async function googleOAuthLink(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const linkBodySchema = z.object({
     code: z.string(),
     userId: z.string(),
@@ -127,19 +141,18 @@ export async function googleOAuthLink(request: FastifyRequest, reply: FastifyRep
   try {
     const { code, userId } = linkBodySchema.parse(request.body);
 
-    // Exchange authorization code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Get user info from Google
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
     if (!userInfo.email || !userInfo.id) {
-      return reply.status(400).send({ error: "Failed to get user information from Google" });
+      return reply
+        .status(400)
+        .send({ error: "Failed to get user information from Google" });
     }
 
-    // Link Google account to existing user
     const usersRepository = new PrismaUsersRepository();
     const refreshTokensRepository = new PrismaRefreshTokensRepository();
     const googleSignInUseCase = new GoogleSignInUseCase(
@@ -147,11 +160,12 @@ export async function googleOAuthLink(request: FastifyRequest, reply: FastifyRep
       refreshTokensRepository,
     );
 
-    const { user, accessToken, refreshToken } = await googleSignInUseCase.execute({
-      googleId: userInfo.id,
-      email: userInfo.email,
-      linkAccount: true,
-    });
+    const { user, accessToken, refreshToken } =
+      await googleSignInUseCase.execute({
+        googleId: userInfo.id,
+        email: userInfo.email,
+        linkAccount: true,
+      });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
@@ -164,12 +178,13 @@ export async function googleOAuthLink(request: FastifyRequest, reply: FastifyRep
     });
   } catch (err) {
     if (err instanceof UserAlreadyExistsError) {
-      return reply.status(409).send({ 
-        error: "Failed to link accounts. User may not exist or Google account already linked." 
+      return reply.status(409).send({
+        error:
+          "Failed to link accounts. User may not exist or Google account already linked.",
       });
     }
-    
-    console.error('OAuth link error:', err);
+
+    console.error("OAuth link error:", err);
     return reply.status(500).send({ error: "Failed to link Google account" });
   }
-} 
+}

@@ -1,6 +1,6 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { prisma } from '../../lib/prisma';
+import { FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
+import { prisma } from "../../lib/prisma";
 
 const updateProfileSchema = z.object({
   displayName: z.string().min(1).max(50).optional(),
@@ -10,46 +10,44 @@ const updateProfileSchema = z.object({
 
 export async function updateProfile(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const userId = request.user?.id;
-    
+
     if (!userId) {
       return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'User not authenticated'
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
     }
 
     const body = updateProfileSchema.parse(request.body);
-    
-    // Check if display name is already taken (if provided)
+
     if (body.displayName) {
       const existingUser = await prisma.user.findFirst({
         where: {
           displayName: body.displayName,
-          id: { not: userId }, // Exclude current user
-          deletedAt: null
-        }
+          id: { not: userId },
+          deletedAt: null,
+        },
       });
-      
+
       if (existingUser) {
         return reply.status(400).send({
-          error: 'Display name already taken',
-          message: 'This display name is already in use'
+          error: "Display name already taken",
+          message: "This display name is already in use",
         });
       }
     }
 
-    // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         displayName: body.displayName,
         avatarUrl: body.avatarUrl,
         bio: body.bio,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       select: {
         id: true,
@@ -60,28 +58,27 @@ export async function updateProfile(
         bio: true,
         twoFactorEnabled: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     return reply.status(200).send({
-      message: 'Profile updated successfully',
-      user: updatedUser
+      message: "Profile updated successfully",
+      user: updatedUser,
     });
-
   } catch (error) {
-    console.error('Error updating profile:', error);
-    
+    console.error("Error updating profile:", error);
+
     if (error instanceof z.ZodError) {
       return reply.status(400).send({
-        error: 'Invalid input',
-        message: error.errors[0].message
+        error: "Invalid input",
+        message: error.errors[0].message,
       });
     }
-    
+
     return reply.status(500).send({
-      error: 'Internal server error',
-      message: 'Failed to update profile'
+      error: "Internal server error",
+      message: "Failed to update profile",
     });
   }
 }
