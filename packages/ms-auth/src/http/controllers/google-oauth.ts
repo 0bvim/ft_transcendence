@@ -139,6 +139,7 @@ export async function googleOAuthLink(
   });
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { code, userId } = linkBodySchema.parse(request.body);
 
     const { tokens } = await oauth2Client.getToken(code);

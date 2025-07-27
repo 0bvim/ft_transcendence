@@ -25,6 +25,7 @@ export async function deleteUser(request: FastifyRequest, reply: FastifyReply) {
       userId: id,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
     return reply.status(200).send({

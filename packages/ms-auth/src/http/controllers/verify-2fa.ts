@@ -23,8 +23,6 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
     authenticationResponse: z.any().optional(),
     backupCode: z.string().optional(),
     totpCode: z.string().optional(),
-    smsCode: z.string().optional(),
-    emailCode: z.string().optional(),
   });
 
   try {
@@ -35,8 +33,6 @@ export async function verify2FA(request: FastifyRequest, reply: FastifyReply) {
       authenticationResponse,
       backupCode,
       totpCode,
-      smsCode,
-      emailCode,
     } = verify2FABodySchema.parse(request.body);
 
     const usersRepository = new PrismaUsersRepository();

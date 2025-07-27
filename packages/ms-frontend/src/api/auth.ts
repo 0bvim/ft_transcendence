@@ -17,18 +17,20 @@ const api = axios.create({
 });
 
 // Request interceptor to add auth token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+api.interceptors.request.use(
+  (config: { headers: { Authorization: string } }) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+);
 
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  (response: any) => response,
+  async (error: { config: any; response: { status: number } }) => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -281,8 +283,6 @@ export const authApi = {
     authenticationResponse?: any;
     backupCode?: string;
     totpCode?: string;
-    smsCode?: string;
-    emailCode?: string;
   }): Promise<AuthResponse> => {
     const response = await api.post("/verify-2fa", data);
     return response.data;
