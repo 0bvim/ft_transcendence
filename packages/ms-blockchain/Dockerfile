@@ -20,6 +20,8 @@ COPY ./ms-blockchain/.env .env
 # Install all dependencies including Hardhat
 RUN npm install
 RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
+RUN npm run build
+RUN mkdir -p /app/deployments
 
 FROM build AS development
 
@@ -28,21 +30,26 @@ ENV NODE_ENV=development
 # CMD ["tail", "-f", "/dev/null"]
 CMD ["make", "dev"]
 
-FROM build AS prod
+FROM node:20-alpine AS prod
+
+WORKDIR /app
 
 ENV NODE_ENV=production
 
 # Install curl for health checks and entrypoint script
 RUN apk add --no-cache curl
 
-# Copy the entrypoint script
-COPY ./blockchain/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+# Copy built artifacts from the build stage
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/deployments ./deployments
+COPY --from=build /app/typechain-types ./typechain-types
+COPY --from=build /app/contracts ./contracts
 
-# Compile smart contracts first to generate typechain-types
-RUN npm run build:contracts
-# Then build TypeScript server code
-RUN npm run build:server
+# Copy the entrypoint script
+COPY ./ms-blockchain/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Use custom entrypoint for contract deployment
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
