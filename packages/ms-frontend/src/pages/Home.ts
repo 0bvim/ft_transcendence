@@ -1,31 +1,37 @@
 export default function Home(): HTMLElement {
   const container = document.createElement('div');
-  container.className = 'min-h-screen bg-mesh-gradient relative overflow-hidden';
+  container.className = 'min-h-screen relative overflow-hidden';
 
   container.innerHTML = `
-    <!-- Background decorative elements -->
+    <!-- Synthwave Background Effects -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary-300/20 rounded-full blur-3xl animate-float"></div>
-      <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-400/20 rounded-full blur-3xl animate-float" style="animation-delay: -3s;"></div>
-      <div class="absolute top-1/3 right-1/3 w-60 h-60 bg-primary-200/20 rounded-full blur-3xl animate-float" style="animation-delay: -1.5s;"></div>
-      <div class="absolute bottom-1/4 left-1/4 w-40 h-40 bg-success-300/20 rounded-full blur-3xl animate-float" style="animation-delay: -2s;"></div>
+      <!-- Animated Grid Background -->
+      <div class="absolute inset-0 synthwave-grid opacity-30"></div>
+      
+      <!-- Neon Orbs -->
+      <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(255,0,255,0.15) 0%, transparent 70%); animation-delay: -3s;"></div>
+      <div class="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,255,255,0.15) 0%, transparent 70%); animation-delay: -1s;"></div>
+      <div class="absolute top-1/3 right-1/4 w-64 h-64 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(128,0,255,0.1) 0%, transparent 70%); animation-delay: -2s;"></div>
+      
+      <!-- Horizon Line -->
+      <div class="horizon-line"></div>
+      
+      <!-- Perspective Grid -->
+      <div class="absolute bottom-0 left-0 right-0 h-64 perspective-grid opacity-20"></div>
     </div>
 
     <!-- Navigation -->
-    <nav class="relative z-10 p-6">
+    <nav class="relative z-20 p-6">
       <div class="container-fluid">
         <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-glow">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
-              </svg>
-            </div>
-            <h1 class="text-2xl font-bold text-gradient">ft_transcendence</h1>
+          <div class="flex items-center">
+            <h1 class="text-3xl font-bold text-gradient font-retro tracking-wider">
+              FT_TRANSCENDENCE
+            </h1>
           </div>
           
           <div class="flex items-center space-x-4">
-            <a href="/login" data-link class="btn btn-ghost">
+            <a href="/login" data-link class="nav-link">
               Sign In
             </a>
             <a href="/register" data-link class="btn btn-primary">
@@ -37,149 +43,95 @@ export default function Home(): HTMLElement {
     </nav>
 
     <!-- Hero Section -->
-    <main class="relative z-10 flex items-center justify-center min-h-screen pt-0">
+    <main class="relative z-10 flex items-center justify-center min-h-screen pt-0 pb-24">
       <div class="container text-center animate-fade-in">
         <!-- Hero Content -->
-        <div class="max-w-4xl mx-auto mb-16">
-          <h1 class="text-6xl md:text-7xl font-bold text-gradient mb-6 animate-slide-up">
-            The Ultimate
-            <br />
-            Pong Experience
-          </h1>
-          <p class="text-xl text-secondary-600 mb-8 max-w-2xl mx-auto leading-relaxed animate-slide-up" style="animation-delay: 0.2s;">
-            Experience the classic game like never before with modern authentication, 
-            real-time multiplayer, tournaments, and cutting-edge security features.
-          </p>
+        <div class="max-w-6xl mx-auto">
+          <!-- Main Title -->
+          <div class="mb-12">
+            <h1 class="text-8xl md:text-9xl font-bold text-gradient mb-8 animate-slide-up font-retro tracking-wider relative leading-tight">
+              <div class="text-neon text-neon-glow">THE</div>
+              <div class="text-gradient animate-neon-flicker">ULTIMATE</div>
+              <div class="text-gradient animate-neon-flicker">PONG</div>
+              <div class="text-neon-cyan text-shadow-lg">EXPERIENCE</div>
+            </h1>
+          </div>
           
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-slide-up" style="animation-delay: 0.4s;">
-            <a href="/register" data-link class="btn btn-primary btn-lg group">
-              Start Playing Now
-              <svg class="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-              </svg>
-            </a>
-            <a href="#features" class="btn btn-secondary btn-lg">
-              Learn More
-            </a>
+          <!-- Subtitle -->
+          <div class="mb-16">
+            <p class="text-2xl text-neon-cyan/80 mb-4 max-w-4xl mx-auto leading-relaxed animate-slide-up font-mono" style="animation-delay: 0.2s;">
+              <span class="text-neon-pink">&gt;</span> Experience the classic game like never before with 
+              <span class="text-neon-green">modern authentication</span>, 
+              <span class="text-neon-cyan">real-time multiplayer</span>, 
+              <span class="text-neon-pink">tournaments</span>, and 
+              <span class="text-warning-500">cutting-edge security</span> features.
+              <span class="animate-pulse">_</span>
+            </p>
           </div>
-
-          <!-- Social Proof -->
-          <div class="flex items-center justify-center space-x-8 text-secondary-500 animate-slide-up" style="animation-delay: 0.6s;">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-secondary-900">1,000+</div>
-              <div class="text-sm">Players</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-secondary-900">500+</div>
-              <div class="text-sm">Tournaments</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-secondary-900">10k+</div>
-              <div class="text-sm">Games Played</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Feature Preview -->
-        <div id="features" class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto animate-slide-up" style="animation-delay: 0.8s;">
-          <div class="card-hover p-8 text-center group">
-            <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-secondary-900 mb-3">Multiplayer Tournaments</h3>
-            <p class="text-secondary-600">Compete with players worldwide in exciting tournaments with real-time matchmaking.</p>
-          </div>
-
-          <div class="card-hover p-8 text-center group">
-            <div class="w-16 h-16 bg-gradient-to-br from-success-500 to-success-700 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-secondary-900 mb-3">Advanced Security</h3>
-            <p class="text-secondary-600">Secure authentication with 2FA, WebAuthn support, and OAuth integration.</p>
-          </div>
-
-          <div class="card-hover p-8 text-center group">
-            <div class="w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-700 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-secondary-900 mb-3">Real-time Gaming</h3>
-            <p class="text-secondary-600">Lightning-fast gameplay with real-time synchronization and minimal latency.</p>
-          </div>
-        </div>
-
-        <!-- Call to Action -->
-        <div class="mt-20 animate-slide-up" style="animation-delay: 1s;">
-          <div class="card-gradient p-8 max-w-3xl mx-auto text-center">
-            <h2 class="text-3xl font-bold text-secondary-900 mb-4">Ready to Play?</h2>
-            <p class="text-secondary-600 mb-6">Join thousands of players in the most advanced Pong experience ever created.</p>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="/register" data-link class="btn btn-primary btn-lg">
-                Create Free Account
+          
+          <!-- Enhanced Action Buttons -->
+          <div class="flex justify-center animate-slide-up" style="animation-delay: 0.4s;">
+            <!-- Primary CTA Button -->
+            <div class="relative group">
+              <a href="/login" data-link class="btn btn-primary relative overflow-hidden text-lg px-12 py-6 block">
+                <span class="relative z-10 flex items-center justify-center font-retro tracking-wider pointer-events-none">
+                  START_PLAYING.EXE
+                  <svg class="w-6 h-6 ml-4 transition-transform group-hover:translate-x-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                  </svg>
+                </span>
+                <!-- Enhanced glow effect -->
+                <div class="absolute inset-0 bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"></div>
               </a>
-              <a href="/login" data-link class="btn btn-secondary btn-lg">
-                Sign In
-              </a>
+              <!-- Outer glow ring -->
+              <div class="absolute inset-0 -m-1 bg-gradient-to-r from-neon-pink to-neon-cyan rounded-lg opacity-20 group-hover:opacity-40 transition-opacity duration-500 blur-sm pointer-events-none"></div>
+            </div>
+          </div>
+
+          <!-- Terminal Command Line -->
+          <div class="mt-20 animate-slide-up" style="animation-delay: 0.6s;">
+            <div class="inline-block bg-secondary-900/50 backdrop-blur-lg border border-neon-cyan/30 px-6 py-3 clip-cyber-button">
+              <p class="text-neon-cyan/60 font-mono text-sm">
+                <span class="text-neon-pink">root@ft_transcendence:~$</span> 
+                <span class="animate-pulse">echo "Welcome to the future of gaming"</span>
+                <span class="animate-pulse text-neon-green ml-2">_</span>
+              </p>
             </div>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="relative z-10 py-8 border-t border-white/20 mt-20">
-      <div class="container">
-        <div class="flex flex-col md:flex-row items-center justify-between">
-          <div class="flex items-center space-x-3 mb-4 md:mb-0">
-            <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
-              </svg>
-            </div>
-            <span class="text-lg font-bold text-gradient">ft_transcendence</span>
-          </div>
-          
-          <div class="flex items-center space-x-6 text-sm text-secondary-600">
-            <a href="#" class="hover:text-primary-600 transition-colors">Privacy</a>
-            <a href="#" class="hover:text-primary-600 transition-colors">Terms</a>
-            <a href="#" class="hover:text-primary-600 transition-colors">Support</a>
-          </div>
-        </div>
-        
-        <div class="text-center mt-6 pt-6 border-t border-white/20 text-sm text-secondary-500">
-          © 2024 ft_transcendence. All rights reserved.
+    <!-- Minimal Footer -->
+    <footer class="absolute bottom-0 left-0 right-0 z-10 border-t border-neon-pink/20 bg-secondary-900/20 backdrop-blur-sm">
+      <div class="container-fluid py-4">
+        <div class="text-center">
+          <p class="text-neon-cyan/40 font-mono text-xs">
+            <span class="text-neon-pink">ft_transcendence@2024:~$</span> 
+            initialized_successfully
+          </p>
         </div>
       </div>
     </footer>
   `;
 
-  // Add smooth scrolling for anchor links
-  setupSmoothScrolling(container);
+  // Ensure button clicks work properly
+  const startButton = container.querySelector('a[data-link]');
+  if (startButton) {
+    startButton.addEventListener('click', (e) => {
+      console.log('Button clicked - checking if router handles it');
+      // Let the event bubble up to the document where router listens
+      // If router doesn't handle it in 100ms, manually navigate
+      setTimeout(() => {
+        const currentPath = window.location.pathname;
+        const href = startButton.getAttribute('href');
+        if (currentPath === '/' || currentPath === '/home') {
+          console.log('Router did not handle click, manually navigating to:', href);
+          window.location.href = href || '/login';
+        }
+      }, 100);
+    });
+  }
 
   return container;
-}
-
-function setupSmoothScrolling(container: HTMLElement) {
-  container.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const link = target.closest('a');
-    
-    if (link && link.getAttribute('href')?.startsWith('#')) {
-      e.preventDefault();
-      const targetId = link.getAttribute('href')?.substring(1);
-      const targetElement = container.querySelector(`#${targetId}`);
-      
-      if (targetElement) {
-        targetElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    }
-  });
 } 

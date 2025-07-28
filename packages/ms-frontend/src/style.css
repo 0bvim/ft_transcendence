@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,185 +6,297 @@
 
 @layer base {
   body {
-    @apply bg-white font-sans text-secondary-900 antialiased;
+    @apply bg-synthwave-bg font-retro text-neon-cyan antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background: linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 20%, #2d1b69 40%, #000 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
   }
   
   html {
     @apply scroll-smooth;
   }
+
+  /* Synthwave grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(255, 0, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 0, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: -1;
+    animation: gridFlow 20s linear infinite;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #1a0a2e;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    box-shadow: 0 0 10px #ff00ff;
+  }
 }
 
 @layer components {
-  /* Modern Button Components */
+  /* Retro Sci-Fi Button Components */
   .btn {
-    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-all duration-300 focus:outline-none relative overflow-hidden border border-neon-pink bg-transparent;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  }
+  
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.4), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn:hover::before {
+    left: 100%;
   }
   
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-soft hover:shadow-medium active:scale-95;
+    @apply text-neon-pink border-neon-pink hover:text-black hover:bg-neon-pink;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+  }
+  
+  .btn-primary:hover {
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.8), inset 0 0 20px rgba(255, 0, 255, 0.2);
+    animation: glow-pulse 1s ease-in-out infinite alternate;
   }
   
   .btn-secondary {
-    @apply bg-white text-secondary-700 border border-secondary-200 hover:bg-secondary-50 focus:ring-primary-500 shadow-soft hover:shadow-medium active:scale-95;
+    @apply text-neon-cyan border-neon-cyan hover:text-black hover:bg-neon-cyan;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+  
+  .btn-secondary:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), inset 0 0 20px rgba(0, 255, 255, 0.2);
   }
   
   .btn-success {
-    @apply bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 shadow-soft hover:shadow-medium active:scale-95;
+    @apply text-neon-green border-neon-green hover:text-black hover:bg-neon-green;
+    box-shadow: 0 0 10px rgba(0, 255, 128, 0.5);
   }
   
   .btn-danger {
-    @apply bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500 shadow-soft hover:shadow-medium active:scale-95;
+    @apply text-danger-500 border-danger-500 hover:text-black hover:bg-danger-500;
+    box-shadow: 0 0 10px rgba(255, 0, 64, 0.5);
   }
   
   .btn-ghost {
-    @apply text-secondary-700 hover:bg-secondary-100 focus:ring-primary-500 active:scale-95;
-  }
-  
-  .btn-lg {
-    @apply px-6 py-3 text-base;
-  }
-  
-  .btn-sm {
-    @apply px-3 py-1.5 text-xs;
+    @apply text-neon-cyan hover:bg-neon-cyan/10 border-transparent;
+    box-shadow: none;
   }
 
-  /* Modern Form Components */
+  /* Retro Form Components */
   .form-group {
-    @apply space-y-2;
+    @apply space-y-3;
   }
   
   .form-label {
-    @apply block text-sm font-medium text-secondary-700;
+    @apply block text-sm font-medium text-neon-cyan uppercase tracking-wide;
+    font-family: 'Orbitron', sans-serif;
   }
   
   .form-input {
-    @apply block w-full px-4 py-3 border border-secondary-200 rounded-xl shadow-soft text-secondary-900 placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm;
+    @apply block w-full px-4 py-3 bg-transparent border border-neon-pink text-neon-cyan placeholder-neon-pink/50 focus:outline-none focus:border-neon-cyan transition-all duration-300;
+    font-family: 'Exo 2', sans-serif;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.1);
   }
   
-  .form-input:hover {
-    @apply border-secondary-300;
+  .form-input:focus {
+    box-shadow: 
+      inset 0 0 10px rgba(0, 255, 255, 0.2),
+      0 0 10px rgba(0, 255, 255, 0.5);
   }
   
   .form-input.error {
-    @apply border-danger-300 focus:ring-danger-500;
-  }
-  
-  .form-textarea {
-    @apply form-input resize-none;
-  }
-  
-  .form-select {
-    @apply form-input bg-white;
+    @apply border-danger-500;
+    box-shadow: 
+      inset 0 0 10px rgba(255, 0, 64, 0.2),
+      0 0 10px rgba(255, 0, 64, 0.5);
   }
 
-  /* Modern Card Components */
+  /* Synthwave Card Components */
   .card {
-    @apply bg-white/70 backdrop-blur-lg rounded-2xl shadow-soft border border-white/20;
+    @apply bg-gradient-to-br from-secondary-800/50 to-secondary-900/50 backdrop-blur-lg border border-neon-pink/30 relative overflow-hidden;
+    clip-path: polygon(20px 0%, 100% 0%, calc(100% - 20px) 100%, 0% 100%);
+  }
+  
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #ff00ff, transparent);
+  }
+  
+  .card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00ffff, transparent);
   }
   
   .card-hover {
-    @apply card transition-all duration-300 hover:shadow-medium hover:-translate-y-1;
+    @apply card transition-all duration-500 hover:scale-105;
+  }
+  
+  .card-hover:hover {
+    box-shadow: 
+      0 0 30px rgba(255, 0, 255, 0.3),
+      inset 0 0 30px rgba(255, 0, 255, 0.1);
   }
   
   .card-glass {
-    @apply bg-white/30 backdrop-blur-xl rounded-2xl border border-white/20 shadow-large;
-  }
-  
-  .card-gradient {
-    @apply bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl rounded-2xl border border-white/30 shadow-large;
+    @apply bg-secondary-900/20 backdrop-blur-xl border border-neon-cyan/20;
+    box-shadow: 
+      0 0 20px rgba(0, 255, 255, 0.1),
+      inset 0 0 20px rgba(0, 255, 255, 0.05);
   }
 
-  /* Navigation Components */
+  /* Synthwave Navigation */
   .nav-link {
-    @apply inline-flex items-center px-4 py-2 text-sm font-medium text-secondary-600 hover:text-primary-600 transition-colors duration-200;
+    @apply inline-flex items-center px-4 py-2 text-sm font-medium text-neon-cyan hover:text-neon-pink transition-all duration-300 relative;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
   
-  .nav-link.active {
-    @apply text-primary-600 bg-primary-50 rounded-lg;
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #ff00ff, #00ffff);
+    transition: all 0.3s;
+    transform: translateX(-50%);
+  }
+  
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    width: 100%;
   }
 
-  /* Alert Components */
+  /* Neon Alert Components */
   .alert {
-    @apply p-4 rounded-xl border-l-4 text-sm;
+    @apply p-4 border-l-4 text-sm relative overflow-hidden;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
   }
   
   .alert-success {
-    @apply bg-success-50 border-success-400 text-success-700;
+    @apply bg-secondary-900/50 border-neon-green text-neon-green;
+    box-shadow: 0 0 20px rgba(0, 255, 128, 0.2);
   }
   
   .alert-warning {
-    @apply bg-warning-50 border-warning-400 text-warning-700;
+    @apply bg-secondary-900/50 border-warning-500 text-warning-500;
+    box-shadow: 0 0 20px rgba(255, 170, 0, 0.2);
   }
   
   .alert-danger {
-    @apply bg-danger-50 border-danger-400 text-danger-700;
+    @apply bg-secondary-900/50 border-danger-500 text-danger-500;
+    box-shadow: 0 0 20px rgba(255, 0, 64, 0.2);
   }
   
   .alert-info {
-    @apply bg-primary-50 border-primary-400 text-primary-700;
+    @apply bg-secondary-900/50 border-neon-cyan text-neon-cyan;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
   }
 
-  /* Avatar Components */
+  /* Retro Avatar Components */
   .avatar {
     @apply relative inline-block;
   }
   
   .avatar-img {
-    @apply rounded-full object-cover;
-  }
-  
-  .avatar-sm .avatar-img {
-    @apply w-8 h-8;
-  }
-  
-  .avatar-md .avatar-img {
-    @apply w-12 h-12;
-  }
-  
-  .avatar-lg .avatar-img {
-    @apply w-20 h-20;
-  }
-  
-  .avatar-xl .avatar-img {
-    @apply w-32 h-32;
+    @apply object-cover border-2 border-neon-pink;
+    clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
   }
 
-  /* Badge Components */
+  /* Neon Badge Components */
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium border;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
   }
   
   .badge-primary {
-    @apply bg-primary-100 text-primary-700;
+    @apply bg-transparent border-neon-pink text-neon-pink;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
   }
   
   .badge-success {
-    @apply bg-success-100 text-success-700;
+    @apply bg-transparent border-neon-green text-neon-green;
+    box-shadow: 0 0 10px rgba(0, 255, 128, 0.3);
   }
   
   .badge-warning {
-    @apply bg-warning-100 text-warning-700;
+    @apply bg-transparent border-warning-500 text-warning-500;
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
   }
   
   .badge-danger {
-    @apply bg-danger-100 text-danger-700;
+    @apply bg-transparent border-danger-500 text-danger-500;
+    box-shadow: 0 0 10px rgba(255, 0, 64, 0.3);
   }
 
-  /* Loading Components */
+  /* Synthwave Loading Components */
   .spinner {
-    @apply animate-spin h-5 w-5 text-primary-600;
+    @apply h-6 w-6 border-2 border-neon-pink border-t-transparent rounded-full;
+    animation: spin 1s linear infinite;
   }
   
-  .spinner-sm {
-    @apply h-4 w-4;
-  }
-  
-  .spinner-lg {
-    @apply h-8 w-8;
+  .spinner::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    border-top: 2px solid #00ffff;
+    border-radius: 50%;
+    animation: spin 2s linear infinite reverse;
   }
 
-  /* Layout Components */
+  /* Retro Layout Components */
   .container-fluid {
     @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
@@ -197,135 +309,141 @@
     @apply w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Animation Helpers */
-  .animate-in {
-    @apply animate-fade-in;
-  }
-  
-  .slide-up {
-    @apply animate-slide-up;
-  }
-  
-  .slide-down {
-    @apply animate-slide-down;
-  }
-  
-  .scale-in {
-    @apply animate-scale-in;
+  /* Synthwave Grid Background Component */
+  .synthwave-grid {
+    position: relative;
+    background-image: 
+      linear-gradient(rgba(255, 0, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 0, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridFlow 20s linear infinite;
   }
 
-  /* Modern Input with Floating Label */
-  .floating-input {
-    @apply relative;
+  /* Neon Text Effects */
+  .text-neon {
+    text-shadow: 
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 15px currentColor,
+      0 0 20px currentColor;
   }
   
-  .floating-input input {
-    @apply w-full px-4 pt-6 pb-2 border border-secondary-200 rounded-xl bg-white/50 backdrop-blur-sm placeholder-transparent focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
-  }
-  
-  .floating-input label {
-    @apply absolute left-4 top-2 text-xs text-secondary-500 transition-all duration-200;
-  }
-  
-  .floating-input input:placeholder-shown + label {
-    @apply text-base text-secondary-400 top-4;
-  }
-  
-  .floating-input input:focus + label {
-    @apply top-2 text-xs text-primary-600;
+  .text-neon-glow {
+    animation: neon-flicker 0.1s infinite alternate;
   }
 
-  /* Glass Morphism Effects */
-  .glass {
-    @apply bg-white/20 backdrop-blur-lg border border-white/30;
-  }
-  
-  .glass-card {
-    @apply glass rounded-2xl shadow-large;
-  }
-
-  /* Gradient Text */
+  /* Retro Gradient Text */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-neon-pink to-neon-cyan bg-clip-text text-transparent;
+    animation: glow-pulse 2s ease-in-out infinite alternate;
   }
   
   .text-gradient-secondary {
-    @apply bg-gradient-to-r from-secondary-600 to-secondary-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-neon-purple to-neon-blue bg-clip-text text-transparent;
   }
 
-  /* Modern File Upload */
-  .file-upload-area {
-    @apply border-2 border-dashed border-secondary-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors duration-200 cursor-pointer bg-secondary-50/50;
-  }
-  
-  .file-upload-area.dragover {
-    @apply border-primary-500 bg-primary-50;
-  }
-
-  /* Modern Toggle */
+  /* Synthwave Toggle */
   .toggle {
-    @apply relative inline-flex h-6 w-11 items-center rounded-full bg-secondary-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply relative inline-flex h-6 w-11 items-center bg-secondary-700 border border-neon-pink transition-colors focus:outline-none;
+    clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
   }
   
   .toggle.checked {
-    @apply bg-primary-600;
+    @apply bg-neon-pink/20 border-neon-cyan;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
   }
   
   .toggle-thumb {
-    @apply inline-block h-4 w-4 transform rounded-full bg-white transition-transform;
+    @apply inline-block h-4 w-4 transform bg-neon-pink transition-transform;
+    clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
+    box-shadow: 0 0 5px rgba(255, 0, 255, 0.8);
   }
   
   .toggle.checked .toggle-thumb {
-    @apply translate-x-6;
+    @apply translate-x-6 bg-neon-cyan;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
   }
 
-  /* Status Indicators */
-  .status-dot {
-    @apply inline-block w-2 h-2 rounded-full;
+  /* Audio Control Component */
+  .audio-control {
+    @apply fixed top-4 right-4 z-50 p-3 bg-secondary-900/50 backdrop-blur-lg border border-neon-pink/30 cursor-pointer transition-all duration-300;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
   }
   
-  .status-online {
-    @apply bg-success-500;
+  .audio-control:hover {
+    @apply border-neon-cyan/50;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
   }
   
-  .status-offline {
-    @apply bg-secondary-400;
+  .audio-control.muted {
+    @apply border-danger-500/50;
+    box-shadow: 0 0 15px rgba(255, 0, 64, 0.3);
   }
-  
-  .status-busy {
-    @apply bg-warning-500;
+
+  /* Horizon Line Effect */
+  .horizon-line {
+    position: absolute;
+    bottom: 20%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.3), rgba(0, 255, 255, 0.3), rgba(255, 0, 255, 0.3), transparent);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+    opacity: 0.5;
+  }
+
+  /* Scan Line Effect */
+  .scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ffff, transparent);
+    animation: synthwaveScan 3s ease-in-out infinite;
+    opacity: 0.7;
   }
 }
 
 @layer utilities {
   .text-shadow {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
   }
   
   .text-shadow-lg {
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
   }
   
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.secondary.300') theme('colors.secondary.100');
+    scrollbar-color: #ff00ff #1a0a2e;
   }
   
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+  /* Perspective Grid Effect */
+  .perspective-grid {
+    background: 
+      linear-gradient(90deg, transparent 0%, rgba(255, 0, 255, 0.1) 50%, transparent 100%),
+      linear-gradient(0deg, transparent 0%, rgba(255, 0, 255, 0.1) 50%, transparent 100%);
+    background-size: 100px 100px;
+    transform: perspective(500px) rotateX(60deg);
+    transform-origin: bottom;
   }
   
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: theme('colors.secondary.100');
-    border-radius: 3px;
+  /* Retro Gaming Font */
+  .font-retro {
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
   }
   
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: theme('colors.secondary.300');
-    border-radius: 3px;
+  /* Cyberpunk Clip Paths */
+  .clip-cyberpunk {
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
   }
   
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: theme('colors.secondary.400');
+  .clip-cyber-button {
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  }
+  
+  .clip-cyber-card {
+    clip-path: polygon(20px 0%, 100% 0%, calc(100% - 20px) 100%, 0% 100%);
   }
 } 
