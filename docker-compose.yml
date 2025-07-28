@@ -9,7 +9,7 @@ services:
       dockerfile: ./ms-frontend/Dockerfile
       target: development
     ports:
-      - "${FRONTEND_PORT:-3010}:3010"
+      - "${FRONTEND_PORT:-3000}:3000"
     volumes:
       - ./packages/ms-frontend/src:/app/src
       - ./packages/ms-frontend/assets:/app/assets
@@ -20,8 +20,8 @@ services:
       - ./packages/ms-frontend/tailwind.config.js:/app/tailwind.config.js
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      - logstash
+    # depends_on:
+    #   - logstash
 
   ms-auth:
     container_name: authentication
@@ -31,22 +31,14 @@ services:
       target: development
     ports:
       - "3001:3001"
-    environment:
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://localhost:3010/auth/google/callback}
-      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-localhost}
-      - WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-ft_transcendence}
-      - WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-http://localhost:3010}
     volumes:
       - ./packages/ms-auth/prisma:/app/prisma
       - ./packages/ms-auth/src:/app/src
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      logstash:
-        condition: service_healthy
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
 
   ms-game:
     container_name: game
@@ -55,48 +47,48 @@ services:
       dockerfile: ./ms-game/Dockerfile
     env_file: ./packages/ms-game/.env
     ports:
-      - "${GAME_PORT:-3003}:3003"
+      - "${GAME_PORT:-3002}:3002"
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      logstash:
-        condition: service_healthy
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
 
-  tournament:
+  ms-tournament:
     container_name: tournament
     build:
       context: ./packages
-      dockerfile: ./tournament/Dockerfile
+      dockerfile: ./ms-tournament/Dockerfile
       target: development
     ports:
-      - "${TOURNAMENT_PORT:-4243}:4243"
+      - "${TOURNAMENT_PORT:-3003}:3003"
     environment:
-      - PORT=4243
+      - PORT=3003
       - DATABASE_URL=file:./tournament.db
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - AUTH_SERVICE_URL=http://authentication:3001
       - GAME_SERVICE_URL=http://game:3003
       - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
     volumes:
-      - ./packages/tournament/src:/app/src
-      - ./packages/tournament/prisma:/app/prisma
+      - ./packages/ms-tournament/src:/app/src
+      - ./packages/ms-tournament/prisma:/app/prisma
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
-      logstash:
-        condition: service_healthy
-      blockchain:
+      #    logstash:
+      #      condition: service_healthy
+      ms-blockchain:
         condition: service_started
 
-  blockchain-node:
+  ms-blockchain-node:
     container_name: blockchain-node
     build:
       context: ./packages
-      dockerfile: ./blockchain/Dockerfile
+      dockerfile: ./ms-blockchain/Dockerfile
       target: development
-    command: npx hardhat node --hostname 0.0.0.0 --port 8545
+    command: npx hardhat node --hostname 0.0.0.0 --port 3005
     ports:
-      - "8545:8545"
+      - "3005:3005"
     environment:
       - NODE_ENV=development
     networks:
@@ -107,19 +99,19 @@ services:
           "CMD",
           "sh",
           "-c",
-          "wget --no-verbose --tries=1 --spider http://127.0.0.1:8545 || exit 1",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3005 || exit 1",
         ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
-  blockchain:
+  ms-blockchain:
     container_name: blockchain
     build:
       context: ./packages
-      dockerfile: ./blockchain/Dockerfile
-      target: development
+      dockerfile: ./ms-blockchain/Dockerfile
+      target: prod
     ports:
       - "${BLOCKCHAIN_PORT:-3004}:3004"
     environment:
@@ -128,109 +120,141 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
       - AVALANCHE_CHAIN_ID=${AVALANCHE_CHAIN_ID:-43113}
-      - PRIVATE_KEY=${BLOCKCHAIN_PRIVATE_KEY}
-      - TOURNAMENT_SCORING_CONTRACT_ADDRESS=${TOURNAMENT_SCORING_CONTRACT_ADDRESS}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
-      - TOURNAMENT_SERVICE_URL=http://tournament:4243
+      - TOURNAMENT_SERVICE_URL=http://tournament:3003
       - AUTH_SERVICE_URL=http://authentication:3001
       - GAS_LIMIT=${GAS_LIMIT:-3000000}
       - GAS_PRICE=${GAS_PRICE:-20000000000}
-    volumes:
-      - ./packages/blockchain/src:/app/src
-      - ./packages/blockchain/contracts:/app/contracts
-      - ./packages/blockchain/scripts:/app/scripts
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      logstash:
-        condition: service_healthy
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
 
   elasticsearch:
-    container_name: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-9.0.2}
+    container_name: elasticsearch
+    restart: unless-stopped
     environment:
-      - discovery.type=${ELASTICSEARCH_DISCOVERY_TYPE:-single-node}
-      - ES_JAVA_OPTS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
-      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
-      - "_JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTIONS:--XX:UseSVE=0}"
+      - _JAVA_OPTIONS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-true}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "${ELASTICSEARCH_PORT:-9200}:9200"
     networks:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ${ELASTICSEARCH_DATA_VOLUME:-esdata}:/usr/share/elasticsearch/data
-    healthcheck:
-      test:
-        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: ${ELASTICSEARCH_HEALTH_CHECK_INTERVAL:-30s}
-      timeout: ${ELASTICSEARCH_HEALTH_CHECK_TIMEOUT:-10s}
-      retries: ${ELASTICSEARCH_HEALTH_CHECK_RETRIES:-5}
+      - ./devops/certs:/usr/share/elasticsearch/config/certs
+      - ./devops/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+  #    healthcheck:
+  #      test:
+  #        [
+  #          "CMD-SHELL",
+  #          "curl -k -u elastic:${ELASTIC_PASSWORD:-changeme} -f https://localhost:9200/_cluster/health?pretty || exit 1"
+  #        ]
+  #      interval: 30s
+  #      timeout: 10s
+  #      retries: 5
+  #      start_period: 120s
 
   kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION:-9.0.2}
     container_name: kibana
-    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION:-9.0.2}
+    restart: unless-stopped
     depends_on:
       elasticsearch:
         condition: service_healthy
     environment:
-      - ELASTICSEARCH_HOSTS=${KIBANA_ELASTICSEARCH_HOSTS:-http://elasticsearch:9200}
-      - xpack.security.enabled=${KIBANA_SECURITY_ENABLED:-false}
-      - "_JAVA_OPTIONS=${KIBANA_JAVA_OPTIONS:--XX:UseSVE=0}"
+      - _JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
+      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS:-https://elasticsearch:9200}
+      - ELASTICSEARCH_USERNAME=${KIBANA_ES_USER:-kibana_system}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - ELASTICSEARCH_SSL_VERIFICATIONMODE=certificate
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=${XPACK_SECURITY_ENCRYPTIONKEY:-a_secure_32_character_string_123}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY:-a_secure_32_character_string_456}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${XPACK_REPORTING_ENCRYPTIONKEY:-a_secure_32_character_string_789}
     ports:
       - "${KIBANA_PORT:-5601}:5601"
+    volumes:
+      - ./devops/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./devops/certs:/usr/share/kibana/config/certs:ro
     networks:
       - ${NETWORK_NAME:-ft-net}
 
   logstash:
-    container_name: logstash
     image: docker.elastic.co/logstash/logstash:${LOGSTASH_VERSION:-9.0.2}
+    container_name: logstash
+    restart: unless-stopped
     depends_on:
-      elasticsearch:
-        condition: service_healthy
-    ports:
-      - "${LOGSTASH_TCP_PORT:-5001}:5001"
-      - "${LOGSTASH_HTTP_PORT:-9600}:9600"
+      - elasticsearch
     environment:
-      - LS_JAVA_OPTS=${LOGSTASH_JAVA_OPTS:--Xmx256m -Xms256m}
+      - _JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
+      - LS_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS:-https://elasticsearch:9200}
+      - ELASTICSEARCH_USER=${LOGSTASH_ES_USER:-logstash_system}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/logstash/config/certs/ca.crt
     networks:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      - ./devops/logstash/config:/usr/share/logstash/config
+      - ./devops/certs:/usr/share/logstash/config/certs
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f https://localhost:9600/_node/stats || exit 1"]
+    #   interval: 15s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 30s
 
   prometheus:
     container_name: prometheus
-    image: prom/prometheus
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    user: root
+    networks:
+      - ${NETWORK_NAME:-ft-net}
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ${PROMETHEUS_CONFIG_PATH:-./devops/prometheus/prometheus.yml}:/etc/prometheus/prometheus.yml
       - ${PROMETHEUS_ALERTS_PATH:-./devops/prometheus/alerts.yml}:/etc/prometheus/alerts.yml
-    networks:
-      - ${NETWORK_NAME:-ft-net}
+      - ./devops/prometheus/web-config.yml:/etc/prometheus/web-config.yml
+      - ./devops/certs:/etc/prometheus/certs
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.config.file=/etc/prometheus/web-config.yml"
 
   grafana:
     container_name: grafana
     image: grafana/grafana:latest
+    restart: unless-stopped
+    user: root
+    networks:
+      - ${NETWORK_NAME:-ft-net}
     ports:
-      - "${GRAFANA_PORT:-3002}:3000"
+      - "${GRAFANA_PORT:-3006}:3000"
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana
+      - ./devops/certs:/etc/grafana/certs
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGN_UP:-false}
+      - GF_SERVER_PROTOCOL=https
+      - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
+      - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
     depends_on:
       - prometheus
-      - elasticsearch
-    networks:
-      - ${NETWORK_NAME:-ft-net}
+      # - elasticsearch
 
 volumes:
   esdata:

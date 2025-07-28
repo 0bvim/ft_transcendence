@@ -1,7 +1,19 @@
 cluster.name: docker-cluster
-network.host: 0.0.0.0
 http.port: 9200
 discovery.type: single-node
-xpack.security.enabled: false
-xpack.security.http.ssl.enabled: false
-xpack.security.transport.ssl.enabled: false
+network.host: 0.0.0.0
+
+# SSL/TLS Configuration
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certs/elasticsearch.crt
+xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certs/elasticsearch.key
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/elasticsearch.crt
+xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/elasticsearch.key
+xpack.security.http.ssl.client_authentication: optional
+
+# Disable authentication for development
+# xpack.security.authc.anonymous.username: anonymous_user
+# xpack.security.authc.anonymous.roles: superuser
+# xpack.security.authc.anonymous.authz_exception: true

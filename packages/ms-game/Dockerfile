@@ -1,15 +1,21 @@
+FROM node:20-alpine AS observability-builder
+WORKDIR /app
+COPY ./observability ./observability
+RUN cd observability && npm install && npm run build && npm pack
+
 FROM node:20-alpine
 
 WORKDIR /app
 
 RUN apk add --no-cache curl
 
-COPY ./observability ./observability
-RUN cd observability && npm install && npm run build && npm pack
+# First, build the observability package
+COPY --from=observability-builder /app/observability/ft-transcendence-observability-1.0.0.tgz .
 
 COPY ./ms-game/package*.json ./
 
-RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
+# Install the packed observability package
+RUN npm install ./ft-transcendence-observability-1.0.0.tgz
 
 RUN npm install
 
@@ -24,8 +30,8 @@ COPY ./ms-game/certs ./certs
 RUN npm run build
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3003/health || exit 1
+    CMD curl -f http://localhost:3002/health || exit 1
 
-EXPOSE 3003
+EXPOSE 3002
 
 CMD ["npm", "start"]

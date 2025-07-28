@@ -111,7 +111,7 @@ class TournamentApi {
   constructor() {
     // Use tournament service URL directly
     const hostname = window.location.hostname;
-    this.baseUrl = `http://${hostname}:4243`;
+    this.baseUrl = `http://${hostname}:3003`;
   }
 
   private async request<T>(
