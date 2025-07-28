@@ -18,9 +18,9 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config: { headers: { Authorization: string } }) => {
+  (config) => {
     const token = localStorage.getItem("accessToken");
-    if (token) {
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -113,8 +113,9 @@ export interface UpdateProfileRequest {
 export const authApi = {
   // Standard authentication
   register: async (data: RegisterRequest): Promise<void> => {
-    const response = await api.post("/register", data);
-    return response.data;
+    await api.post("/register", data);
+    // Backend returns empty response with 201 status on success
+    return;
   },
 
   login: async (data: LoginRequest): Promise<AuthResponse> => {
