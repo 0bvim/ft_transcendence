@@ -100,8 +100,19 @@ help:
 	@echo "make fclean      - Full cleanup and remove generated certificates"
 	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
-define create_certificates
-	# Generate certificates for microservices
+define generate_elk_certificates
+	# Generate ELK stack wildcard certificates using our custom script
+	if [ -f ./devops/scripts/generate-elk-certs.sh ]; then \
+		echo "🔐 Generating ELK stack wildcard certificates..."; \
+		./devops/scripts/generate-elk-certs.sh; \
+	else \
+		echo "❌ Certificate generation script not found at ./devops/scripts/generate-elk-certs.sh"; \
+		exit 1; \
+	fi
+endef
+
+define generate_microservice_certificates
+	# Generate certificates for microservices (if needed)
 	for service in $(SERVICES_PATH); do \
 		if [ ! -d $$service/certs ]; then \
 			mkdir -p $$service/certs; \
@@ -110,36 +121,13 @@ define create_certificates
 				echo "✅ Certificates already exist for $$service"; \
 		else \
 			echo "🔧 Creating new certificates for $$service"; \
-			mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
+			if command -v mkcert > /dev/null; then \
+				mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
+			else \
+				echo "⚠️ mkcert not found, skipping microservice certificates"; \
+			fi; \
 		fi; \
 	done
-
-	# Generate certificates for observability stack
-	if [ ! -d devops/certs ]; then \
-		mkdir -p devops/certs; \
-	fi; \
-	for service in elasticsearch kibana logstash prometheus grafana; do \
-		if [ -f devops/certs/$$service.crt ] && [ -f devops/certs/$$service.key ]; then \
-			if openssl x509 -checkend 86400 -noout -in devops/certs/$$service.crt > /dev/null 2>&1; then \
-				echo "✅ Valid certificates already exist for $$service"; \
-			else \
-				echo "🔧 Regenerating expired certificates for $$service"; \
-				mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key localhost 127.0.0.1; \
-			fi; \
-		else \
-			echo "🔧 Creating new certificates for $$service"; \
-			mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key localhost 127.0.0.1; \
-		fi; \
-	done; \
-	# Generate PKCS12 keystore for Logstash SSL \
-	if [ -f devops/certs/logstash.crt ] && [ -f devops/certs/logstash.key ]; then \
-		echo "🔧 Creating PKCS12 keystore for Logstash"; \
-		openssl pkcs12 -export -out devops/certs/logstash.p12 -inkey devops/certs/logstash.key -in devops/certs/logstash.crt -password pass:logstash 2>/dev/null || true; \
-	fi; \
-	# Fix permissions for certificate files to ensure containers can read them \
-	chmod 644 devops/certs/*.crt 2>/dev/null || true; \
-	chmod 644 devops/certs/*.key 2>/dev/null || true; \
-	chmod 644 devops/certs/*.p12 2>/dev/null || true
 endef
 
 define install_mkcert
@@ -159,7 +147,8 @@ endef
 
 generate-certs:
 	@echo "⏲️ Generating SSL certificates..."
+	@$(call generate_elk_certificates)
 	@$(call install_mkcert)
-	@$(call create_certificates)
+	@$(call generate_microservice_certificates)
 
 .PHONY: up dev down dev-clean restart logs clean fclean metrics generate-certs

@@ -1,12 +1,22 @@
+# Logstash Configuration for HTTPS with Self-Signed Wildcard Certificates
+# Version: 9.0.2
+
 # Pipeline settings
 config.reload.automatic: true
+config.reload.interval: 3s
 
-# Settings for the Logstash monitoring and management API.
-# These settings are used to configure the API endpoint that can be used to monitor Logstash.
-
-# Enable the API
+# Settings for the Logstash monitoring and management API
 api.enabled: true
-
-# The host and port for the API.
 api.http.host: 0.0.0.0
 api.http.port: 9600
+
+# SSL Configuration for Elasticsearch output
+# These settings will be used in pipeline configurations
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: ["https://elasticsearch:9200"]
+xpack.monitoring.elasticsearch.ssl.certificate_authority: "/usr/share/logstash/config/certs/ca.crt"
+xpack.monitoring.elasticsearch.ssl.verification_mode: certificate
+
+# Logging
+log.level: debug
+path.logs: /usr/share/logstash/logs
