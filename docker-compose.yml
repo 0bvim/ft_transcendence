@@ -210,7 +210,7 @@ services:
     volumes:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./devops/logstash/config:/usr/share/logstash/config:ro
-      - ./devops/certs:/usr/share/logstash/config/certs:ro
+      - ./devops/certs:/usr/share/logstash/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
       interval: 30s

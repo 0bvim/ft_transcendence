@@ -14,7 +14,7 @@ api.http.port: 9600
 # These settings will be used in pipeline configurations
 xpack.monitoring.enabled: true
 xpack.monitoring.elasticsearch.hosts: ["https://elasticsearch:9200"]
-xpack.monitoring.elasticsearch.ssl.certificate_authority: "/usr/share/logstash/config/certs/ca.crt"
+xpack.monitoring.elasticsearch.ssl.certificate_authority: "/usr/share/logstash/certs/ca.crt"
 xpack.monitoring.elasticsearch.ssl.verification_mode: certificate
 
 # Logging

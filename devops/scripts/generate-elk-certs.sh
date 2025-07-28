@@ -70,7 +70,7 @@ IP.2 = ::1
 EOF
 
 # Generate wildcard certificate signed by CA
-openssl x509 -req -in elk-wildcard.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out elk-wildcard.crt -days 365 -extfile elk-wildcard.ext
+openssl x509 -req -in elk-wildcard.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out elk-wildcard.crt -days 365 -extensions v3_req -extfile elk-wildcard.ext
 
 echo -e "${GREEN}✅ Wildcard certificate generated successfully${NC}"
 

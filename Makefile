@@ -98,6 +98,7 @@ help:
 	@echo "make run         - Open application URLs in browser"
 	@echo "make clean       - Full cleanup (remove containers, volumes, images)"
 	@echo "make fclean      - Full cleanup and remove generated certificates"
+	@echo "make setup-elk-users - Set up ELK users with fixed passwords from .env"
 	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
 define generate_elk_certificates
@@ -151,4 +152,13 @@ generate-certs:
 	@$(call install_mkcert)
 	@$(call generate_microservice_certificates)
 
-.PHONY: up dev down dev-clean restart logs clean fclean metrics generate-certs
+setup-elk-users:
+	@echo "🔐 Setting up ELK users with fixed passwords..."
+	@if [ -f ./devops/scripts/setup-elk-users.sh ]; then \
+		./devops/scripts/setup-elk-users.sh; \
+	else \
+		echo "❌ ELK user setup script not found at ./devops/scripts/setup-elk-users.sh"; \
+		exit 1; \
+	fi
+
+.PHONY: up dev down dev-clean restart logs clean fclean metrics generate-certs setup-elk-users
