@@ -7,6 +7,10 @@ datasources:
     url: https://prometheus:9090
     isDefault: true
     editable: true
+    basicAuth: true
+    basicAuthUser: $PROMETHEUS_USERNAME
+    secureJsonData:
+      basicAuthPassword: $PROMETHEUS_PASSWORD
     jsonData:
       tlsSkipVerify: true
 
@@ -14,6 +18,10 @@ datasources:
     type: elasticsearch
     access: proxy
     url: https://elasticsearch:9200
+    basicAuth: true
+    basicAuthUser: ${ELASTIC_USER}
+    secureJsonData:
+      basicAuthPassword: ${ELASTIC_PASSWORD}
     database: logstash-*
     isDefault: false
     editable: true
