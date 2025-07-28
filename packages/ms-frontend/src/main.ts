@@ -24,6 +24,12 @@ router.addRoute({
 });
 
 router.addRoute({
+  path: '/home',
+  component: () => import('./pages/Home'),
+  title: 'Home'
+});
+
+router.addRoute({
   path: '/login',
   component: () => import('./pages/Login'),
   title: 'Login'
@@ -98,18 +104,6 @@ router.addRoute({
   title: 'Blockchain Verification'
 });
 
-// Handle default route
-const currentPath = window.location.pathname;
-if (currentPath === '/') {
-  // Redirect to dashboard if authenticated, otherwise to login
-  const isAuthenticated = !!localStorage.getItem('accessToken');
-  if (isAuthenticated) {
-    window.location.href = '/dashboard';
-  } else {
-    window.location.href = '/login';
-  }
-}
-
 // Start the router
 router.start(); 
 
@@ -121,9 +115,9 @@ function addSynthwaveEffects() {
   document.body.appendChild(scanLine);
 
   // Add horizon line effect (optional, can be added to specific pages)
-  // const horizonLine = document.createElement('div');
-  // horizonLine.className = 'horizon-line';
-  // document.body.appendChild(horizonLine);
+  const horizonLine = document.createElement('div');
+  horizonLine.className = 'horizon-line';
+  document.body.appendChild(horizonLine);
 }
 
 // Initialize synthwave effects
