@@ -20,8 +20,6 @@ services:
       - ./packages/ms-frontend/tailwind.config.js:/app/tailwind.config.js
     networks:
       - ${NETWORK_NAME:-ft-net}
-    # depends_on:
-    #   - logstash
 
   ms-auth:
     container_name: authentication
@@ -36,9 +34,6 @@ services:
       - ./packages/ms-auth/src:/app/src
     networks:
       - ${NETWORK_NAME:-ft-net}
-    # depends_on:
-    #   logstash:
-    #     condition: service_healthy
 
   ms-game:
     container_name: game
@@ -50,9 +45,6 @@ services:
       - "${GAME_PORT:-3002}:3002"
     networks:
       - ${NETWORK_NAME:-ft-net}
-    # depends_on:
-    #   logstash:
-    #     condition: service_healthy
 
   ms-tournament:
     container_name: tournament
@@ -75,8 +67,6 @@ services:
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
-      #    logstash:
-      #      condition: service_healthy
       ms-blockchain:
         condition: service_started
 
@@ -127,19 +117,17 @@ services:
       - GAS_PRICE=${GAS_PRICE:-20000000000}
     networks:
       - ${NETWORK_NAME:-ft-net}
-    # depends_on:
-    #   logstash:
-    #     condition: service_healthy
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-9.0.2}
     container_name: elasticsearch
+    hostname: elasticsearch.localhost
     restart: unless-stopped
     environment:
       - _JAVA_OPTIONS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
       - ES_JAVA_OPTS=-Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
-      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-true}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.enabled=true
     ulimits:
       memlock:
         soft: -1
@@ -150,69 +138,74 @@ services:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ${ELASTICSEARCH_DATA_VOLUME:-esdata}:/usr/share/elasticsearch/data
-      - ./devops/certs:/usr/share/elasticsearch/config/certs
-      - ./devops/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-  #    healthcheck:
-  #      test:
-  #        [
-  #          "CMD-SHELL",
-  #          "curl -k -u elastic:${ELASTIC_PASSWORD:-changeme} -f https://localhost:9200/_cluster/health?pretty || exit 1"
-  #        ]
-  #      interval: 30s
-  #      timeout: 10s
-  #      retries: 5
-  #      start_period: 120s
+      - ${ELASTICSEARCH_CERTS_PATH:-./devops/certs}:/usr/share/elasticsearch/config/certs:ro
+      - ./devops/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -k -s https://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION:-9.0.2}
     container_name: kibana
+    hostname: kibana.localhost
     restart: unless-stopped
     depends_on:
       elasticsearch:
         condition: service_healthy
     environment:
       - _JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
-      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS:-https://elasticsearch:9200}
-      - ELASTICSEARCH_USERNAME=${KIBANA_ES_USER:-kibana_system}
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-changeme}
-      - ELASTICSEARCH_SSL_VERIFICATIONMODE=certificate
-      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca.crt
-      - XPACK_SECURITY_ENCRYPTIONKEY=${XPACK_SECURITY_ENCRYPTIONKEY:-a_secure_32_character_string_123}
-      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY:-a_secure_32_character_string_456}
-      - XPACK_REPORTING_ENCRYPTIONKEY=${XPACK_REPORTING_ENCRYPTIONKEY:-a_secure_32_character_string_789}
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-kibana_system}
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD:-syspass}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=a_secure_32_character_string_123456
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a_secure_32_character_string_123456
+      - XPACK_REPORTING_ENCRYPTIONKEY=a_secure_32_character_string_789012
     ports:
       - "${KIBANA_PORT:-5601}:5601"
     volumes:
-      - ./devops/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
-      - ./devops/certs:/usr/share/kibana/config/certs:ro
+      - ./devops/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ${KIBANA_CERTS_PATH:-./devops/certs}:/usr/share/kibana/config/certs:ro
     networks:
       - ${NETWORK_NAME:-ft-net}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f https://localhost:5601/api/status --insecure || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   logstash:
     image: docker.elastic.co/logstash/logstash:${LOGSTASH_VERSION:-9.0.2}
     container_name: logstash
+    hostname: logstash.localhost
     restart: unless-stopped
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     environment:
       - _JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
       - LS_JAVA_OPTS=-Xms512m -Xmx512m
-      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS:-https://elasticsearch:9200}
-      - ELASTICSEARCH_USER=${LOGSTASH_ES_USER:-logstash_system}
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-changeme}
-      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/logstash/config/certs/ca.crt
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USER=${ELASTIC_USER}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "${LOGSTASH_PORT:-5001}:5001"
     networks:
       - ${NETWORK_NAME:-ft-net}
     volumes:
-      - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
-      - ./devops/logstash/config:/usr/share/logstash/config
-      - ./devops/certs:/usr/share/logstash/config/certs
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f https://localhost:9600/_node/stats || exit 1"]
-    #   interval: 15s
-    #   timeout: 10s
-    #   retries: 5
-    #   start_period: 30s
+      - ./devops/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./devops/logstash/config:/usr/share/logstash/config:ro
+      - ${LOGSTASH_CERTS_PATH:-./devops/certs}:/usr/share/logstash/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   prometheus:
     container_name: prometheus
@@ -227,7 +220,7 @@ services:
       - ${PROMETHEUS_CONFIG_PATH:-./devops/prometheus/prometheus.yml}:/etc/prometheus/prometheus.yml
       - ${PROMETHEUS_ALERTS_PATH:-./devops/prometheus/alerts.yml}:/etc/prometheus/alerts.yml
       - ./devops/prometheus/web-config.yml:/etc/prometheus/web-config.yml
-      - ./devops/certs:/etc/prometheus/certs
+      - ${PROMETHEUS_CERTS_PATH:-./devops/certs}:/etc/prometheus/certs
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -245,16 +238,15 @@ services:
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana
-      - ./devops/certs:/etc/grafana/certs
+      - ${GRAFANA_CERTS_PATH:-./devops/certs}:/etc/grafana/certs
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_SERVER_PROTOCOL=https
       - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
       - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
     depends_on:
       - prometheus
-      # - elasticsearch
 
 volumes:
   esdata:
