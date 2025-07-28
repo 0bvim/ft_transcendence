@@ -159,6 +159,19 @@ export default function Register(): HTMLElement {
             </div>
           </div>
 
+          <!-- Success Message -->
+          <div id="successMessage" class="hidden">
+            <div class="alert alert-success">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="font-mono text-sm">SUCCESS:</span>
+                <span class="ml-2">Account created successfully! Redirecting to login...</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Register Button -->
           <button
             type="submit"
@@ -298,6 +311,8 @@ function setupEventListeners(container: HTMLElement) {
         password: data.password,
       });
       
+      console.log('Registration successful');
+      
       // Show success message
       showSuccess();
       
@@ -308,7 +323,27 @@ function setupEventListeners(container: HTMLElement) {
       
     } catch (error: any) {
       console.error('Register error:', error);
-      const message = error.response?.data?.message || 'Registration failed. Please try again.';
+      
+      // Better error handling for different scenarios
+      let message = 'Registration failed. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const errorData = error.response.data;
+        
+        if (status === 409) {
+          message = errorData?.error || 'Email or username already in use.';
+        } else if (status === 400) {
+          message = errorData?.error || 'Invalid input data.';
+        } else if (errorData?.error) {
+          message = errorData.error;
+        }
+      } else if (error.request) {
+        // Network error
+        message = 'Network error. Please check your connection and try again.';
+      }
+      
       showError(message);
     } finally {
       setLoading(false);
@@ -361,12 +396,12 @@ function setupEventListeners(container: HTMLElement) {
     googleButton.disabled = loading;
     
     if (loading) {
-      registerButtonText.textContent = 'Creating Account...';
+      registerButtonText.textContent = 'CREATING_ACCOUNT...';
       registerButtonIcon.classList.add('hidden');
       registerSpinner.classList.remove('hidden');
       registerButton.classList.add('opacity-75');
     } else {
-      registerButtonText.textContent = 'Create Account';
+      registerButtonText.textContent = 'CREATE_ACCOUNT.EXE';
       registerButtonIcon.classList.remove('hidden');
       registerSpinner.classList.add('hidden');
       registerButton.classList.remove('opacity-75');
