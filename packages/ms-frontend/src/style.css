@@ -405,6 +405,78 @@
   }
 }
 
+/* Retro Keyframe Animations */
+@keyframes gridFlow {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(50px); }
+}
+
+@keyframes synthwaveScan {
+  0% { transform: translateY(-100vh); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes neon-flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% {
+    text-shadow: 
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 15px currentColor,
+      0 0 20px currentColor,
+      0 0 35px currentColor,
+      0 0 40px currentColor;
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes animate-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-30px) rotate(120deg); }
+  66% { transform: translateY(15px) rotate(240deg); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes animate-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes animate-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @layer utilities {
   .text-shadow {
     text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
@@ -412,6 +484,14 @@
   
   .text-shadow-lg {
     text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+  }
+  
+  .shadow-glow-lg {
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
   }
   
   .scrollbar-thin {
@@ -445,5 +525,26 @@
   
   .clip-cyber-card {
     clip-path: polygon(20px 0%, 100% 0%, calc(100% - 20px) 100%, 0% 100%);
+  }
+
+  /* Animation Utilities */
+  .animate-float {
+    animation: animate-float 6s ease-in-out infinite;
+  }
+  
+  .animate-fade-in {
+    animation: animate-fade-in 1s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: animate-slide-up 0.8s ease-out;
+  }
+  
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  .animate-neon-flicker {
+    animation: neon-flicker 0.15s infinite linear;
   }
 } 
