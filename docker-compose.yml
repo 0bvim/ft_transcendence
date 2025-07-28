@@ -201,7 +201,7 @@ services:
       - ./devops/logstash/config:/usr/share/logstash/config:ro
       - ${LOGSTASH_CERTS_PATH:-./devops/certs}:/usr/share/logstash/certs:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      test: ["CMD-SHELL", "curl -f https://localhost:9600/_node/stats --insecure || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -245,6 +245,10 @@ services:
       - GF_SERVER_PROTOCOL=https
       - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
       - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
+      - PROMETHEUS_USERNAME=${PROMETHEUS_USERNAME}
+      - PROMETHEUS_PASSWORD=${PROMETHEUS_PASSWORD}
+      - ELASTIC_USER=${ELASTIC_USER}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       - prometheus
 
