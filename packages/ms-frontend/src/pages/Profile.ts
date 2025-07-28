@@ -20,30 +20,54 @@ function getAvatarUrl(avatarUrl: string | null | undefined): string {
 
 export default function Profile(): HTMLElement {
   const container = document.createElement('div');
-  container.className = 'min-h-screen bg-secondary-50 py-8';
+  container.className = 'min-h-screen relative overflow-hidden';
 
   container.innerHTML = `
-    <div class="container mx-auto">
+    <!-- Synthwave Background Effects -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <!-- Animated Grid Background -->
+      <div class="absolute inset-0 synthwave-grid opacity-15"></div>
+      
+      <!-- Neon Orbs -->
+      <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(255,0,255,0.1) 0%, transparent 70%); animation-delay: -2s;"></div>
+      <div class="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,255,255,0.1) 0%, transparent 70%); animation-delay: -4s;"></div>
+      <div class="absolute top-1/4 right-1/3 w-80 h-80 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,255,128,0.08) 0%, transparent 70%); animation-delay: -3s;"></div>
+      <div class="absolute bottom-1/3 left-1/4 w-64 h-64 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(128,0,255,0.08) 0%, transparent 70%); animation-delay: -1s;"></div>
+      
+      <!-- Horizon Line -->
+      <div class="horizon-line"></div>
+      
+      <!-- Scan Lines -->
+      <div class="scan-line"></div>
+    </div>
+
+    <div class="relative z-10 container-fluid py-8">
       <!-- Header -->
-      <div class="mb-8">
+      <div class="mb-12 animate-fade-in">
         <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <button id="backButton" class="btn btn-ghost text-secondary-600 hover:text-primary-600">
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex items-center space-x-6">
+            <button id="backButton" class="btn btn-ghost group">
+              <svg class="w-5 h-5 mr-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
               </svg>
-              Back to Dashboard
+              BACK_TO_DASHBOARD
             </button>
             <div>
-              <h1 class="text-3xl font-bold text-gradient">Profile</h1>
-              <p class="text-secondary-600 mt-1">Manage your account settings and preferences</p>
+              <h1 class="text-5xl font-bold text-gradient font-retro tracking-wider">
+                <span class="text-neon-cyan">USER</span> 
+                <span class="text-neon-pink">PROFILE</span>
+              </h1>
+              <p class="text-neon-cyan/80 mt-2 font-mono">
+                <span class="text-neon-pink">$</span> Manage your account settings and preferences
+                <span class="animate-pulse">_</span>
+              </p>
             </div>
           </div>
-          <button id="editToggle" class="btn btn-primary">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button id="editToggle" class="btn btn-primary group">
+            <svg class="w-5 h-5 mr-3 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
-            <span id="editToggleText">Edit Profile</span>
+            <span id="editToggleText" class="font-retro tracking-wider">EDIT_PROFILE.EXE</span>
           </button>
         </div>
       </div>
@@ -51,54 +75,61 @@ export default function Profile(): HTMLElement {
       <!-- Profile Content -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Profile Card -->
-        <div class="lg:col-span-1">
-          <div class="card-gradient p-6 space-y-6 sticky top-8">
+        <div class="lg:col-span-1 animate-slide-up">
+          <div class="card p-8 space-y-8 sticky top-8">
             <!-- Avatar Section -->
             <div class="text-center">
               <div class="relative inline-block">
-                <div class="avatar avatar-xl">
-                  <img id="avatarImage" src="/assets/wishes.png" alt="Profile Avatar" class="avatar-img border-4 border-white shadow-medium" />
+                <!-- Cyberpunk Avatar Frame -->
+                <div class="relative">
+                  <div class="w-32 h-32 clip-cyberpunk bg-gradient-to-br from-neon-pink/20 to-neon-cyan/20 p-1 mx-auto">
+                    <img id="avatarImage" src="/assets/wishes.png" alt="Profile Avatar" 
+                         class="w-full h-full object-cover clip-cyberpunk" />
+                  </div>
+                  <div class="absolute inset-0 w-32 h-32 clip-cyberpunk border-2 border-neon-pink animate-glow-pulse mx-auto"></div>
+                  
+                  <!-- Upload Overlay -->
+                  <div id="avatarUploadOverlay" class="absolute inset-0 w-32 h-32 clip-cyberpunk bg-secondary-900/80 backdrop-blur-lg opacity-0 hover:opacity-100 transition-all duration-300 flex items-center justify-center cursor-pointer hidden mx-auto">
+                    <svg class="w-8 h-8 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                  </div>
+                  <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="hidden" />
                 </div>
-                <div id="avatarUploadOverlay" class="absolute inset-0 bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer hidden">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
+                
+                <!-- Avatar Actions (shown only in edit mode) -->
+                <div id="avatarActions" class="mt-4 space-y-2 hidden">
+                  <button id="removeAvatarButton" class="btn btn-danger btn-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <span class="font-retro tracking-wider">REMOVE_AVATAR</span>
+                  </button>
                 </div>
-                <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="hidden" />
+                
+                <div class="mt-6">
+                  <h2 id="displayName" class="text-2xl font-bold text-neon-cyan font-retro">Loading...</h2>
+                  <p id="username" class="text-neon-pink/70 mt-1 font-mono">@loading</p>
+                </div>
+                
+                <div class="mt-4 flex items-center justify-center space-x-2">
+                  <span class="w-2 h-2 bg-neon-green rounded-full animate-glow-pulse"></span>
+                  <span class="text-sm text-neon-green font-mono uppercase">Online</span>
+                </div>
               </div>
-              
-              <!-- Avatar Actions (shown only in edit mode) -->
-              <div id="avatarActions" class="mt-3 space-y-2 hidden">
-                <button id="removeAvatarButton" class="btn btn-sm btn-danger">
-                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
-                  </svg>
-                  Remove Avatar
-                </button>
-              </div>
-              
-              <div class="mt-4">
-                <h2 id="displayName" class="text-xl font-semibold text-secondary-900">Loading...</h2>
-                <p id="username" class="text-secondary-600">@loading</p>
-              </div>
-              
-              <div class="mt-4 flex items-center justify-center space-x-2">
-                <span class="status-dot status-online"></span>
-                <span class="text-sm text-secondary-600">Online</span>
-              </div>
-            </div>
 
-            <!-- Quick Stats -->
-            <div class="border-t border-secondary-200 pt-6">
-              <div class="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div class="text-2xl font-bold text-primary-600" id="totalGames">0</div>
-                  <div class="text-xs text-secondary-500">Games Played</div>
-                </div>
-                <div>
-                  <div class="text-2xl font-bold text-success-600" id="winRate">0%</div>
-                  <div class="text-xs text-secondary-500">Win Rate</div>
+              <!-- Quick Stats -->
+              <div class="border-t border-neon-cyan/30 pt-8 mt-8">
+                <div class="grid grid-cols-2 gap-6">
+                  <div class="p-4 bg-secondary-900/30 backdrop-blur-lg border border-neon-pink/30 clip-cyber-button text-center">
+                    <div class="text-3xl font-bold text-neon-pink font-retro mb-2" id="totalGames">0</div>
+                    <div class="text-xs text-neon-cyan/70 font-mono uppercase tracking-wider">Games Played</div>
+                  </div>
+                  <div class="p-4 bg-secondary-900/30 backdrop-blur-lg border border-neon-green/30 clip-cyber-button text-center">
+                    <div class="text-3xl font-bold text-neon-green font-retro mb-2" id="winRate">0%</div>
+                    <div class="text-xs text-neon-cyan/70 font-mono uppercase tracking-wider">Win Rate</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -106,86 +137,104 @@ export default function Profile(): HTMLElement {
         </div>
 
         <!-- Main Content -->
-        <div class="lg:col-span-2 space-y-8">
+        <div class="lg:col-span-2 space-y-8 animate-slide-up" style="animation-delay: 0.2s;">
           <!-- Profile Information -->
-          <div class="card-gradient p-6">
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-lg font-semibold text-secondary-900">Profile Information</h3>
-              <span id="lastUpdated" class="text-sm text-secondary-500">Last updated: Never</span>
+          <div class="card p-8">
+            <div class="flex items-center justify-between mb-8">
+              <h3 class="text-2xl font-bold text-gradient font-retro tracking-wider">PROFILE INFORMATION</h3>
+              <span id="lastUpdated" class="text-sm text-neon-cyan/60 font-mono border border-neon-cyan/30 px-3 py-1 clip-cyber-button">
+                Last updated: Never
+              </span>
             </div>
 
-            <form id="profileForm" class="space-y-6">
+            <form id="profileForm" class="space-y-8">
               <!-- Display Name -->
               <div class="form-group">
-                <label for="displayNameInput" class="form-label">Display Name</label>
+                <label for="displayNameInput" class="form-label">
+                  <span class="text-neon-cyan">[</span>DISPLAY_NAME<span class="text-neon-pink">]</span>
+                </label>
                 <input
                   id="displayNameInput"
                   name="displayName"
                   type="text"
                   class="form-input"
-                  placeholder="Enter your display name"
+                  placeholder="Enter your display name..."
                   maxlength="50"
                   disabled
                 />
-                <p class="text-xs text-secondary-500 mt-1">This is how your name appears in tournaments</p>
+                <p class="text-xs text-neon-green/70 mt-2 font-mono">
+                  <span class="text-neon-pink">></span> This is how your name appears in tournaments
+                </p>
               </div>
 
               <!-- Email (readonly) -->
               <div class="form-group">
-                <label for="emailInput" class="form-label">Email Address</label>
+                <label for="emailInput" class="form-label">
+                  <span class="text-neon-pink">[</span>EMAIL_ADDRESS<span class="text-neon-cyan">]</span>
+                </label>
                 <input
                   id="emailInput"
                   name="email"
                   type="email"
-                  class="form-input bg-secondary-50"
+                  class="form-input bg-secondary-900/30"
                   disabled
                   readonly
                 />
-                <p class="text-xs text-secondary-500 mt-1">Email cannot be changed after registration</p>
+                <p class="text-xs text-warning-500/70 mt-2 font-mono">
+                  <span class="text-neon-cyan">></span> Email cannot be changed after registration
+                </p>
               </div>
 
               <!-- Username (readonly) -->
               <div class="form-group">
-                <label for="usernameInput" class="form-label">Username</label>
+                <label for="usernameInput" class="form-label">
+                  <span class="text-neon-green">[</span>USERNAME<span class="text-neon-cyan">]</span>
+                </label>
                 <input
                   id="usernameInput"
                   name="username"
                   type="text"
-                  class="form-input bg-secondary-50"
+                  class="form-input bg-secondary-900/30"
                   disabled
                   readonly
                 />
-                <p class="text-xs text-secondary-500 mt-1">Username cannot be changed after registration</p>
+                <p class="text-xs text-warning-500/70 mt-2 font-mono">
+                  <span class="text-neon-pink">></span> Username cannot be changed after registration
+                </p>
               </div>
 
               <!-- Bio -->
               <div class="form-group">
-                <label for="bioInput" class="form-label">Bio</label>
+                <label for="bioInput" class="form-label">
+                  <span class="text-neon-cyan">[</span>BIO<span class="text-neon-green">]</span>
+                </label>
                 <textarea
                   id="bioInput"
                   name="bio"
                   rows="4"
-                  class="form-textarea"
+                  class="form-input resize-none"
                   placeholder="Tell us about yourself..."
                   maxlength="500"
                   disabled
                 ></textarea>
-                <div class="flex justify-between mt-1">
-                  <p class="text-xs text-secondary-500">Share a bit about yourself with other players</p>
-                  <span id="bioCounter" class="text-xs text-secondary-400">0/500</span>
+                <div class="flex justify-between mt-2">
+                  <p class="text-xs text-neon-green/70 font-mono">
+                    <span class="text-neon-pink">></span> Share a bit about yourself with other players
+                  </p>
+                  <span id="bioCounter" class="text-xs text-neon-cyan/60 font-mono border border-neon-cyan/30 px-2 py-1 clip-cyber-button">0/500</span>
                 </div>
               </div>
 
               <!-- Form Actions -->
               <div id="formActions" class="hidden">
-                <div class="flex space-x-3">
+                <div class="flex space-x-4">
                   <button
                     type="submit"
                     id="saveButton"
-                    class="btn btn-primary"
+                    class="btn btn-primary group"
                   >
-                    <span id="saveButtonText">Save Changes</span>
-                    <svg id="saveSpinner" class="w-4 h-4 ml-2 spinner hidden" fill="none" viewBox="0 0 24 24">
+                    <span id="saveButtonText" class="font-retro tracking-wider">SAVE_CHANGES.EXE</span>
+                    <svg id="saveSpinner" class="w-5 h-5 ml-3 spinner hidden" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -195,7 +244,7 @@ export default function Profile(): HTMLElement {
                     id="cancelButton"
                     class="btn btn-secondary"
                   >
-                    Cancel
+                    <span class="font-retro tracking-wider">CANCEL.EXE</span>
                   </button>
                 </div>
               </div>
@@ -203,42 +252,44 @@ export default function Profile(): HTMLElement {
           </div>
 
           <!-- Security Settings -->
-          <div class="card-gradient p-6">
-            <h3 class="text-lg font-semibold text-secondary-900 mb-6">Security Settings</h3>
+          <div class="card p-8">
+            <h3 class="text-2xl font-bold text-gradient mb-8 font-retro tracking-wider">SECURITY SETTINGS</h3>
             
-            <div class="space-y-4">
+            <div class="space-y-6">
               <!-- 2FA Status -->
-              <div class="flex items-center justify-between p-4 bg-secondary-50 rounded-xl">
-                <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 bg-warning-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
+              <div class="p-6 bg-secondary-900/30 backdrop-blur-lg border border-neon-cyan/30 clip-cyber-button hover:border-neon-cyan/50 transition-all duration-300">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 clip-cyberpunk bg-gradient-to-br from-warning-500/20 to-neon-pink/20 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-warning-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="font-bold text-neon-cyan font-retro text-lg">TWO-FACTOR AUTHENTICATION</h4>
+                      <p class="text-sm text-neon-cyan/70 font-mono">Secure your account with an additional layer of protection</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 class="font-medium text-secondary-900">Two-Factor Authentication</h4>
-                    <p class="text-sm text-secondary-600">Secure your account with an additional layer of protection</p>
+                  <div class="flex items-center space-x-4">
+                    <span id="twoFactorStatus" class="badge badge-warning">DISABLED</span>
+                    <button id="twoFactorToggle" class="btn btn-sm btn-primary">
+                      <span id="twoFactorToggleText" class="font-retro tracking-wider">ENABLE</span>
+                    </button>
                   </div>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <span id="twoFactorStatus" class="badge badge-warning">Disabled</span>
-                  <button id="twoFactorToggle" class="btn btn-sm btn-primary">
-                    <span id="twoFactorToggleText">Enable</span>
-                  </button>
                 </div>
               </div>
 
               <!-- Account Created -->
-              <div class="flex items-center justify-between p-4 bg-secondary-50 rounded-xl">
-                <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-6 bg-secondary-900/30 backdrop-blur-lg border border-neon-green/30 clip-cyber-button">
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 clip-cyberpunk bg-gradient-to-br from-neon-green/20 to-neon-cyan/20 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v2m0 0v2m0-2h.01M12 17h.01M3 11a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8z"></path>
                     </svg>
                   </div>
                   <div>
-                    <h4 class="font-medium text-secondary-900">Account Created</h4>
-                    <p class="text-sm text-secondary-600" id="accountCreated">Loading...</p>
+                    <h4 class="font-bold text-neon-green font-retro text-lg">ACCOUNT CREATED</h4>
+                    <p class="text-sm text-neon-cyan/70 font-mono" id="accountCreated">Loading...</p>
                   </div>
                 </div>
               </div>
@@ -246,23 +297,39 @@ export default function Profile(): HTMLElement {
           </div>
 
           <!-- Danger Zone -->
-          <div class="card-gradient p-6 border border-danger-200">
-            <h3 class="text-lg font-semibold text-danger-900 mb-6">Danger Zone</h3>
+          <div class="card p-8 border border-danger-500/50">
+            <h3 class="text-2xl font-bold text-danger-500 mb-8 font-retro tracking-wider">DANGER ZONE</h3>
             
-            <div class="space-y-4">
-              <div class="p-4 border border-danger-200 rounded-xl">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h4 class="font-medium text-danger-900">Delete Account</h4>
-                    <p class="text-sm text-danger-600">Permanently delete your account and all associated data</p>
+            <div class="p-6 bg-danger-500/10 backdrop-blur-lg border border-danger-500/30 clip-cyber-button">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 clip-cyberpunk bg-gradient-to-br from-danger-500/20 to-danger-500/30 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-danger-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
                   </div>
-                  <button id="deleteAccountButton" class="btn btn-danger">
-                    Delete Account
-                  </button>
+                  <div>
+                    <h4 class="font-bold text-danger-500 font-retro text-lg">DELETE ACCOUNT</h4>
+                    <p class="text-sm text-danger-400/70 font-mono">Permanently delete your account and all associated data</p>
+                  </div>
                 </div>
+                <button id="deleteAccountButton" class="btn btn-danger">
+                  <span class="font-retro tracking-wider">DELETE_ACCOUNT.EXE</span>
+                </button>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Terminal Footer -->
+      <div class="mt-12 text-center animate-fade-in" style="animation-delay: 0.6s;">
+        <div class="inline-block bg-secondary-900/50 backdrop-blur-lg border border-neon-cyan/30 px-6 py-3 clip-cyber-button">
+          <p class="text-neon-cyan/60 font-mono text-sm">
+            <span class="text-neon-pink">profile@ft_transcendence:~$</span> 
+            <span class="animate-pulse">echo "User data secured"</span>
+            <span class="animate-pulse text-neon-green ml-2">_</span>
+          </p>
         </div>
       </div>
 
