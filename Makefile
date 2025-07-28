@@ -64,6 +64,20 @@ clean:
 	docker system prune -af
 	docker volume prune -f
 
+fclean: clean
+	@echo "🔥 Removing certificates and generated files..."
+	@for service in $(SERVICES_PATH); do \
+		if [ -d $$service/certs ]; then \
+			echo "Removing $$service/certs..."; \
+			rm -rf $$service/certs; \
+		fi; \
+	done
+	@if [ -d devops/certs ]; then \
+		echo "Removing devops/certs..."; \
+		rm -rf devops/certs; \
+	fi
+	@echo "✅ fclean complete."
+
 metrics:
 	@echo "Opening monitoring dashboards..."
 	@if command -v xdg-open > /dev/null; then \
@@ -86,6 +100,7 @@ help:
 	@echo "make dev-clean   - Clean and rebuild development services only"
 	@echo "make run         - Open application URLs in browser"
 	@echo "make clean       - Full cleanup (remove containers, volumes, images)"
+	@echo "make fclean      - Full cleanup and remove generated certificates"
 	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
 define create_certificates
@@ -150,4 +165,4 @@ generate-certs:
 	@$(call install_mkcert)
 	@$(call create_certificates)
 
-.PHONY: up dev down dev-clean restart logs clean metrics generate-certs
+.PHONY: up dev down dev-clean restart logs clean fclean metrics generate-certs

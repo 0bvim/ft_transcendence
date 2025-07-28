@@ -1,11 +1,16 @@
+FROM node:20-alpine AS observability-builder
+WORKDIR /app
+COPY ./observability ./observability
+RUN cd observability && npm install && npm run build && npm pack
+
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
 RUN apk add --no-cache make
 
-COPY ./observability ./observability
-RUN cd observability && npm install && npm run build && npm pack
+# First, build the observability package
+COPY --from=observability-builder /app/observability/ft-transcendence-observability-1.0.0.tgz .
 
 COPY ./ms-auth/prisma/schema.prisma ./prisma/schema.prisma
 COPY ./ms-auth/prisma/migrations ./prisma/migrations
@@ -16,7 +21,7 @@ COPY ./ms-auth/Makefile Makefile
 COPY ./ms-auth/.env .env
 COPY ./ms-auth/certs ./certs
 
-RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
+RUN npm install ./ft-transcendence-observability-1.0.0.tgz
 
 FROM build AS development
 

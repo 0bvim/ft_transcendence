@@ -1,15 +1,21 @@
+FROM node:20-alpine AS observability-builder
+WORKDIR /app
+COPY ./observability ./observability
+RUN cd observability && npm install && npm run build && npm pack
+
 FROM node:20-alpine
 
 WORKDIR /app
 
 RUN apk add --no-cache curl
 
-COPY ./observability ./observability
-RUN cd observability && npm install && npm run build && npm pack
+# First, build the observability package
+COPY --from=observability-builder /app/observability/ft-transcendence-observability-1.0.0.tgz .
 
 COPY ./ms-game/package*.json ./
 
-RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
+# Install the packed observability package
+RUN npm install ./ft-transcendence-observability-1.0.0.tgz
 
 RUN npm install
 

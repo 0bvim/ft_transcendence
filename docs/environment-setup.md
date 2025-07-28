@@ -10,7 +10,7 @@ The ft_transcendence project uses a hybrid environment variable management appro
 ### 1. Root Environment Configuration
 Copy the root environment template:
 ```bash
-cp .env.example .env
+cp ..env.example .env
 ```
 
 Edit `.env` with your specific values for:
@@ -24,19 +24,19 @@ Each microservice requires its own `.env` file. Copy the templates:
 
 ```bash
 # Frontend service
-cp packages/ms-frontend/.env.example packages/ms-frontend/.env
+cp packages/ms-frontend/..env.example packages/ms-frontend/.env
 
 # Authentication service  
-cp packages/ms-auth/.env.example packages/ms-auth/.env
+cp packages/ms-auth/..env.example packages/ms-auth/.env
 
 # Game service
-cp packages/ms-game/.env.example packages/ms-game/.env
+cp packages/ms-game/..env.example packages/ms-game/.env
 
 # Tournament service
-cp packages/ms-tournament/.env.example packages/ms-tournament/.env
+cp packages/ms-tournament/..env.example packages/ms-tournament/.env
 
 # Blockchain service
-cp packages/ms-blockchain/.env.example packages/ms-blockchain/.env
+cp packages/ms-blockchain/..env.example packages/ms-blockchain/.env
 ```
 
 ### 3. Required Environment Variables
