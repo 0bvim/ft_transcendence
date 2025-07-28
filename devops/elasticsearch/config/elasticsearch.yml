@@ -1,19 +1,33 @@
-cluster.name: docker-cluster
+# Elasticsearch Configuration for HTTPS with Self-Signed Wildcard Certificates
+# Version: 9.0.2
+
+cluster.name: ft-transcendence-elk
+node.name: elasticsearch-node-1
 http.port: 9200
 discovery.type: single-node
 network.host: 0.0.0.0
 
-# SSL/TLS Configuration
+# SSL/TLS Configuration for HTTPS
 xpack.security.enabled: true
+
+# HTTP SSL Configuration (for client connections)
 xpack.security.http.ssl.enabled: true
 xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certs/elasticsearch.crt
 xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certs/elasticsearch.key
+xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca.crt
+xpack.security.http.ssl.verification_mode: certificate
+xpack.security.http.ssl.client_authentication: optional
+
+# Transport SSL Configuration (for node-to-node communication)
 xpack.security.transport.ssl.enabled: true
 xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/elasticsearch.crt
 xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/elasticsearch.key
-xpack.security.http.ssl.client_authentication: optional
+xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca.crt
+xpack.security.transport.ssl.verification_mode: certificate
 
-# Disable authentication for development
-# xpack.security.authc.anonymous.username: anonymous_user
-# xpack.security.authc.anonymous.roles: superuser
-# xpack.security.authc.anonymous.authz_exception: true
+# Development Authentication Configuration for Built-in Users
+# Enable built-in users like kibana_system, elastic, etc.
+xpack.security.authc.realms.native.native1.order: 0
+
+# Logging
+logger.org.elasticsearch.xpack.security: DEBUG

@@ -1,15 +1,33 @@
+# Kibana Configuration for HTTPS with Self-Signed Wildcard Certificates
+# Version: 9.0.2
+
 server.host: "0.0.0.0"
+server.port: 5601
 server.name: "kibana"
 server.shutdownTimeout: "5s"
-elasticsearch.hosts: ["https://elasticsearch:9200"]
 
-# SSL/TLS Configuration
+# Server SSL Configuration (for browser connections)
 server.ssl.enabled: true
 server.ssl.certificate: /usr/share/kibana/config/certs/kibana.crt
 server.ssl.key: /usr/share/kibana/config/certs/kibana.key
-elasticsearch.ssl.certificateAuthorities: ["certs/ca.crt"]
+server.ssl.certificateAuthorities: ["/usr/share/kibana/config/certs/ca.crt"]
 
+# Elasticsearch Connection Configuration
+elasticsearch.hosts: ["https://elasticsearch:9200"]
+elasticsearch.ssl.certificateAuthorities: ["/usr/share/kibana/config/certs/ca.crt"]
+elasticsearch.ssl.verificationMode: certificate
+
+# Development Settings
 monitoring.ui.container.elasticsearch.enabled: true
+logging:
+  appenders:
+    default:
+      type: console
+      layout:
+        type: json
+  root:
+    level: info
 
-# All other settings are managed via environment variables in docker-compose.yml
-# to allow for a more flexible and secure configuration.
+# Security Settings for Development
+xpack.encryptedSavedObjects.encryptionKey: "a_secure_32_character_string_123456"
+xpack.reporting.encryptionKey: "a_secure_32_character_string_789012"
