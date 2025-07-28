@@ -31,19 +31,7 @@ export default function Login(): HTMLElement {
     <!-- Main Login Container -->
     <div class="w-full max-w-md space-y-8 animate-fade-in relative z-10">
       <!-- Header -->
-      <div class="text-center">
-        <div class="mb-8">
-          <!-- Cyberpunk Logo -->
-          <div class="relative mx-auto w-20 h-20">
-            <div class="w-20 h-20 clip-cyberpunk bg-gradient-to-br from-neon-pink to-neon-cyan flex items-center justify-center shadow-neon-pink">
-              <svg class="w-10 h-10 text-black" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
-            <div class="absolute inset-0 w-20 h-20 clip-cyberpunk bg-gradient-to-br from-neon-pink to-neon-cyan animate-glow-pulse opacity-50"></div>
-          </div>
-        </div>
-        
+      <div class="text-center">        
         <h2 class="text-4xl font-bold text-gradient mb-4 font-retro tracking-wider">
           <span class="text-neon-pink">&lt;</span>ACCESS_GRANTED<span class="text-neon-cyan">/&gt;</span>
         </h2>

@@ -93,7 +93,7 @@ export class AudioControl {
     
     container.innerHTML = `
       <div class="flex items-center space-x-2">
-        <div class="relative">
+        <div class="relative flex items-center justify-center w-6 h-6">
           <!-- Audio Icon -->
           <svg class="audio-icon-speaker w-6 h-6 text-neon-cyan transition-colors duration-300 group-hover:text-neon-pink" 
                fill="currentColor" viewBox="0 0 24 24">
@@ -101,10 +101,18 @@ export class AudioControl {
           </svg>
           
           <!-- Muted Icon (shown by default) -->
-          <svg class="audio-icon-muted w-6 h-6 text-danger-500 absolute top-0 left-0" 
-               fill="currentColor" viewBox="0 0 24 24">
-            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-          </svg>
+          <div class="audio-icon-muted absolute inset-0 flex items-center justify-center">
+            <!-- Speaker base (same as above but in muted color) -->
+            <svg class="w-6 h-6 text-danger-400 absolute" 
+                 fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+            </svg>
+            <!-- X overlay perfectly centered -->
+            <svg class="w-6 h-6 text-danger-500 absolute" 
+                 fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+          </div>
         </div>
         
         <!-- Status Text -->
