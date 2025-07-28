@@ -5,14 +5,11 @@ DEV_SERVICES = ms-frontend ms-auth ms-game tournament blockchain-node blockchain
 MS-AUTH=packages/ms-auth
 MS-FRONTEND=packages/ms-frontend
 MS-GAME=packages/ms-game
-# unlock after finish implementation of services
-# MS-BLOCKCHAIN=packages/ms-blockchain
-# MS-OBSERVABILITY=packages/ms-observability
-# MS-TOURNAMENT=packages/ms-tournament
+MS-BLOCKCHAIN=packages/ms-blockchain
+MS-TOURNAMENT=packages/ms-tournament
 
 # All Services
-# SERVICES_PATH=$(MS-AUTH) $(MS-BLOCKCHAIN) $(MS-FRONTEND) $(MS-GAME) $(MS-OBSERVABILITY) $(MS-TOURNAMENT)
-SERVICES_PATH=$(MS-AUTH) $(MS-FRONTEND) $(MS-GAME)
+SERVICES_PATH=$(MS-AUTH) $(MS-FRONTEND) $(MS-GAME) $(MS-BLOCKCHAIN) $(MS-TOURNAMENT)
 
 # Default to Linux
 OS := Linux

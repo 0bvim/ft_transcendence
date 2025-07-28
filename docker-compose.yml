@@ -20,8 +20,8 @@ services:
       - ./packages/ms-frontend/tailwind.config.js:/app/tailwind.config.js
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      - logstash
+    # depends_on:
+    #   - logstash
 
   ms-auth:
     container_name: authentication
@@ -36,9 +36,9 @@ services:
       - ./packages/ms-auth/src:/app/src
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      logstash:
-        condition: service_healthy
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
 
   ms-game:
     container_name: game
@@ -47,38 +47,38 @@ services:
       dockerfile: ./ms-game/Dockerfile
     env_file: ./packages/ms-game/.env
     ports:
-      - "${GAME_PORT:-3006}:3002"
+      - "${GAME_PORT:-3002}:3002"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
+
+  ms-tournament:
+    container_name: tournament
+    build:
+      context: ./packages
+      dockerfile: ./ms-tournament/Dockerfile
+      target: development
+    ports:
+      - "${TOURNAMENT_PORT:-3003}:3003"
+    environment:
+      - PORT=3003
+      - DATABASE_URL=file:./tournament.db
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - AUTH_SERVICE_URL=http://authentication:3001
+      - GAME_SERVICE_URL=http://game:3003
+      - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
+    volumes:
+      - ./packages/ms-tournament/src:/app/src
+      - ./packages/ms-tournament/prisma:/app/prisma
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
-      logstash:
-        condition: service_healthy
-
-  ms-tournament:
-   container_name: tournament
-   build:
-     context: ./packages
-     dockerfile: ./ms-tournament/Dockerfile
-     target: development
-   ports:
-     - "${TOURNAMENT_PORT:-3003}:3003"
-   environment:
-     - PORT=3003
-     - DATABASE_URL=file:./tournament.db
-     - LOG_LEVEL=${LOG_LEVEL:-info}
-     - AUTH_SERVICE_URL=http://authentication:3001
-     - GAME_SERVICE_URL=http://game:3003
-     - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
-   volumes:
-     - ./packages/ms-tournament/src:/app/src
-     - ./packages/ms-tournament/prisma:/app/prisma
-   networks:
-     - ${NETWORK_NAME:-ft-net}
-   depends_on:
-     logstash:
-       condition: service_healthy
-     ms-blockchain:
-       condition: service_started
+      #    logstash:
+      #      condition: service_healthy
+      ms-blockchain:
+        condition: service_started
 
   ms-blockchain-node:
     container_name: blockchain-node
@@ -94,7 +94,13 @@ services:
     networks:
       - ${NETWORK_NAME:-ft-net}
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3005 || exit 1"]
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3005 || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -121,9 +127,9 @@ services:
       - GAS_PRICE=${GAS_PRICE:-20000000000}
     networks:
       - ${NETWORK_NAME:-ft-net}
-    depends_on:
-      logstash:
-        condition: service_healthy
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-9.0.2}
@@ -146,16 +152,16 @@ services:
       - ${ELASTICSEARCH_DATA_VOLUME:-esdata}:/usr/share/elasticsearch/data
       - ./devops/certs:/usr/share/elasticsearch/config/certs
       - ./devops/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-#    healthcheck:
-#      test:
-#        [
-#          "CMD-SHELL",
-#          "curl -k -u elastic:${ELASTIC_PASSWORD:-changeme} -f https://localhost:9200/_cluster/health?pretty || exit 1"
-#        ]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 5
-#      start_period: 120s
+  #    healthcheck:
+  #      test:
+  #        [
+  #          "CMD-SHELL",
+  #          "curl -k -u elastic:${ELASTIC_PASSWORD:-changeme} -f https://localhost:9200/_cluster/health?pretty || exit 1"
+  #        ]
+  #      interval: 30s
+  #      timeout: 10s
+  #      retries: 5
+  #      start_period: 120s
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION:-9.0.2}
@@ -201,12 +207,12 @@ services:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline
       - ./devops/logstash/config:/usr/share/logstash/config
       - ./devops/certs:/usr/share/logstash/config/certs
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f https://localhost:9600/_node/stats || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f https://localhost:9600/_node/stats || exit 1"]
+    #   interval: 15s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 30s
 
   prometheus:
     container_name: prometheus
@@ -223,9 +229,9 @@ services:
       - ./devops/prometheus/web-config.yml:/etc/prometheus/web-config.yml
       - ./devops/certs:/etc/prometheus/certs
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.config.file=/etc/prometheus/web-config.yml'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.config.file=/etc/prometheus/web-config.yml"
 
   grafana:
     container_name: grafana
@@ -235,7 +241,7 @@ services:
     networks:
       - ${NETWORK_NAME:-ft-net}
     ports:
-      - "${GRAFANA_PORT:-3002}:3000"
+      - "${GRAFANA_PORT:-3006}:3000"
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana
@@ -248,7 +254,7 @@ services:
       - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
     depends_on:
       - prometheus
-      - elasticsearch
+      # - elasticsearch
 
 volumes:
   esdata:

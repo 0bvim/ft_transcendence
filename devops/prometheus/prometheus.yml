@@ -18,6 +18,7 @@ scrape_configs:
     static_configs:
       - targets: ["authentication:3001"]
     metrics_path: "/metrics"
+    scheme: "https"
   - job_name: "ms-blockchain"
     static_configs:
       - targets: ["blockchain:3004"]
@@ -26,4 +27,3 @@ scrape_configs:
     static_configs:
       - targets: ["tournament:3003"]
     metrics_path: "/metrics"
-
