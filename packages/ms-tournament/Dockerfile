@@ -1,3 +1,8 @@
+FROM node:18-slim AS observability-builder
+WORKDIR /app
+COPY ./observability ./observability
+RUN cd observability && npm install && npm run build && npm pack
+
 FROM node:18-slim AS build
 
 WORKDIR /app
@@ -5,8 +10,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y make openssl && rm -rf /var/lib/apt/lists/*
 
 # First, build the observability package
-COPY ./observability ./observability
-RUN cd observability && npm install && npm run build && npm pack
+COPY --from=observability-builder /app/observability/ft-transcendence-observability-1.0.0.tgz .
 
 COPY ./ms-tournament/prisma/schema.prisma ./prisma/schema.prisma
 COPY ./ms-tournament/prisma/migrations ./prisma/migrations
@@ -16,7 +20,7 @@ COPY ./ms-tournament/tsconfig.json ./tsconfig.json
 COPY ./ms-tournament/Makefile Makefile
 COPY ./ms-tournament/.env ./.env
 
-RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
+RUN npm install ./ft-transcendence-observability-1.0.0.tgz
 
 FROM build AS development
 

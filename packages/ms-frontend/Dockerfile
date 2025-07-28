@@ -1,14 +1,18 @@
+FROM node:20-alpine AS observability-builder
+WORKDIR /app
+COPY ./observability ./observability
+RUN apk add --no-cache make && cd observability && npm install && npm run build && npm pack
+
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY ./observability ./observability
-RUN cd observability && npm install && npm run build && npm pack
+COPY --from=observability-builder /app/observability/ft-transcendence-observability-1.0.0.tgz .
 
 RUN apk add --no-cache make
 
 # Install dependencies first for better caching
-RUN npm install ./observability/ft-transcendence-observability-1.0.0.tgz
+RUN npm install ./ft-transcendence-observability-1.0.0.tgz
 
 # Copy project files
 COPY ./ms-frontend/src ./src

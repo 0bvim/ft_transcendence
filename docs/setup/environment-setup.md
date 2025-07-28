@@ -5,8 +5,8 @@
 1. **Copy environment files for each service:**
    ```bash
    # Main environment (optional - has defaults)
-   cp env.example .env
-
+   cp .env.example .env
+   
    # Game service environment
    cp packages/ms-game/env_example packages/ms-game/.env
    ```

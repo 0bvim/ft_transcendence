@@ -150,7 +150,7 @@ make help        # Show all available commands
 1. **Copy environment files:**
 ```bash
 # Main environment (optional - has defaults)
-cp env.example .env
+cp .env.example .env
 
 # Game service environment
 cp packages/ms-game/env_example packages/ms-game/.env
@@ -284,7 +284,7 @@ curl http://localhost:3003/metrics
 
 - [Container Architecture](docs/doc-devops/Containers.mmd) - Service relationships
 - [Observability Setup](packages/observability/) - Logging and metrics library
-- [Environment Configuration](env.example) - Configuration options
+- [Environment Configuration](.env.example) - Configuration options
 
 ---
 
