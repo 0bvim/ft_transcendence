@@ -2,134 +2,121 @@ name: ${PROJECT_NAME:-ft_transcendence}
 
 services:
   # Core application services
-  # ms-frontend:
-  #   container_name: frontend
-  #   build:
-  #     context: ./packages
-  #     dockerfile: ./ms-frontend/Dockerfile
-  #     target: development
-  #   ports:
-  #     - "${FRONTEND_PORT:-3000}:3000"
-  #   volumes:
-  #     - ./packages/ms-frontend/src:/app/src
-  #     - ./packages/ms-frontend/assets:/app/assets
-  #     - ./packages/ms-frontend/public:/app/public
-  #     - ./packages/ms-frontend/package.json:/app/package.json
-  #     - ./packages/ms-frontend/tsconfig.json:/app/tsconfig.json
-  #     - ./packages/ms-frontend/vite.config.ts:/app/vite.config.ts
-  #     - ./packages/ms-frontend/tailwind.config.js:/app/tailwind.config.js
-  #   networks:
-  #     - ${NETWORK_NAME:-ft-net}
-  #   # depends_on:
-  #   #   - logstash
+  ms-frontend:
+    container_name: frontend
+    build:
+      context: ./packages
+      dockerfile: ./ms-frontend/Dockerfile
+      target: development
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./packages/ms-frontend/src:/app/src
+      - ./packages/ms-frontend/assets:/app/assets
+      - ./packages/ms-frontend/public:/app/public
+      - ./packages/ms-frontend/package.json:/app/package.json
+      - ./packages/ms-frontend/tsconfig.json:/app/tsconfig.json
+      - ./packages/ms-frontend/vite.config.ts:/app/vite.config.ts
+      - ./packages/ms-frontend/tailwind.config.js:/app/tailwind.config.js
+    networks:
+      - ${NETWORK_NAME:-ft-net}
 
-  # ms-auth:
-  #   container_name: authentication
-  #   build:
-  #     context: ./packages
-  #     dockerfile: ./ms-auth/Dockerfile
-  #     target: development
-  #   ports:
-  #     - "3001:3001"
-  #   volumes:
-  #     - ./packages/ms-auth/prisma:/app/prisma
-  #     - ./packages/ms-auth/src:/app/src
-  #   networks:
-  #     - ${NETWORK_NAME:-ft-net}
-  #   # depends_on:
-  #   #   logstash:
-  #   #     condition: service_healthy
+  ms-auth:
+    container_name: authentication
+    build:
+      context: ./packages
+      dockerfile: ./ms-auth/Dockerfile
+      target: development
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/ms-auth/prisma:/app/prisma
+      - ./packages/ms-auth/src:/app/src
+    networks:
+      - ${NETWORK_NAME:-ft-net}
 
-  # ms-game:
-  #   container_name: game
-  #   build:
-  #     context: ./packages
-  #     dockerfile: ./ms-game/Dockerfile
-  #   env_file: ./packages/ms-game/.env
-  #   ports:
-  #     - "${GAME_PORT:-3002}:3002"
-  #   networks:
-  #     - ${NETWORK_NAME:-ft-net}
-  #   # depends_on:
-  #   #   logstash:
-  #   #     condition: service_healthy
+  ms-game:
+    container_name: game
+    build:
+      context: ./packages
+      dockerfile: ./ms-game/Dockerfile
+    env_file: ./packages/ms-game/.env
+    ports:
+      - "${GAME_PORT:-3002}:3002"
+    networks:
+      - ${NETWORK_NAME:-ft-net}
 
-  # ms-tournament:
-  #   container_name: tournament
-  #   build:
-  #     context: ./packages
-  #     dockerfile: ./ms-tournament/Dockerfile
-  #     target: development
-  #   ports:
-  #     - "${TOURNAMENT_PORT:-3003}:3003"
-  #   environment:
-  #     - PORT=3003
-  #     - DATABASE_URL=file:./tournament.db
-  #     - LOG_LEVEL=${LOG_LEVEL:-info}
-  #     - AUTH_SERVICE_URL=http://authentication:3001
-  #     - GAME_SERVICE_URL=http://game:3003
-  #     - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
-  #   volumes:
-  #     - ./packages/ms-tournament/src:/app/src
-  #     - ./packages/ms-tournament/prisma:/app/prisma
-  #   networks:
-  #     - ${NETWORK_NAME:-ft-net}
-  #   depends_on:
-  #     #    logstash:
-  #     #      condition: service_healthy
-  #     ms-blockchain:
-  #       condition: service_started
+  ms-tournament:
+    container_name: tournament
+    build:
+      context: ./packages
+      dockerfile: ./ms-tournament/Dockerfile
+      target: development
+    ports:
+      - "${TOURNAMENT_PORT:-3003}:3003"
+    environment:
+      - PORT=3003
+      - DATABASE_URL=file:./tournament.db
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - AUTH_SERVICE_URL=http://authentication:3001
+      - GAME_SERVICE_URL=http://game:3003
+      - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
+    volumes:
+      - ./packages/ms-tournament/src:/app/src
+      - ./packages/ms-tournament/prisma:/app/prisma
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    depends_on:
+      ms-blockchain:
+        condition: service_started
 
-  # ms-blockchain-node:
-  #   container_name: blockchain-node
-  #   build:
-  #     context: ./packages
-  #     dockerfile: ./ms-blockchain/Dockerfile
-  #     target: development
-  #   command: npx hardhat node --hostname 0.0.0.0 --port 3005
-  #   ports:
-  #     - "3005:3005"
-  #   environment:
-  #     - NODE_ENV=development
-  #   networks:
-  #     - ${NETWORK_NAME:-ft-net}
-  #   healthcheck:
-  #     test:
-  #       [
-  #         "CMD",
-  #         "sh",
-  #         "-c",
-  #         "wget --no-verbose --tries=1 --spider http://127.0.0.1:3005 || exit 1",
-  #       ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #     start_period: 30s
+  ms-blockchain-node:
+    container_name: blockchain-node
+    build:
+      context: ./packages
+      dockerfile: ./ms-blockchain/Dockerfile
+      target: development
+    command: npx hardhat node --hostname 0.0.0.0 --port 3005
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - ${NETWORK_NAME:-ft-net}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3005 || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  # ms-blockchain:
-  #   container_name: blockchain
-  #   build:
-  #     context: ./packages
-  #     dockerfile: ./ms-blockchain/Dockerfile
-  #     target: prod
-  #   ports:
-  #     - "${BLOCKCHAIN_PORT:-3004}:3004"
-  #   environment:
-  #     - NODE_ENV=production
-  #     - PORT=3004
-  #     - LOG_LEVEL=${LOG_LEVEL:-info}
-  #     - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
-  #     - AVALANCHE_CHAIN_ID=${AVALANCHE_CHAIN_ID:-43113}
-  #     - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
-  #     - TOURNAMENT_SERVICE_URL=http://tournament:3003
-  #     - AUTH_SERVICE_URL=http://authentication:3001
-  #     - GAS_LIMIT=${GAS_LIMIT:-3000000}
-  #     - GAS_PRICE=${GAS_PRICE:-20000000000}
-  #   networks:
-  #     - ${NETWORK_NAME:-ft-net}
-  #   # depends_on:
-  #   #   logstash:
-  #   #     condition: service_healthy
+  ms-blockchain:
+    container_name: blockchain
+    build:
+      context: ./packages
+      dockerfile: ./ms-blockchain/Dockerfile
+      target: prod
+    ports:
+      - "${BLOCKCHAIN_PORT:-3004}:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
+      - AVALANCHE_CHAIN_ID=${AVALANCHE_CHAIN_ID:-43113}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
+      - TOURNAMENT_SERVICE_URL=http://tournament:3003
+      - AUTH_SERVICE_URL=http://authentication:3001
+      - GAS_LIMIT=${GAS_LIMIT:-3000000}
+      - GAS_PRICE=${GAS_PRICE:-20000000000}
+    networks:
+      - ${NETWORK_NAME:-ft-net}
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-9.0.2}
@@ -139,7 +126,7 @@ services:
     environment:
       - _JAVA_OPTIONS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
       - ES_JAVA_OPTS=-Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - xpack.security.enabled=true
     ulimits:
       memlock:
@@ -151,7 +138,7 @@ services:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ${ELASTICSEARCH_DATA_VOLUME:-esdata}:/usr/share/elasticsearch/data
-      - ./devops/certs:/usr/share/elasticsearch/config/certs:ro
+      - ${ELASTICSEARCH_CERTS_PATH:-./devops/certs}:/usr/share/elasticsearch/config/certs:ro
       - ./devops/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f -k -s https://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
@@ -171,8 +158,8 @@ services:
     environment:
       - _JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-kibana_system}
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD:-syspass}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca.crt
       - XPACK_SECURITY_ENCRYPTIONKEY=a_secure_32_character_string_123456
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a_secure_32_character_string_123456
@@ -181,7 +168,7 @@ services:
       - "${KIBANA_PORT:-5601}:5601"
     volumes:
       - ./devops/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
-      - ./devops/certs:/usr/share/kibana/config/certs:ro
+      - ${KIBANA_CERTS_PATH:-./devops/certs}:/usr/share/kibana/config/certs:ro
     networks:
       - ${NETWORK_NAME:-ft-net}
     healthcheck:
@@ -203,14 +190,16 @@ services:
       - _JAVA_OPTIONS=${ELASTICSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
       - LS_JAVA_OPTS=-Xms512m -Xmx512m
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
-      - ELASTICSEARCH_USER=${LOGSTASH_ES_USER:-logstash_system}
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - ELASTICSEARCH_USER=${ELASTIC_USER}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "${LOGSTASH_PORT:-5001}:5001"
     networks:
       - ${NETWORK_NAME:-ft-net}
     volumes:
       - ./devops/logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./devops/logstash/config:/usr/share/logstash/config:ro
-      - ./devops/certs:/usr/share/logstash/certs:ro
+      - ${LOGSTASH_CERTS_PATH:-./devops/certs}:/usr/share/logstash/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
       interval: 30s
@@ -231,7 +220,7 @@ services:
       - ${PROMETHEUS_CONFIG_PATH:-./devops/prometheus/prometheus.yml}:/etc/prometheus/prometheus.yml
       - ${PROMETHEUS_ALERTS_PATH:-./devops/prometheus/alerts.yml}:/etc/prometheus/alerts.yml
       - ./devops/prometheus/web-config.yml:/etc/prometheus/web-config.yml
-      - ./devops/certs:/etc/prometheus/certs
+      - ${PROMETHEUS_CERTS_PATH:-./devops/certs}:/etc/prometheus/certs
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -249,16 +238,15 @@ services:
     volumes:
       - ${GRAFANA_PROVISIONING_PATH:-./devops/grafana/provisioning}:/etc/grafana/provisioning
       - ${GRAFANA_DATA_VOLUME:-grafana-data}:/var/lib/grafana
-      - ./devops/certs:/etc/grafana/certs
+      - ${GRAFANA_CERTS_PATH:-./devops/certs}:/etc/grafana/certs
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_SERVER_PROTOCOL=https
       - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
       - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
     depends_on:
       - prometheus
-      # - elasticsearch
 
 volumes:
   esdata:

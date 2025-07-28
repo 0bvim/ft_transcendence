@@ -22,6 +22,12 @@ endif
 up: generate-certs
 	@echo "🚀 Starting services in detached mode..."
 	docker compose up -d --build
+	@echo "⏳ Waiting for Elasticsearch to be ready..."
+	@$(call wait_for_elasticsearch)
+	@echo "🔐 Setting up ELK users automatically..."
+	@$(call setup_elk_users)
+	@echo "🔐 Setting up Prometheus authentication automatically..."
+	@$(call setup_prometheus_auth)
 
 dev:
 	@echo "Starting development services (without monitoring stack)..."
@@ -29,7 +35,11 @@ dev:
 
 down:
 	@echo "Stopping services... "
-	docker compose down
+	@if [ -f .env ]; then \
+		docker-compose --env-file .env down; \
+	else \
+		docker-compose down; \
+	fi
 
 dev-clean:
 	@echo "Cleaning and rebuilding development services..."
@@ -44,15 +54,15 @@ restart:
 run:
 	@echo "Opening application services..."
 	@if command -v xdg-open > /dev/null; then \
-			xdg-open http://localhost:3010 & \
-			xdg-open http://localhost:3003; \
+			xdg-open https://localhost:3000 & \
+			xdg-open https://localhost:3006; \
 		elif command -v open > /dev/null; then \
-			open http://localhost:3010 & \
-			open http://localhost:3003; \
+			open https://localhost:3000 & \
+			open https://localhost:3006; \
 		else \
 			echo "Could not detect browser opener. Please manually open:"; \
-			echo "  Frontend: http://localhost:3010"; \
-			echo "  Game: http://localhost:3003"; \
+			echo "  Frontend: https://localhost:3000"; \
+			echo "  Game: https://localhost:3006"; \
 		fi
 
 clean:
@@ -101,15 +111,52 @@ help:
 	@echo "make setup-elk-users - Set up ELK users with fixed passwords from .env"
 	@echo "make metrics     - Open monitoring dashboards (Grafana & Kibana)"
 
-define generate_elk_certificates
-	# Generate ELK stack wildcard certificates using our custom script
-	if [ -f ./devops/scripts/generate-elk-certs.sh ]; then \
-		echo "🔐 Generating ELK stack wildcard certificates..."; \
-		./devops/scripts/generate-elk-certs.sh; \
-	else \
-		echo "❌ Certificate generation script not found at ./devops/scripts/generate-elk-certs.sh"; \
-		exit 1; \
-	fi
+define generate_observability_certificates
+	# Generate certificates for observability stack (ELK + Prometheus + Grafana)
+	if [ ! -d devops/certs ]; then \
+		mkdir -p devops/certs; \
+	fi; \
+	for service in elasticsearch kibana logstash prometheus grafana; do \
+		if [ -f devops/certs/$$service.crt ] && [ -f devops/certs/$$service.key ]; then \
+			if openssl x509 -checkend 86400 -noout -in devops/certs/$$service.crt > /dev/null 2>&1; then \
+				echo "✅ Valid certificates already exist for $$service"; \
+			else \
+				echo "🔧 Regenerating expired certificates for $$service"; \
+				if command -v mkcert > /dev/null; then \
+					mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key *.localhost localhost 127.0.0.1; \
+				else \
+					echo "⚠️ mkcert not found, skipping $$service certificates"; \
+				fi; \
+			fi; \
+		else \
+			echo "🔧 Creating new certificates for $$service"; \
+			if command -v mkcert > /dev/null; then \
+				mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key *.localhost localhost 127.0.0.1; \
+			else \
+				echo "⚠️ mkcert not found, skipping $$service certificates"; \
+			fi; \
+		fi; \
+	done; \
+	# Generate CA certificate for ELK internal communication \
+	if [ ! -f devops/certs/ca.crt ]; then \
+		echo "🔧 Creating CA certificate for ELK internal communication"; \
+		if command -v mkcert > /dev/null; then \
+			mkcert -install > /dev/null 2>&1 || true; \
+			if [ -f "$$(mkcert -CAROOT)/rootCA.pem" ]; then \
+				cp "$$(mkcert -CAROOT)/rootCA.pem" devops/certs/ca.crt; \
+				echo "✅ CA certificate copied from mkcert"; \
+			else \
+				echo "⚠️ mkcert CA not found, creating self-signed CA"; \
+				openssl req -x509 -newkey rsa:2048 -keyout devops/certs/ca.key -out devops/certs/ca.crt -days 365 -nodes -subj "/CN=ELK-CA" 2>/dev/null; \
+			fi; \
+		else \
+			echo "🔧 Creating self-signed CA certificate"; \
+			openssl req -x509 -newkey rsa:2048 -keyout devops/certs/ca.key -out devops/certs/ca.crt -days 365 -nodes -subj "/CN=ELK-CA" 2>/dev/null; \
+		fi; \
+	fi; \
+	# Fix permissions for certificate files \
+	chmod 644 devops/certs/*.crt 2>/dev/null || true; \
+	chmod 644 devops/certs/*.key 2>/dev/null || true
 endef
 
 define generate_microservice_certificates
@@ -148,17 +195,138 @@ endef
 
 generate-certs:
 	@echo "⏲️ Generating SSL certificates..."
-	@$(call generate_elk_certificates)
 	@$(call install_mkcert)
+	@$(call generate_observability_certificates)
 	@$(call generate_microservice_certificates)
+	@$(call ensure_ca_certificate)
+
+define ensure_ca_certificate
+	# Ensure CA certificate exists for ELK internal communication
+	if [ ! -f devops/certs/ca.crt ]; then \
+		echo "🔧 Creating CA certificate for ELK internal communication"; \
+		if command -v mkcert > /dev/null; then \
+			mkcert -install > /dev/null 2>&1 || true; \
+			if [ -f "$$(mkcert -CAROOT)/rootCA.pem" ]; then \
+				cp "$$(mkcert -CAROOT)/rootCA.pem" devops/certs/ca.crt; \
+				echo "✅ CA certificate copied from mkcert"; \
+			else \
+				echo "⚠️ mkcert CA not found, creating self-signed CA"; \
+				openssl req -x509 -newkey rsa:2048 -keyout devops/certs/ca.key -out devops/certs/ca.crt -days 365 -nodes -subj "/CN=ELK-CA" 2>/dev/null; \
+			fi; \
+		else \
+			echo "🔧 Creating self-signed CA certificate"; \
+			openssl req -x509 -newkey rsa:2048 -keyout devops/certs/ca.key -out devops/certs/ca.crt -days 365 -nodes -subj "/CN=ELK-CA" 2>/dev/null; \
+		fi; \
+		chmod 644 devops/certs/ca.crt 2>/dev/null || true; \
+	else \
+		echo "✅ CA certificate already exists"; \
+	fi
+endef
+
+define wait_for_elasticsearch
+	# Wait for Elasticsearch to be ready before setting up users
+	for i in $$(seq 1 60); do \
+		if curl -k -s https://elasticsearch.localhost:9200/_cluster/health > /dev/null 2>&1; then \
+			echo "✅ Elasticsearch is ready"; \
+			break; \
+		fi; \
+		echo "⏳ Waiting for Elasticsearch (attempt $$i/60)..."; \
+		sleep 2; \
+	done
+endef
+
+define setup_elk_users
+	# Set up ELK built-in users with fixed passwords from .env
+	echo "🔐 Setting up ELK Stack built-in users with fixed passwords..."; \
+	echo "📄 Loading environment variables from .env..."; \
+	if [ ! -f .env ]; then \
+		echo "❌ .env file not found."; \
+		exit 1; \
+	fi; \
+	NEW_ELASTIC_PASSWORD=$$(grep '^ELASTIC_PASSWORD=' .env | cut -d'=' -f2 | tr -d '"' | tr -d "'"); \
+	echo "✅ Loaded environment variables from .env"; \
+	echo "🔍 Checking Elasticsearch availability..."; \
+	for i in $$(seq 1 30); do \
+		if curl -k -s https://elasticsearch.localhost:9200/_cluster/health > /dev/null 2>&1; then \
+			echo "✅ Elasticsearch is running"; \
+			break; \
+		fi; \
+		echo "⏳ Waiting for Elasticsearch (attempt $$i/30)..."; \
+		sleep 2; \
+	done; \
+	echo "🔐 Ensuring 'elastic' user password is set from .env..."; \
+	curl -k -s -u "elastic:changeme" -X POST "https://elasticsearch.localhost:9200/_security/user/elastic/_password" -H "Content-Type: application/json" -d "{\"password\":\"$$NEW_ELASTIC_PASSWORD\"}" > /dev/null; \
+	echo "🔐 Setting up all other built-in user passwords..."; \
+	for user in kibana_system logstash_system beats_system apm_system remote_monitoring_user; do \
+		echo "🔑 Setting password for user: $$user"; \
+		password_var=$$(echo $$user | tr '[:lower:]' '[:upper:]' | sed 's/_SYSTEM/_SYSTEM/' | sed 's/REMOTE_MONITORING_USER/REMOTE_MONITORING_USER/')_PASSWORD; \
+		password=$$(grep "^$$password_var=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'"); \
+		if [ -z "$$password" ]; then \
+			password="syspass"; \
+		fi; \
+		response=$$(curl -k -s -w "%{http_code}" -u "elastic:$$NEW_ELASTIC_PASSWORD" \
+			-X POST "https://elasticsearch.localhost:9200/_security/user/$$user/_password" \
+			-H "Content-Type: application/json" \
+			-d "{\"password\":\"$$password\"}"); \
+		http_code=$$(echo "$$response" | tail -c 4); \
+		if [ "$$http_code" = "200" ]; then \
+			echo "✅ Password set successfully for $$user"; \
+		else \
+			echo "❌ Failed to set password for $$user (HTTP $$http_code)"; \
+		fi; \
+	done; \
+	echo "🧪 Verifying user authentication..."; \
+	for user in elastic kibana_system logstash_system; do \
+		password_var=$$(echo $$user | tr '[:lower:]' '[:upper:]' | sed 's/_SYSTEM/_SYSTEM/')_PASSWORD; \
+		password=$$(grep "^$$password_var=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'"); \
+		if [ -z "$$password" ]; then \
+			if [ "$$user" = "elastic" ]; then \
+				password="changeme"; \
+			else \
+				password="syspass"; \
+			fi; \
+		fi; \
+		if curl -k -s -u "$$user:$$password" https://elasticsearch.localhost:9200/_security/_authenticate > /dev/null 2>&1; then \
+			echo "✅ $$user authentication verified"; \
+		else \
+			echo "❌ $$user authentication failed"; \
+		fi; \
+	done; \
+	echo "🎉 ELK Stack user setup completed!"
+endef
+
+define setup_prometheus_auth
+	# Set up Prometheus basic authentication with bcrypt hash from .env
+	echo "🔐 Setting up Prometheus basic authentication..."; \
+	echo "📄 Loading environment variables from .env..."; \
+	if [ ! -f .env ]; then \
+		echo "❌ .env file not found."; \
+		exit 1; \
+	fi; \
+	PROMETHEUS_USERNAME=$$(grep '^PROMETHEUS_USERNAME=' .env | cut -d'=' -f2 | tr -d '"'); \
+	PROMETHEUS_PASSWORD=$$(grep '^PROMETHEUS_PASSWORD=' .env | cut -d'=' -f2 | tr -d '"'); \
+	if [ -z "$$PROMETHEUS_USERNAME" ] || [ -z "$$PROMETHEUS_PASSWORD" ]; then \
+		echo "❌ PROMETHEUS_USERNAME or PROMETHEUS_PASSWORD not found in .env"; \
+		exit 1; \
+	fi; \
+	echo "🔑 Generating bcrypt hash for Prometheus password..."; \
+	PASSWORD_HASH=$$(docker run --rm httpd:2.4-alpine htpasswd -bnBC 10 "" "$$PROMETHEUS_PASSWORD" | tr -d ':\n' | sed 's/^//'); \
+	echo "📝 Updating Prometheus web-config.yml with authentication..."; \
+	echo "tls_server_config:" > devops/prometheus/web-config.yml; \
+	echo "  cert_file: /etc/prometheus/certs/prometheus.crt" >> devops/prometheus/web-config.yml; \
+	echo "  key_file: /etc/prometheus/certs/prometheus.key" >> devops/prometheus/web-config.yml; \
+	echo "" >> devops/prometheus/web-config.yml; \
+	echo "basic_auth_users:" >> devops/prometheus/web-config.yml; \
+	echo "  $$PROMETHEUS_USERNAME: $$PASSWORD_HASH" >> devops/prometheus/web-config.yml
+	echo "✅ Prometheus authentication configured with user: $$PROMETHEUS_USERNAME"
+endef
 
 setup-elk-users:
 	@echo "🔐 Setting up ELK users with fixed passwords..."
-	@if [ -f ./devops/scripts/setup-elk-users.sh ]; then \
-		./devops/scripts/setup-elk-users.sh; \
-	else \
-		echo "❌ ELK user setup script not found at ./devops/scripts/setup-elk-users.sh"; \
-		exit 1; \
-	fi
+	@$(call setup_elk_users)
 
-.PHONY: up dev down dev-clean restart logs clean fclean metrics generate-certs setup-elk-users
+setup-prometheus-auth:
+	@echo "🔐 Setting up Prometheus authentication..."
+	@$(call setup_prometheus_auth)
+
+.PHONY: up dev down dev-clean restart logs clean fclean metrics generate-certs setup-elk-users setup-prometheus-auth
