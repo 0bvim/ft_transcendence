@@ -10,6 +10,14 @@ services:
       target: development
     ports:
       - "${FRONTEND_PORT:-3010}:3010"
+    volumes:
+      - ./packages/ms-frontend/src:/app/src
+      - ./packages/ms-frontend/assets:/app/assets
+      - ./packages/ms-frontend/public:/app/public
+      - ./packages/ms-frontend/package.json:/app/package.json
+      - ./packages/ms-frontend/tsconfig.json:/app/tsconfig.json
+      - ./packages/ms-frontend/vite.config.ts:/app/vite.config.ts
+      - ./packages/ms-frontend/tailwind.config.js:/app/tailwind.config.js
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
