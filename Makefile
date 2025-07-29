@@ -88,15 +88,15 @@ fclean: clean
 metrics:
 	@echo "Opening monitoring dashboards..."
 	@if command -v xdg-open > /dev/null; then \
-		xdg-open http://localhost:3002 & \
-		xdg-open http://localhost:5601; \
+		xdg-open https://localhost:3002 & \
+		xdg-open https://localhost:5601; \
 	elif command -v open > /dev/null; then \
-		open http://localhost:3002 & \
-		open http://localhost:5601; \
+		open https://localhost:3002 & \
+		open https://localhost:5601; \
 	else \
 		echo "Could not detect browser opener. Please manually open:"; \
-		echo "  Grafana: http://localhost:3002"; \
-		echo "  Kibana: http://localhost:5601"; \
+		echo "  Grafana: https://localhost:3002"; \
+		echo "  Kibana: https://localhost:5601"; \
 	fi
 
 help:
