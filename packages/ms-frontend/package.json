@@ -10,10 +10,13 @@
     "lint:fix": "eslint . --ext ts,tsx --fix"
   },
   "dependencies": {
+    "@ft-transcendence/observability": "file:../observability",
+    "@types/p5": "^1.7.6",
     "axios": "^1.6.0",
-    "@ft-transcendence/observability": "file:../observability"
+    "p5": "^2.0.3"
   },
   "devDependencies": {
+    "@ft-transcendence/observability": "file:../observability",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -22,8 +25,7 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.0.2",
-    "vite": "^5.0.0",
-    "@ft-transcendence/observability": "file:../observability"
+    "vite": "^5.0.0"
   },
   "keywords": [],
   "author": "",

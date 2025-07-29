@@ -1,3 +1,6 @@
+import { PongGame } from '../game/PongGame';
+import { authApi } from '../api/auth';
+
 export default function Game(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen relative overflow-hidden';
@@ -110,6 +113,61 @@ export default function Game(): HTMLElement {
         </div>
       </div>
 
+      <!-- Embedded Game Canvas Section -->
+      <div id="gameCanvasSection" class="hidden mt-12 animate-slide-up">
+        <div class="card p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-3xl font-bold text-gradient font-retro tracking-wider">GAME_SESSION.EXE</h2>
+            <button id="exitGameButton" class="btn btn-ghost group">
+              <svg class="w-5 h-5 mr-2 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              EXIT_GAME
+            </button>
+          </div>
+          
+          <!-- Game Status Bar -->
+          <div id="gameStatusBar" class="mb-6 p-4 bg-secondary-900/30 backdrop-blur-lg border border-neon-cyan/30 clip-cyber-button">
+            <div class="flex items-center justify-between font-mono">
+              <div class="flex items-center space-x-4">
+                <span class="text-neon-pink">STATUS:</span>
+                <span id="gameStatus" class="text-neon-green">INITIALIZING...</span>
+              </div>
+              <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2">
+                  <span id="playerLabel" class="text-neon-cyan">PLAYER:</span>
+                  <span id="playerScore" class="text-neon-green font-bold">0</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-neon-cyan">AI:</span>
+                  <span id="aiScore" class="text-neon-green font-bold">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Game Canvas Container -->
+          <div id="gameCanvasContainer" class="relative bg-black border-2 border-neon-cyan/50 clip-cyber-button overflow-hidden">
+            <div id="gameCanvas" class="w-full h-96 flex items-center justify-center">
+              <div class="text-neon-cyan font-mono animate-pulse">
+                <span class="text-neon-pink">></span> LOADING_GAME_ENGINE...
+                <span class="animate-pulse">_</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Game Controls Info -->
+          <div class="mt-6 p-4 bg-secondary-900/20 backdrop-blur-lg border border-neon-pink/20 clip-cyber-button">
+            <div class="text-center font-mono text-sm text-neon-cyan">
+              <span class="text-neon-pink">CONTROLS:</span>
+              <span class="mx-4">W/S or ↑/↓ - MOVE PADDLE</span>
+              <span class="mx-4">SPACE - START/PAUSE</span>
+              <span class="mx-4">R - RESTART</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Game Instructions -->
       <div class="card p-8 animate-slide-up" style="animation-delay: 0.4s;">
         <h2 class="text-3xl font-bold text-gradient mb-8 font-retro tracking-wider">HOW TO PLAY</h2>
@@ -177,22 +235,232 @@ export default function Game(): HTMLElement {
   return container;
 }
 
+// Game types for embedded game functionality
+type GameType = 'ai-match' | 'tournament' | 'quick-match';
+
+interface GameConfig {
+  type: GameType;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  targetScore?: number;
+  tournamentId?: string;
+}
+
+// Show the embedded game canvas and initialize game
+async function showEmbeddedGame(container: HTMLElement, gameType: GameType): Promise<void> {
+  const gameCanvasSection = container.querySelector('#gameCanvasSection') as HTMLElement;
+  
+  if (!gameCanvasSection) return;
+  
+  // Configure game based on type
+  const gameConfig: GameConfig = {
+    type: gameType,
+    difficulty: 'medium',
+    targetScore: 5
+  };
+  
+  // Show the game canvas section with animation
+  gameCanvasSection.classList.remove('hidden');
+  
+  // Scroll to game section
+  setTimeout(() => {
+    gameCanvasSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+  
+  // Initialize game
+  await initializeEmbeddedGame(container, gameConfig);
+}
+
+// Hide the embedded game canvas
+function hideEmbeddedGame(container: HTMLElement): void {
+  const gameCanvasSection = container.querySelector('#gameCanvasSection') as HTMLElement;
+  
+  if (!gameCanvasSection) return;
+  
+  // Hide the game canvas section
+  gameCanvasSection.classList.add('hidden');
+  
+  // Clean up game resources
+  cleanupEmbeddedGame(container);
+  
+  // Scroll back to top of page
+  setTimeout(() => {
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+// Initialize the embedded game with real p5.js PongGame and player name
+async function initializeEmbeddedGame(container: HTMLElement, config: GameConfig): Promise<void> {
+  const gameCanvas = container.querySelector('#gameCanvas') as HTMLElement;
+  const gameStatus = container.querySelector('#gameStatus') as HTMLElement;
+  const playerScore = container.querySelector('#playerScore') as HTMLElement;
+  const aiScore = container.querySelector('#aiScore') as HTMLElement;
+  const playerLabel = container.querySelector('#playerLabel') as HTMLElement;
+  
+  if (!gameCanvas || !gameStatus) return;
+  
+  // Update status
+  gameStatus.textContent = 'LOADING_GAME_ENGINE...';
+  
+  // Get current user name and update UI
+  let playerName = 'PLAYER';
+  try {
+    const userProfile = await authApi.getProfile();
+    playerName = userProfile.user.displayName || userProfile.user.username || 'PLAYER';
+    
+    // Update player label in UI
+    if (playerLabel) {
+      playerLabel.textContent = `${playerName.toUpperCase()}:`;
+    }
+  } catch (error) {
+    console.warn('Could not fetch user profile, using default name:', error);
+  }
+  
+  // Clear the canvas container and prepare for p5.js
+  gameCanvas.innerHTML = '';
+  gameCanvas.style.display = 'flex';
+  gameCanvas.style.justifyContent = 'center';
+  gameCanvas.style.alignItems = 'center';
+  
+  // Import and initialize the PongGame
+  try {
+    const { PongGame, GameState } = await import('../game/PongGame.js');
+    
+    // Create game configuration
+    const gameConfig = {
+      player1Name: playerName,
+      player2Name: config.type === 'ai-match' ? 'AI_OPPONENT' : 'PLAYER_2',
+      player1IsAI: false,
+      player2IsAI: config.type === 'ai-match',
+      aiDifficulty: (config.difficulty || 'medium').toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD',
+      targetScore: config.targetScore || 5
+    };
+    
+    // Create game callbacks
+    const gameCallbacks = {
+      onScoreUpdate: (player1Score: number, player2Score: number) => {
+        if (playerScore) playerScore.textContent = player1Score.toString();
+        if (aiScore) aiScore.textContent = player2Score.toString();
+      },
+      onGameStateChange: (state: any) => {
+        if (!gameStatus) return;
+        
+        switch (state) {
+          case GameState.Loading:
+            gameStatus.textContent = 'LOADING...';
+            break;
+          case GameState.Ready:
+            gameStatus.textContent = 'READY_TO_PLAY';
+            break;
+          case GameState.Playing:
+            gameStatus.textContent = 'PLAYING';
+            break;
+          case GameState.Paused:
+            gameStatus.textContent = 'PAUSED';
+            break;
+          case GameState.GameOver:
+            gameStatus.textContent = 'GAME_OVER';
+            break;
+        }
+      },
+      onGameEnd: (winner: string, _finalScore: { player1: number; player2: number }) => {
+        if (gameStatus) {
+          gameStatus.textContent = `${winner.toUpperCase()}_WINS!`;
+        }
+        
+        // Show game over message
+        setTimeout(() => {
+          if (gameStatus) {
+            gameStatus.textContent = 'GAME_COMPLETE';
+          }
+        }, 3000);
+      }
+    };
+    
+    // Create and initialize the game
+    const pongGame = new PongGame(gameConfig, gameCallbacks);
+    pongGame.init(gameCanvas);
+    
+    // Store game instance for cleanup
+    (container as any)._pongGameInstance = pongGame;
+    
+    // Update UI elements
+    gameStatus.textContent = 'READY_TO_PLAY';
+    
+  } catch (error) {
+    console.error('Failed to load PongGame:', error);
+    gameStatus.textContent = 'ERROR_LOADING_GAME';
+    
+    // Fallback to placeholder
+    gameCanvas.innerHTML = `
+      <div class="w-full h-full bg-black border border-neon-red/30 flex items-center justify-center">
+        <div class="text-center">
+          <div class="text-neon-red font-mono mb-4">
+            <span class="text-neon-pink">!</span> GAME_ENGINE_ERROR
+          </div>
+          <div class="text-neon-cyan font-mono text-sm">
+            Failed to initialize game engine
+          </div>
+          <div class="mt-4 text-neon-yellow font-mono text-xs">
+            Check console for details
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Clean up game resources
+function cleanupEmbeddedGame(container: HTMLElement): void {
+  const gameStatus = container.querySelector('#gameStatus') as HTMLElement;
+  const gameCanvas = container.querySelector('#gameCanvas') as HTMLElement;
+  const playerLabel = container.querySelector('#playerLabel') as HTMLElement;
+  
+  // Reset status
+  if (gameStatus) {
+    gameStatus.textContent = 'INITIALIZING...';
+  }
+  
+  // Reset player label
+  if (playerLabel) {
+    playerLabel.textContent = 'PLAYER:';
+  }
+  
+  // Reset canvas
+  if (gameCanvas) {
+    gameCanvas.innerHTML = `
+      <div class="text-neon-cyan font-mono animate-pulse">
+        <span class="text-neon-pink">></span> LOADING_GAME_ENGINE...
+        <span class="animate-pulse">_</span>
+      </div>
+    `;
+  }
+  
+  // Clean up game instance
+  if ((container as any)._pongGameInstance) {
+    try {
+      (container as any)._pongGameInstance.cleanup();
+    } catch (error) {
+      console.warn('Error cleaning up game instance:', error);
+    }
+    delete (container as any)._pongGameInstance;
+  }
+}
+
 function setupEventListeners(container: HTMLElement) {
   const backButton = container.querySelector('#backButton') as HTMLButtonElement;
   const playAiButton = container.querySelector('#playAiButton') as HTMLButtonElement;
   const playTournamentButton = container.querySelector('#playTournamentButton') as HTMLButtonElement;
   const quickMatchButton = container.querySelector('#quickMatchButton') as HTMLButtonElement;
+  const exitGameButton = container.querySelector('#exitGameButton') as HTMLButtonElement;
 
   // Back button
   backButton.addEventListener('click', () => {
     window.location.href = '/dashboard';
   });
 
-  // Play vs AI - opens game service directly
-  playAiButton.addEventListener('click', () => {
-    // Open the game service for AI play
-    const gameServiceUrl = `https://${window.location.hostname}:3002`;
-    window.open(gameServiceUrl, '_blank');
+  // Play vs AI - show embedded game canvas
+  playAiButton.addEventListener('click', async () => {
+    await showEmbeddedGame(container, 'ai-match');
   });
 
   // Tournament Play - redirects to tournament page
@@ -204,5 +472,10 @@ function setupEventListeners(container: HTMLElement) {
   quickMatchButton.addEventListener('click', () => {
     // TODO: Implement real-time matchmaking
     alert('Quick Match feature coming soon!');
+  });
+
+  // Exit game - hide embedded game canvas
+  exitGameButton?.addEventListener('click', () => {
+    hideEmbeddedGame(container);
   });
 } 

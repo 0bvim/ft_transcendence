@@ -3,4 +3,4 @@ tls_server_config:
   key_file: /etc/prometheus/certs/prometheus.key
 
 basic_auth_users:
-  prometheus: $2y$10$mbPYJuyEolKFYU5tlPZQpOlaoE8bxRWqv2jzqFQTDgIVVPwXGXika
+  prometheus: $2y$10$1iXZK.yxdy/anQfKy7m.wOKsnj.egcKSWW24Vwps66s4TIc3rsi0C
