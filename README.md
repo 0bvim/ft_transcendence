@@ -34,13 +34,13 @@ make metrics
 
 | Service | URL | Description | Status |
 |---------|-----|-------------|--------|
-| **Frontend** | http://localhost:3010 | Main application interface | ✅ |
-| **Authentication** | http://localhost:3001 | Auth API endpoints | ✅ |
-| **Game** | http://localhost:3003 | Pong game service | ✅ |
-| **Grafana** | http://localhost:3002 | Metrics dashboard (admin/admin) | ✅ |
-| **Kibana** | http://localhost:5601 | Logs visualization | ✅ |
-| **Prometheus** | http://localhost:9090 | Metrics collection | ✅ |
-| **Elasticsearch** | http://localhost:9200 | Search and analytics | ✅ |
+| **Frontend** | https://localhost:3010 | Main application interface | ✅ |
+| **Authentication** | https://localhost:3001 | Auth API endpoints | ✅ |
+| **Game** | https://localhost:3003 | Pong game service | ✅ |
+| **Grafana** | https://localhost:3002 | Metrics dashboard (admin/admin) | ✅ |
+| **Kibana** | https://localhost:5601 | Logs visualization | ✅ |
+| **Prometheus** | https://localhost:9090 | Metrics collection | ✅ |
+| **Elasticsearch** | https://localhost:9200 | Search and analytics | ✅ |
 
 ## 🏗️ Architecture
 
@@ -162,9 +162,9 @@ make up
 ```
 
 3. **Access services:**
-- Frontend: http://localhost:3010
-- Game: http://localhost:3003
-- Auth API: http://localhost:3001
+- Frontend: https://localhost:3000
+- Game: https://localhost:3002
+- Auth API: https://localhost:3001
 
 ## 📊 Monitoring & Observability
 
@@ -179,9 +179,9 @@ make up
 
 ### Health Checks
 All services provide health endpoints:
-- Frontend: http://localhost:3010/health
-- Auth: http://localhost:3001/health
-- Game: http://localhost:3003/health
+- Frontend: https://localhost:3000/health
+- Auth: https://localhost:3001/health
+- Game: https://localhost:3002/health
 
 ## 🎮 Game Features
 
@@ -251,12 +251,12 @@ docker-compose logs ms-auth
 docker-compose logs ms-game
 
 # Check service health
-curl http://localhost:3010/health
-curl http://localhost:3001/health
-curl http://localhost:3003/health
+curl https://localhost:3000/health
+curl https://localhost:3001/health
+curl https://localhost:3002/health
 
 # Check metrics
-curl http://localhost:3003/metrics
+curl https://localhost:3002/metrics
 ```
 
 ## 📈 Performance Monitoring

@@ -58,12 +58,13 @@ services:
       - PORT=3003
       - DATABASE_URL=file:./tournament.db
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - AUTH_SERVICE_URL=http://authentication:3001
-      - GAME_SERVICE_URL=http://game:3003
-      - BLOCKCHAIN_SERVICE_URL=http://blockchain:3004
+      - AUTH_SERVICE_URL=https://authentication:3001
+      - GAME_SERVICE_URL=https://game:3003
+      - BLOCKCHAIN_SERVICE_URL=https://blockchain:3004
     volumes:
       - ./packages/ms-tournament/src:/app/src
       - ./packages/ms-tournament/prisma:/app/prisma
+      - ./packages/ms-tournament/certs:/app/certs:ro
     networks:
       - ${NETWORK_NAME:-ft-net}
     depends_on:
@@ -111,8 +112,8 @@ services:
       - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
       - AVALANCHE_CHAIN_ID=${AVALANCHE_CHAIN_ID:-43113}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
-      - TOURNAMENT_SERVICE_URL=http://tournament:3003
-      - AUTH_SERVICE_URL=http://authentication:3001
+      - TOURNAMENT_SERVICE_URL=https://tournament:3003
+      - AUTH_SERVICE_URL=https://authentication:3001
       - GAS_LIMIT=${GAS_LIMIT:-3000000}
       - GAS_PRICE=${GAS_PRICE:-20000000000}
     networks:
@@ -221,6 +222,12 @@ services:
       - ${PROMETHEUS_ALERTS_PATH:-./devops/prometheus/alerts.yml}:/etc/prometheus/alerts.yml
       - ./devops/prometheus/web-config.yml:/etc/prometheus/web-config.yml
       - ${PROMETHEUS_CERTS_PATH:-./devops/certs}:/etc/prometheus/certs
+    environment:
+      - PROMETHEUS_USERNAME=${PROMETHEUS_USERNAME}
+      - PROMETHEUS_PASSWORD=${PROMETHEUS_PASSWORD}
+      - ELASTIC_USER=${ELASTIC_USER}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - PROMETHEUS_CERTS_PATH=/etc/prometheus/certs
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"

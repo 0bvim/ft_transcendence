@@ -4,8 +4,20 @@ import { appRoutes } from "./http/routes";
 import { setupObservability } from "@ft-transcendence/observability";
 import { ZodError } from "zod";
 import { env } from "./env";
+import path from "path";
+import fs from "fs";
 
-const app = fastify();
+const pems = {
+  private: fs.readFileSync(path.join(__dirname, "../certs/key.pem")),
+  cert: fs.readFileSync(path.join(__dirname, "../certs/cert.pem")),
+};
+
+const app = fastify({
+  https: {
+    key: pems.private,
+    cert: pems.cert,
+  },
+});
 
 //Setup Observability
 setupObservability(app, {

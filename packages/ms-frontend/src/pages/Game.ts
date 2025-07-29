@@ -191,7 +191,7 @@ function setupEventListeners(container: HTMLElement) {
   // Play vs AI - opens game service directly
   playAiButton.addEventListener('click', () => {
     // Open the game service for AI play
-    const gameServiceUrl = `http://${window.location.hostname}:3003`;
+    const gameServiceUrl = `https://${window.location.hostname}:3002`;
     window.open(gameServiceUrl, '_blank');
   });
 

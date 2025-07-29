@@ -6,9 +6,19 @@ import path from "path";
 import fs from "fs";
 import { z } from "zod";
 
-dotenv.config();
+const pems = {
+  private: fs.readFileSync(path.join(__dirname, "../certs/key.pem")),
+  cert: fs.readFileSync(path.join(__dirname, "../certs/cert.pem")),
+};
 
-const app = Fastify();
+const app = Fastify({
+  https: {
+    key: pems.private,
+    cert: pems.cert,
+  },
+});
+
+dotenv.config();
 
 // Setup observability for ELK stack
 setupObservability(app, {
