@@ -109,9 +109,12 @@ class TournamentApi {
   private baseUrl: string;
 
   constructor() {
-    // Use tournament service URL directly
+    // Use tournament service URL - in containers, use service name
+    // In development, services are accessible via localhost with HTTPS
     const hostname = window.location.hostname;
-    this.baseUrl = `http://${hostname}:3003`;
+    
+    // For containerized deployment, tournament service is accessible via HTTPS on port 3003
+    this.baseUrl = `https://${hostname}:3003`;
   }
 
   private async request<T>(

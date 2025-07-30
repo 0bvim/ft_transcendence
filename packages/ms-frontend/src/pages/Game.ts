@@ -1,5 +1,6 @@
 import { PongGame } from '../game/PongGame';
 import { authApi } from '../api/auth';
+import { tournamentApi, Tournament, TournamentParticipant, Match } from '../api/tournament';
 
 export default function Game(): HTMLElement {
   const container = document.createElement('div');
@@ -236,13 +237,16 @@ export default function Game(): HTMLElement {
 }
 
 // Game types for embedded game functionality
-type GameType = 'ai-match' | 'tournament' | 'quick-match';
+type GameType = 'ai-match' | 'multiplayer-match' | 'tournament-match' | 'quick-match';
 
 interface GameConfig {
   type: GameType;
   difficulty?: 'easy' | 'medium' | 'hard';
   targetScore?: number;
   tournamentId?: string;
+  matchId?: string;
+  player1Name?: string;
+  player2Name?: string;
 }
 
 // Show the embedded game canvas and initialize game
@@ -463,9 +467,9 @@ function setupEventListeners(container: HTMLElement) {
     await showEmbeddedGame(container, 'ai-match');
   });
 
-  // Tournament Play - redirects to tournament page
-  playTournamentButton.addEventListener('click', () => {
-    window.location.href = '/tournament';
+  // Tournament Play - show tournament section
+  playTournamentButton.addEventListener('click', async () => {
+    await showTournamentSection(container);
   });
 
   // Quick Match - disabled for now
@@ -478,4 +482,432 @@ function setupEventListeners(container: HTMLElement) {
   exitGameButton?.addEventListener('click', () => {
     hideEmbeddedGame(container);
   });
+}
+
+// Tournament Section Management
+async function showTournamentSection(container: HTMLElement): Promise<void> {
+  // Hide game options and show tournament section
+  const gameOptions = container.querySelector('.container-fluid');
+  let tournamentSection = container.querySelector('#tournamentSection');
+  
+  if (gameOptions) gameOptions.classList.add('hidden');
+  
+  if (!tournamentSection) {
+    // Create tournament section if it doesn't exist
+    await createTournamentSection(container);
+    tournamentSection = container.querySelector('#tournamentSection');
+  }
+  
+  if (tournamentSection) {
+    tournamentSection.classList.remove('hidden');
+    await loadTournaments(container);
+    setupTournamentEventListeners(container);
+  }
+}
+
+async function createTournamentSection(container: HTMLElement): Promise<void> {
+  const tournamentHTML = `
+    <div id="tournamentSection" class="relative z-10 container-fluid py-8 animate-fade-in hidden">
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center space-x-6">
+          <button id="backToGameButton" class="btn btn-ghost group">
+            <svg class="w-5 h-5 mr-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            BACK_TO_GAME_OPTIONS
+          </button>
+          <h1 class="text-4xl font-bold text-gradient font-retro tracking-wider">
+            <span class="text-neon-purple">TOURNAMENT</span> 
+            <span class="text-neon-pink">ARENA</span>
+          </h1>
+        </div>
+        <button id="createTournamentButton" class="btn btn-primary">
+          <span class="font-retro tracking-wider">CREATE_TOURNAMENT.EXE</span>
+        </button>
+      </div>
+      
+      <div id="tournamentsList" class="space-y-4">
+        <div class="text-center py-12">
+          <div class="text-neon-cyan font-mono text-lg mb-4">LOADING_TOURNAMENTS...</div>
+          <div class="loading-spinner mx-auto"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  container.insertAdjacentHTML('beforeend', tournamentHTML);
+}
+
+function hideTournamentSection(container: HTMLElement): void {
+  const gameOptions = container.querySelector('.container-fluid');
+  const tournamentSection = container.querySelector('#tournamentSection');
+  
+  if (gameOptions) gameOptions.classList.remove('hidden');
+  if (tournamentSection) tournamentSection.classList.add('hidden');
+}
+
+async function loadTournaments(container: HTMLElement): Promise<void> {
+  try {
+    const tournaments = await tournamentApi.getTournaments({ page: 1, limit: 10, status: 'WAITING' });
+    displayTournaments(container, tournaments.tournaments);
+  } catch (error) {
+    console.error('Failed to load tournaments:', error);
+    displayTournamentError(container, 'Failed to load tournaments');
+  }
+}
+
+function displayTournaments(container: HTMLElement, tournaments: Tournament[]): void {
+  const tournamentsList = container.querySelector('#tournamentsList');
+  if (!tournamentsList) return;
+  
+  if (tournaments.length === 0) {
+    tournamentsList.innerHTML = `
+      <div class="text-center py-12">
+        <div class="text-neon-cyan font-mono text-lg mb-4">NO_TOURNAMENTS_AVAILABLE</div>
+        <p class="text-neon-cyan/60 font-mono">Create a new tournament to get started!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const tournamentsHTML = tournaments.map(tournament => `
+    <div class="card p-6 hover:scale-105 transition-all duration-300 cursor-pointer tournament-card" data-tournament-id="${tournament.id}">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold text-neon-green font-retro tracking-wider">${tournament.name}</h3>
+        <div class="flex items-center space-x-4">
+          <span class="px-3 py-1 bg-neon-purple/20 border border-neon-purple/50 rounded text-neon-purple font-mono text-sm">
+            ${tournament.status}
+          </span>
+          <span class="text-neon-cyan font-mono">${tournament.currentPlayers}/${tournament.maxPlayers}</span>
+        </div>
+      </div>
+      
+      <p class="text-neon-cyan/80 font-mono mb-4">${tournament.description || 'No description provided'}</p>
+      
+      <div class="grid grid-cols-3 gap-4 text-sm font-mono">
+        <div>
+          <span class="text-neon-pink">TYPE:</span>
+          <span class="text-neon-cyan ml-2">${tournament.tournamentType}</span>
+        </div>
+        <div>
+          <span class="text-neon-pink">AI_DIFFICULTY:</span>
+          <span class="text-neon-cyan ml-2">${tournament.aiDifficulty}</span>
+        </div>
+        <div>
+          <span class="text-neon-pink">AUTO_START:</span>
+          <span class="text-neon-cyan ml-2">${tournament.autoStart ? 'YES' : 'NO'}</span>
+        </div>
+      </div>
+      
+      <div class="flex space-x-4 mt-6">
+        <button class="btn btn-primary flex-1 join-tournament-btn" data-tournament-id="${tournament.id}">
+          <span class="font-retro tracking-wider">JOIN_TOURNAMENT</span>
+        </button>
+        <button class="btn btn-ghost view-tournament-btn" data-tournament-id="${tournament.id}">
+          <span class="font-retro tracking-wider">VIEW_DETAILS</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  tournamentsList.innerHTML = tournamentsHTML;
+}
+
+function displayTournamentError(container: HTMLElement, message: string): void {
+  const tournamentsList = container.querySelector('#tournamentsList');
+  if (!tournamentsList) return;
+  
+  tournamentsList.innerHTML = `
+    <div class="text-center py-12">
+      <div class="text-neon-red font-mono text-lg mb-4">ERROR</div>
+      <p class="text-neon-cyan/60 font-mono">${message}</p>
+      <button id="retryLoadTournaments" class="btn btn-primary mt-4">
+        <span class="font-retro tracking-wider">RETRY</span>
+      </button>
+    </div>
+  `;
+}
+
+function setupTournamentEventListeners(container: HTMLElement): void {
+  // Back to game options
+  const backToGameButton = container.querySelector('#backToGameButton');
+  backToGameButton?.addEventListener('click', () => {
+    hideTournamentSection(container);
+  });
+  
+  // Create tournament button
+  const createTournamentButton = container.querySelector('#createTournamentButton');
+  createTournamentButton?.addEventListener('click', () => {
+    showCreateTournamentModal(container);
+  });
+  
+  // Tournament card interactions
+  const joinButtons = container.querySelectorAll('.join-tournament-btn');
+  joinButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tournamentId = (e.target as HTMLElement).dataset.tournamentId;
+      if (tournamentId) await joinTournament(container, tournamentId);
+    });
+  });
+  
+  // View tournament details
+  const viewButtons = container.querySelectorAll('.view-tournament-btn');
+  viewButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tournamentId = (e.target as HTMLElement).dataset.tournamentId;
+      if (tournamentId) await showTournamentDetails(container, tournamentId);
+    });
+  });
+  
+  // Retry button
+  const retryButton = container.querySelector('#retryLoadTournaments');
+  retryButton?.addEventListener('click', () => {
+    loadTournaments(container);
+  });
+}
+
+async function joinTournament(container: HTMLElement, tournamentId: string): Promise<void> {
+  try {
+    await tournamentApi.joinTournament(tournamentId);
+    await loadTournaments(container);
+    showNotification(container, 'Successfully joined tournament!', 'success');
+  } catch (error) {
+    console.error('Failed to join tournament:', error);
+    showNotification(container, 'Failed to join tournament. Please try again.', 'error');
+  }
+}
+
+function showNotification(container: HTMLElement, message: string, type: 'success' | 'error'): void {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 z-50 p-4 rounded border font-mono text-sm animate-fade-in ${
+    type === 'success' 
+      ? 'bg-neon-green/20 border-neon-green text-neon-green' 
+      : 'bg-neon-red/20 border-neon-red text-neon-red'
+  }`;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+function showCreateTournamentModal(container: HTMLElement): void {
+  const modalHTML = `
+    <div id="createTournamentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in">
+      <div class="bg-gray-900 border border-neon-cyan/50 rounded-lg p-8 max-w-md w-full mx-4 animate-scale-in">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-neon-green font-retro tracking-wider">CREATE_TOURNAMENT</h2>
+          <button id="closeCreateModal" class="text-neon-red hover:text-neon-red/80 text-2xl">&times;</button>
+        </div>
+        
+        <form id="createTournamentForm" class="space-y-4">
+          <div>
+            <label class="block text-neon-cyan font-mono text-sm mb-2">TOURNAMENT_NAME</label>
+            <input type="text" id="tournamentName" required class="w-full p-3 bg-gray-800 border border-neon-cyan/50 rounded text-neon-cyan font-mono focus:border-neon-green focus:outline-none" placeholder="Enter tournament name...">
+          </div>
+          
+          <div>
+            <label class="block text-neon-cyan font-mono text-sm mb-2">DESCRIPTION</label>
+            <textarea id="tournamentDescription" class="w-full p-3 bg-gray-800 border border-neon-cyan/50 rounded text-neon-cyan font-mono focus:border-neon-green focus:outline-none" rows="3" placeholder="Enter description..."></textarea>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-neon-cyan font-mono text-sm mb-2">MAX_PLAYERS</label>
+              <select id="maxPlayers" class="w-full p-3 bg-gray-800 border border-neon-cyan/50 rounded text-neon-cyan font-mono focus:border-neon-green focus:outline-none">
+                <option value="4">4</option>
+                <option value="8">8</option>
+                <option value="16">16</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-neon-cyan font-mono text-sm mb-2">AI_DIFFICULTY</label>
+              <select id="aiDifficulty" class="w-full p-3 bg-gray-800 border border-neon-cyan/50 rounded text-neon-cyan font-mono focus:border-neon-green focus:outline-none">
+                <option value="EASY">EASY</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HARD">HARD</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3">
+            <input type="checkbox" id="autoStart" class="w-4 h-4 text-neon-green bg-gray-800 border-neon-cyan/50 rounded focus:ring-neon-green">
+            <label for="autoStart" class="text-neon-cyan font-mono text-sm">AUTO_START_WHEN_FULL</label>
+          </div>
+          
+          <div class="flex space-x-4 mt-6">
+            <button type="button" id="cancelCreate" class="btn btn-ghost flex-1">
+              <span class="font-retro tracking-wider">CANCEL</span>
+            </button>
+            <button type="submit" class="btn btn-primary flex-1">
+              <span class="font-retro tracking-wider">CREATE</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Setup modal event listeners
+  const modal = document.getElementById('createTournamentModal');
+  const closeBtn = document.getElementById('closeCreateModal');
+  const cancelBtn = document.getElementById('cancelCreate');
+  const form = document.getElementById('createTournamentForm') as HTMLFormElement;
+  
+  const closeModal = () => modal?.remove();
+  
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await handleCreateTournament(container, form);
+    closeModal();
+  });
+}
+
+async function handleCreateTournament(container: HTMLElement, form: HTMLFormElement): Promise<void> {
+  try {
+    const tournamentData = {
+      name: (form.querySelector('#tournamentName') as HTMLInputElement).value,
+      description: (form.querySelector('#tournamentDescription') as HTMLTextAreaElement).value,
+      maxPlayers: parseInt((form.querySelector('#maxPlayers') as HTMLSelectElement).value),
+      tournamentType: 'MIXED' as const,
+      aiDifficulty: (form.querySelector('#aiDifficulty') as HTMLSelectElement).value as 'EASY' | 'MEDIUM' | 'HARD',
+      autoStart: (form.querySelector('#autoStart') as HTMLInputElement).checked
+    };
+    
+    await tournamentApi.createTournament(tournamentData);
+    await loadTournaments(container);
+    showNotification(container, 'Tournament created successfully!', 'success');
+  } catch (error) {
+    console.error('Failed to create tournament:', error);
+    showNotification(container, 'Failed to create tournament. Please try again.', 'error');
+  }
+}
+
+async function showTournamentDetails(container: HTMLElement, tournamentId: string): Promise<void> {
+  try {
+    const tournament = await tournamentApi.getTournament(tournamentId);
+    
+    const modalHTML = `
+      <div id="tournamentDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in">
+        <div class="bg-gray-900 border border-neon-cyan/50 rounded-lg p-8 max-w-2xl w-full mx-4 animate-scale-in max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-neon-green font-retro tracking-wider">${tournament.name}</h2>
+            <button id="closeDetailsModal" class="text-neon-red hover:text-neon-red/80 text-2xl">&times;</button>
+          </div>
+          
+          <div class="space-y-6">
+            <div class="grid grid-cols-2 gap-4 text-sm font-mono">
+              <div>
+                <span class="text-neon-pink">STATUS:</span>
+                <span class="text-neon-cyan ml-2">${tournament.status}</span>
+              </div>
+              <div>
+                <span class="text-neon-pink">PLAYERS:</span>
+                <span class="text-neon-cyan ml-2">${tournament.currentPlayers}/${tournament.maxPlayers}</span>
+              </div>
+              <div>
+                <span class="text-neon-pink">TYPE:</span>
+                <span class="text-neon-cyan ml-2">${tournament.tournamentType}</span>
+              </div>
+              <div>
+                <span class="text-neon-pink">AI_DIFFICULTY:</span>
+                <span class="text-neon-cyan ml-2">${tournament.aiDifficulty}</span>
+              </div>
+            </div>
+            
+            ${tournament.description ? `
+              <div>
+                <h3 class="text-neon-pink font-mono text-sm mb-2">DESCRIPTION:</h3>
+                <p class="text-neon-cyan/80 font-mono">${tournament.description}</p>
+              </div>
+            ` : ''}
+            
+            <div>
+              <h3 class="text-neon-pink font-mono text-sm mb-3">PARTICIPANTS:</h3>
+              <div class="space-y-2">
+                ${tournament.participants.map(participant => `
+                  <div class="flex items-center justify-between p-3 bg-gray-800 rounded border border-neon-cyan/30">
+                    <span class="text-neon-cyan font-mono">${participant.displayName}</span>
+                    <div class="flex items-center space-x-2">
+                      <span class="px-2 py-1 bg-neon-purple/20 border border-neon-purple/50 rounded text-neon-purple font-mono text-xs">
+                        ${participant.participantType}
+                      </span>
+                      <span class="px-2 py-1 bg-neon-green/20 border border-neon-green/50 rounded text-neon-green font-mono text-xs">
+                        ${participant.status}
+                      </span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            ${tournament.matches && tournament.matches.length > 0 ? `
+              <div>
+                <h3 class="text-neon-pink font-mono text-sm mb-3">MATCHES:</h3>
+                <div class="space-y-2">
+                  ${tournament.matches.map(match => `
+                    <div class="flex items-center justify-between p-3 bg-gray-800 rounded border border-neon-cyan/30">
+                      <span class="text-neon-cyan font-mono">Round ${match.round}</span>
+                      <span class="px-2 py-1 bg-neon-blue/20 border border-neon-blue/50 rounded text-neon-blue font-mono text-xs">
+                        ${match.status}
+                      </span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+          
+          <div class="flex space-x-4 mt-6">
+            <button id="closeDetails" class="btn btn-ghost flex-1">
+              <span class="font-retro tracking-wider">CLOSE</span>
+            </button>
+            ${tournament.status === 'WAITING' && tournament.currentPlayers < tournament.maxPlayers ? `
+              <button id="joinFromDetails" class="btn btn-primary flex-1" data-tournament-id="${tournament.id}">
+                <span class="font-retro tracking-wider">JOIN_TOURNAMENT</span>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Setup modal event listeners
+    const modal = document.getElementById('tournamentDetailsModal');
+    const closeBtn = document.getElementById('closeDetailsModal');
+    const closeDetailsBtn = document.getElementById('closeDetails');
+    const joinBtn = document.getElementById('joinFromDetails');
+    
+    const closeModal = () => modal?.remove();
+    
+    closeBtn?.addEventListener('click', closeModal);
+    closeDetailsBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+    
+    joinBtn?.addEventListener('click', async () => {
+      await joinTournament(container, tournamentId);
+      closeModal();
+    });
+    
+  } catch (error) {
+    console.error('Failed to load tournament details:', error);
+    showNotification(container, 'Failed to load tournament details.', 'error');
+  }
 } 
