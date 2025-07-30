@@ -1,6 +1,7 @@
 import { PongGame } from '../game/PongGame';
 import { authApi } from '../api/auth';
 import { tournamentApi, Tournament, TournamentParticipant, Match } from '../api/tournament';
+import { MultiplayerGame } from '../game/MultiplayerGame';
 
 export default function Game(): HTMLElement {
   const container = document.createElement('div');
@@ -43,74 +44,74 @@ export default function Game(): HTMLElement {
       </div>
 
       <!-- Game Mode Selection -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 animate-slide-up">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-slide-up">
         <!-- AI Opponent -->
-        <div class="card p-8 text-center group hover:scale-105 transition-all duration-500" id="aiGameCard">
-          <div class="w-24 h-24 bg-gradient-to-br from-neon-green to-neon-cyan clip-cyberpunk mx-auto mb-8 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500" id="aiGameCard">
+          <div class="w-20 h-20 bg-gradient-to-br from-neon-green to-neon-cyan clip-cyberpunk mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
             </svg>
           </div>
-          <h3 class="text-2xl font-bold text-neon-green mb-4 font-retro tracking-wider">PLAY VS AI</h3>
-          <p class="text-neon-cyan/80 mb-8 font-mono leading-relaxed">
-            <span class="text-neon-pink">></span> Challenge an AI opponent in a classic Pong match. 
-            <br/>Perfect for practice or quick games.
+          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro tracking-wider">PLAY VS AI</h3>
+          <p class="text-neon-cyan/80 mb-6 font-mono text-sm leading-relaxed">
+            <span class="text-neon-pink">></span> Challenge AI opponent
+            <br/>Practice & quick games
             <span class="animate-pulse">_</span>
           </p>
           <button id="playAiButton" class="btn btn-primary w-full group">
-            <span class="relative z-10 flex items-center justify-center font-retro tracking-wider">
-              START_AI_GAME.EXE
-              <svg class="w-5 h-5 ml-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span class="relative z-10 flex items-center justify-center font-retro tracking-wider text-sm">
+              START_AI_GAME
+              <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
               </svg>
             </span>
           </button>
         </div>
 
-        <!-- Tournament/Multiplayer -->
-        <div class="card p-8 text-center group hover:scale-105 transition-all duration-500" id="tournamentCard">
-          <div class="w-24 h-24 bg-gradient-to-br from-neon-purple to-neon-pink clip-cyberpunk mx-auto mb-8 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Tournament Play -->
+        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500" id="tournamentCard">
+          <div class="w-20 h-20 bg-gradient-to-br from-neon-purple to-neon-pink clip-cyberpunk mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
           </div>
-          <h3 class="text-2xl font-bold text-neon-pink mb-4 font-retro tracking-wider">TOURNAMENT PLAY</h3>
-          <p class="text-neon-cyan/80 mb-8 font-mono leading-relaxed">
-            <span class="text-neon-green">></span> Join or create tournaments to compete 
-            <br/>against other players in organized matches.
+          <h3 class="text-xl font-bold text-neon-pink mb-3 font-retro tracking-wider">TOURNAMENTS</h3>
+          <p class="text-neon-cyan/80 mb-6 font-mono text-sm leading-relaxed">
+            <span class="text-neon-green">></span> Organized competitions
+            <br/>Create & join tournaments
             <span class="animate-pulse">_</span>
           </p>
           <button id="playTournamentButton" class="btn btn-secondary w-full group">
-            <span class="relative z-10 flex items-center justify-center font-retro tracking-wider">
-              BROWSE_TOURNAMENTS.EXE
-              <svg class="w-5 h-5 ml-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span class="relative z-10 flex items-center justify-center font-retro tracking-wider text-sm">
+              TOURNAMENT_ARENA
+              <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
               </svg>
             </span>
           </button>
         </div>
-      </div>
 
-      <!-- Quick Match -->
-      <div class="card p-8 mb-12 animate-slide-up" style="animation-delay: 0.2s;">
-        <div class="flex items-center justify-between">
-          <div class="flex-1">
-            <h2 class="text-3xl font-bold text-gradient mb-4 font-retro tracking-wider">QUICK MATCH</h2>
-            <div class="space-y-2">
-              <p class="text-neon-cyan/80 font-mono">
-                <span class="text-neon-pink">$</span> Looking for a quick game? Join a random match!
-              </p>
-              <p class="text-sm text-warning-500 font-mono border border-warning-500/30 px-3 py-1 clip-cyber-button inline-block">
-                ⚠ FEATURE_STATUS: COMING_SOON
-              </p>
-            </div>
+        <!-- Quick Match -->
+        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500" id="quickMatchCard">
+          <div class="w-20 h-20 bg-gradient-to-br from-neon-yellow to-neon-orange clip-cyberpunk mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
           </div>
-          <div class="ml-8">
-            <button id="quickMatchButton" class="btn btn-ghost opacity-50 cursor-not-allowed" disabled>
-              <span class="font-retro tracking-wider">QUICK_MATCH.EXE</span>
-              <span class="ml-2 text-warning-500">[DISABLED]</span>
-            </button>
-          </div>
+          <h3 class="text-xl font-bold text-neon-yellow mb-3 font-retro tracking-wider">QUICK MATCH</h3>
+          <p class="text-neon-cyan/80 mb-6 font-mono text-sm leading-relaxed">
+            <span class="text-neon-orange">></span> Instant multiplayer
+            <br/>Find random opponent
+            <span class="animate-pulse">_</span>
+          </p>
+          <button id="quickMatchButton" class="btn btn-ghost w-full group opacity-50 cursor-not-allowed" disabled>
+            <span class="relative z-10 flex items-center justify-center font-retro tracking-wider text-sm">
+              COMING_SOON
+              <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+            </span>
+          </button>
         </div>
       </div>
 
@@ -233,7 +234,43 @@ export default function Game(): HTMLElement {
   `;
 
   setupEventListeners(container);
+  
+  // Handle URL parameters for direct navigation from Dashboard
+  handleUrlParameters(container);
+  
   return container;
+}
+
+// Handle URL parameters for navigation from Dashboard
+function handleUrlParameters(container: HTMLElement): void {
+  const urlParams = new URLSearchParams(window.location.search);
+  const section = urlParams.get('section');
+  const action = urlParams.get('action');
+  
+  if (section === 'tournament') {
+    // Show tournament section automatically
+    setTimeout(async () => {
+      await showTournamentSection(container);
+      
+      // If action is create, show create tournament modal
+      if (action === 'create') {
+        setTimeout(() => {
+          showCreateTournamentModal(container);
+        }, 500); // Small delay to ensure tournament section is loaded
+      }
+      
+      // Clean up URL parameters for cleaner experience
+      cleanupUrlParameters();
+    }, 100);
+  }
+}
+
+// Clean up URL parameters after handling them
+function cleanupUrlParameters(): void {
+  if (window.location.search) {
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }
 }
 
 // Game types for embedded game functionality
@@ -508,27 +545,49 @@ async function showTournamentSection(container: HTMLElement): Promise<void> {
 async function createTournamentSection(container: HTMLElement): Promise<void> {
   const tournamentHTML = `
     <div id="tournamentSection" class="relative z-10 container-fluid py-8 animate-fade-in hidden">
-      <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center space-x-6">
-          <button id="backToGameButton" class="btn btn-ghost group">
-            <svg class="w-5 h-5 mr-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            BACK_TO_GAME_OPTIONS
-          </button>
-          <h1 class="text-4xl font-bold text-gradient font-retro tracking-wider">
-            <span class="text-neon-purple">TOURNAMENT</span> 
-            <span class="text-neon-pink">ARENA</span>
-          </h1>
+      <!-- Tournament Header -->
+      <div class="card p-6 mb-8">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-6">
+            <button id="backToGameButton" class="btn btn-ghost group">
+              <svg class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+              <span class="font-retro tracking-wider">BACK_TO_GAME</span>
+            </button>
+            <div class="border-l border-neon-cyan/30 pl-6">
+              <h1 class="text-3xl font-bold text-gradient font-retro tracking-wider">
+                <span class="text-neon-purple">TOURNAMENT</span> 
+                <span class="text-neon-pink">ARENA</span>
+              </h1>
+              <p class="text-neon-cyan/60 font-mono text-sm mt-1">
+                <span class="text-neon-green">></span> Competitive multiplayer tournaments
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button id="refreshTournamentsButton" class="btn btn-ghost group">
+              <svg class="w-4 h-4 mr-2 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span class="font-retro tracking-wider text-sm">REFRESH</span>
+            </button>
+            <button id="createTournamentButton" class="btn btn-primary group">
+              <svg class="w-4 h-4 mr-2 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              <span class="font-retro tracking-wider">CREATE_TOURNAMENT</span>
+            </button>
+          </div>
         </div>
-        <button id="createTournamentButton" class="btn btn-primary">
-          <span class="font-retro tracking-wider">CREATE_TOURNAMENT.EXE</span>
-        </button>
       </div>
       
+      <!-- Tournament List -->
       <div id="tournamentsList" class="space-y-4">
-        <div class="text-center py-12">
-          <div class="text-neon-cyan font-mono text-lg mb-4">LOADING_TOURNAMENTS...</div>
+        <div class="card p-8 text-center">
+          <div class="text-neon-cyan font-mono text-lg mb-4 animate-pulse">
+            <span class="text-neon-pink">></span> SCANNING_TOURNAMENTS...
+          </div>
           <div class="loading-spinner mx-auto"></div>
         </div>
       </div>
@@ -635,6 +694,13 @@ function setupTournamentEventListeners(container: HTMLElement): void {
     hideTournamentSection(container);
   });
   
+  // Refresh tournaments button
+  const refreshButton = container.querySelector('#refreshTournamentsButton');
+  refreshButton?.addEventListener('click', async () => {
+    await loadTournaments(container);
+    showNotification(container, 'Tournaments refreshed!', 'success');
+  });
+  
   // Create tournament button
   const createTournamentButton = container.querySelector('#createTournamentButton');
   createTournamentButton?.addEventListener('click', () => {
@@ -646,25 +712,28 @@ function setupTournamentEventListeners(container: HTMLElement): void {
   joinButtons.forEach(button => {
     button.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const tournamentId = (e.target as HTMLElement).dataset.tournamentId;
-      if (tournamentId) await joinTournament(container, tournamentId);
+      const tournamentId = (e.target as HTMLElement).closest('button')?.dataset.tournamentId;
+      if (tournamentId) {
+        await joinTournament(container, tournamentId);
+      }
     });
   });
   
-  // View tournament details
   const viewButtons = container.querySelectorAll('.view-tournament-btn');
   viewButtons.forEach(button => {
     button.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const tournamentId = (e.target as HTMLElement).dataset.tournamentId;
-      if (tournamentId) await showTournamentDetails(container, tournamentId);
+      const tournamentId = (e.target as HTMLElement).closest('button')?.dataset.tournamentId;
+      if (tournamentId) {
+        await showTournamentDetails(container, tournamentId);
+      }
     });
   });
   
-  // Retry button
+  // Retry load tournaments on error
   const retryButton = container.querySelector('#retryLoadTournaments');
-  retryButton?.addEventListener('click', () => {
-    loadTournaments(container);
+  retryButton?.addEventListener('click', async () => {
+    await loadTournaments(container);
   });
 }
 
@@ -860,10 +929,17 @@ async function showTournamentDetails(container: HTMLElement, tournamentId: strin
                 <div class="space-y-2">
                   ${tournament.matches.map(match => `
                     <div class="flex items-center justify-between p-3 bg-gray-800 rounded border border-neon-cyan/30">
-                      <span class="text-neon-cyan font-mono">Round ${match.round}</span>
-                      <span class="px-2 py-1 bg-neon-blue/20 border border-neon-blue/50 rounded text-neon-blue font-mono text-xs">
-                        ${match.status}
-                      </span>
+                      <div class="flex items-center space-x-4">
+                        <span class="text-neon-cyan font-mono">Round ${match.round}</span>
+                        <span class="px-2 py-1 bg-neon-blue/20 border border-neon-blue/50 rounded text-neon-blue font-mono text-xs">
+                          ${match.status}
+                        </span>
+                      </div>
+                      ${match.status === 'IN_PROGRESS' || match.status === 'WAITING' ? `
+                        <button class="btn btn-primary btn-sm play-match-btn" data-match-id="${match.id}" data-tournament-id="${tournament.id}">
+                          <span class="font-retro tracking-wider text-xs">PLAY_MATCH</span>
+                        </button>
+                      ` : ''}
                     </div>
                   `).join('')}
                 </div>
@@ -906,8 +982,110 @@ async function showTournamentDetails(container: HTMLElement, tournamentId: strin
       closeModal();
     });
     
+    // Play match buttons
+    const playMatchButtons = modal?.querySelectorAll('.play-match-btn');
+    playMatchButtons?.forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const matchId = (e.target as HTMLElement).dataset.matchId;
+        const tournamentId = (e.target as HTMLElement).dataset.tournamentId;
+        if (matchId && tournamentId) {
+          closeModal();
+          await startMultiplayerMatch(container, matchId, tournamentId);
+        }
+      });
+    });
+    
   } catch (error) {
     console.error('Failed to load tournament details:', error);
     showNotification(container, 'Failed to load tournament details.', 'error');
+  }
+}
+
+// Start multiplayer match function
+async function startMultiplayerMatch(container: HTMLElement, matchId: string, tournamentId: string): Promise<void> {
+  try {
+    // Hide tournament section and show multiplayer game
+    const tournamentSection = container.querySelector('#tournamentSection');
+    const gameSection = container.querySelector('#gameSection');
+    
+    if (tournamentSection) tournamentSection.classList.add('hidden');
+    if (gameSection) gameSection.classList.remove('hidden');
+    
+    // Update game section for multiplayer
+    const gameSectionElement = gameSection as HTMLElement;
+    gameSectionElement.innerHTML = `
+      <div class="text-center space-y-6">
+        <h2 class="text-3xl font-bold text-neon-green font-retro tracking-wider mb-8">MULTIPLAYER MATCH</h2>
+        
+        <div id="multiplayerStatus" class="text-neon-cyan font-mono text-lg mb-4">
+          Connecting to match...
+        </div>
+        
+        <div class="relative bg-black border-2 border-neon-cyan rounded-lg overflow-hidden mx-auto" style="width: 820px; height: 420px;">
+          <canvas id="multiplayerCanvas" width="800" height="400" class="border border-neon-cyan/50"></canvas>
+        </div>
+        
+        <div class="flex justify-center space-x-4 mt-6">
+          <button id="exitMultiplayerMatch" class="btn btn-ghost">
+            <span class="font-retro tracking-wider">EXIT_MATCH</span>
+          </button>
+        </div>
+        
+        <div class="text-sm text-neon-cyan/60 font-mono mt-4">
+          <p>Controls: W/S or Arrow Keys to move paddle</p>
+          <p>Press SPACE when ready to play</p>
+        </div>
+      </div>
+    `;
+    
+    // Get canvas and initialize multiplayer game
+    const canvas = document.getElementById('multiplayerCanvas') as HTMLCanvasElement;
+    const statusElement = document.getElementById('multiplayerStatus') as HTMLElement;
+    
+    if (!canvas) {
+      throw new Error('Multiplayer canvas not found');
+    }
+    
+    // Create multiplayer game instance
+    const multiplayerGame = new MultiplayerGame(canvas, matchId);
+    
+    // Set up status and game end callbacks
+    multiplayerGame.setOnStatusChange((status: string) => {
+      if (statusElement) {
+        statusElement.textContent = status;
+      }
+    });
+    
+    multiplayerGame.setOnGameEnd((winner: string, scores: any) => {
+      if (statusElement) {
+        statusElement.textContent = `Game finished! Winner: ${winner}`;
+      }
+      
+      // Show result and option to return to tournament
+      setTimeout(() => {
+        showNotification(container, `Match completed! Winner: ${winner}`, 'success');
+        // Optionally return to tournament after a delay
+        setTimeout(() => {
+          showTournamentSection(container);
+        }, 3000);
+      }, 2000);
+    });
+    
+    // Connect to multiplayer match
+    await multiplayerGame.connect();
+    
+    // Setup exit button
+    const exitButton = document.getElementById('exitMultiplayerMatch');
+    exitButton?.addEventListener('click', () => {
+      multiplayerGame.disconnect();
+      showTournamentSection(container);
+    });
+    
+  } catch (error) {
+    console.error('Failed to start multiplayer match:', error);
+    showNotification(container, 'Failed to start multiplayer match.', 'error');
+    
+    // Return to tournament section on error
+    showTournamentSection(container);
   }
 } 

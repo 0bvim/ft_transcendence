@@ -409,9 +409,8 @@ function setupMatchEventListeners(tournamentId: string) {
       const tournamentId = (e.target as HTMLElement).getAttribute('data-tournament-id');
       
       if (matchId && tournamentId) {
-        // Navigate to game service with tournament context via URL parameters
-        const gameUrl = `http://${window.location.hostname}:3003/game/?tournament=${tournamentId}&match=${matchId}`;
-        window.open(gameUrl, '_blank');
+        // Navigate to embedded game SPA with tournament context
+        window.location.href = `/game?tournament=${tournamentId}&match=${matchId}`;
       }
     });
   });

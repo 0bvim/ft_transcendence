@@ -5,6 +5,7 @@ import { AddressInfo } from "net";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+import { setupMultiplayerRoutes } from "./multiplayer";
 
 const pems = {
   private: fs.readFileSync(path.join(__dirname, "../certs/key.pem")),
@@ -60,6 +61,9 @@ const MatchResultSchema = z.object({
 const initializeApp = async () => {
   // Tournament API endpoints
   await registerTournamentRoutes();
+  
+  // Setup multiplayer WebSocket routes for real-time tournament matches
+  await setupMultiplayerRoutes(app);
 
   // API-only mode: No HTML serving, only API endpoints
   // All game rendering is now handled by the frontend SPA
@@ -87,7 +91,8 @@ const initializeApp = async () => {
         'GET /api/health - Service health check',
         'GET /api/info - Service information',
         'GET /api/tournament/match/:matchId - Get tournament match details',
-        'POST /api/tournament/match/result - Submit tournament match result'
+        'POST /api/tournament/match/result - Submit tournament match result',
+        'WS /ws/match/:matchId - Real-time multiplayer match WebSocket'
       ]
     });
   });
