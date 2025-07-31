@@ -29,19 +29,19 @@ export class AI {
 		// Set difficulty-based parameters
 		switch (difficulty) {
 			case 'EASY':
-				this.tolerance = Board.height / 20; // Large tolerance, more room for error
-				this.predictionAccuracy = 0.6; // 60% accuracy, lots of mistakes
-				this.reactionDelay = 200; // 200ms delay between moves
+				this.tolerance = Board.height / 10; // Large tolerance, more room for error
+				this.predictionAccuracy = 0.2; // 20% accuracy, lots of mistakes
+				this.reactionDelay = 800; // 500ms delay between moves
 				break;
 			case 'MEDIUM':
-				this.tolerance = Board.height / 35; // Medium tolerance
-				this.predictionAccuracy = 0.8; // 80% accuracy, some mistakes
-				this.reactionDelay = 100; // 100ms delay between moves
+				this.tolerance = Board.height / 25; // Medium tolerance
+				this.predictionAccuracy = 0.5; // 50% accuracy, some mistakes
+				this.reactionDelay = 500; // 500ms delay between moves
 				break;
 			case 'HARD':
-				this.tolerance = Board.height / 50; // Very precise
-				this.predictionAccuracy = 0.95; // 95% accuracy, nearly perfect
-				this.reactionDelay = 50; // 50ms delay, very fast reactions
+				this.tolerance = Board.height / 30; // Very precise
+				this.predictionAccuracy = 0.7; // 70% accuracy, nearly perfect
+				this.reactionDelay = 250; // 250ms delay, very fast reactions
 				break;
 		}
 		

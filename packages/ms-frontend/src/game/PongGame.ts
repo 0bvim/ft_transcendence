@@ -43,6 +43,12 @@ export class PongGame {
   private keys: { [key:string]: boolean } = {};
   private scaleFactor = 1;
 
+  // Time-based speed increase
+  private lastSpeedIncreaseTime = 0;
+  private readonly speedIncreaseInterval = 5000; // 5 seconds
+  private readonly speedIncreaseFactor = 1.15; // 15% increase
+  private readonly maxBallSpeed = Ball.startSpeed * 3;
+
   
   constructor(config: GameConfig, callbacks: GameCallbacks) {
     this.config = config;
@@ -143,8 +149,14 @@ export class PongGame {
 
   private updateGame(p: p5): void {
     if (!this.ball || !this.player1 || !this.player2) return;
-    
+
     const currentTime = p.millis();
+
+    // Increase ball speed over time
+    if (currentTime - this.lastSpeedIncreaseTime > this.speedIncreaseInterval) {
+      this.ball.increaseSpeed(this.speedIncreaseFactor, this.maxBallSpeed);
+      this.lastSpeedIncreaseTime = currentTime;
+    }
     
     // Update AI
     if (this.ai1) {
@@ -282,6 +294,7 @@ export class PongGame {
       this.ball.reset(Side.Left);
       this.gameState = GameState.Playing;
       this.callbacks.onGameStateChange(this.gameState);
+      this.lastSpeedIncreaseTime = this.p5Instance?.millis() || 0;
     }
   }
 
@@ -308,8 +321,14 @@ export class PongGame {
     this.ball?.resetToCenter();
     
     // Reset AI
-    this.ai1?.reset();
-    this.ai2?.reset();
+    if (this.ai1) {
+      this.ai1.setDifficulty(this.config.aiDifficulty);
+      this.ai1.reset();
+    }
+    if (this.ai2) {
+      this.ai2.setDifficulty(this.config.aiDifficulty);
+      this.ai2.reset();
+    }
     
     // Reset state
     this.gameState = GameState.Ready;

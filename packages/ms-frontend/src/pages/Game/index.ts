@@ -6,9 +6,41 @@ function setupPageEventListeners(container: HTMLElement): void {
   const localGameButton = container.querySelector('#localGameButton');
   const tournamentButton = container.querySelector('#tournamentButton');
   const backButton = container.querySelector('#backButton');
+  const difficultyEasy = container.querySelector('#difficulty-easy');
+  const difficultyMedium = container.querySelector('#difficulty-medium');
+  const difficultyHard = container.querySelector('#difficulty-hard');
 
-  playAiButton?.addEventListener('click', () => showMenuGame(container, GameType.AI));
+  let selectedDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
+
+  const updateButtonStyles = () => {
+    difficultyEasy?.classList.toggle('btn-success', selectedDifficulty === 'easy');
+    difficultyEasy?.classList.toggle('opacity-50', selectedDifficulty !== 'easy');
+    difficultyMedium?.classList.toggle('btn-warning', selectedDifficulty === 'medium');
+    difficultyMedium?.classList.toggle('opacity-50', selectedDifficulty !== 'medium');
+    difficultyHard?.classList.toggle('btn-error', selectedDifficulty === 'hard');
+    difficultyHard?.classList.toggle('opacity-50', selectedDifficulty !== 'hard');
+  };
+
+  difficultyEasy?.addEventListener('click', () => {
+    selectedDifficulty = 'easy';
+    updateButtonStyles();
+  });
+
+  difficultyMedium?.addEventListener('click', () => {
+    selectedDifficulty = 'medium';
+    updateButtonStyles();
+  });
+
+  difficultyHard?.addEventListener('click', () => {
+    selectedDifficulty = 'hard';
+    updateButtonStyles();
+  });
+
+  playAiButton?.addEventListener('click', () => showMenuGame(container, GameType.AI, selectedDifficulty));
   localGameButton?.addEventListener('click', () => showMenuGame(container, GameType.Local));
+
+  // Set initial styles
+  updateButtonStyles();
   tournamentButton?.addEventListener('click', () => showTournamentSection(container));
 
   backButton?.addEventListener('click', () => {
@@ -82,6 +114,11 @@ export default function GamePage(): HTMLElement {
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">PLAY VS AI</h3>
           <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Challenge our AI opponent.</p>
           <button id="playAiButton" class="btn btn-primary w-full">START_AI_GAME</button>
+          <div id="difficulty-selection" class="flex justify-center space-x-2 my-2">
+            <button id="difficulty-easy" class="btn btn-sm btn-success">Easy</button>
+            <button id="difficulty-medium" class="btn btn-sm btn-warning">Medium</button>
+            <button id="difficulty-hard" class="btn btn-sm btn-error">Hard</button>
+          </div>
         </div>
         <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">LOCAL DUEL</h3>

@@ -100,6 +100,14 @@ export class Ball {
 		}
 	}
 
+	increaseSpeed(factor: number, maxSpeed: number) {
+		const currentSpeed = Math.sqrt(this.xSpeed ** 2 + this.ySpeed ** 2);
+		if (currentSpeed * factor < maxSpeed) {
+			this.xSpeed *= factor;
+			this.ySpeed *= factor;
+		}
+	}
+
 	// Check if ball is out of bounds (scored)
 	isOutOfBounds(): Side | null {
 		if (this.x + Ball.radius * 2 < 0) {

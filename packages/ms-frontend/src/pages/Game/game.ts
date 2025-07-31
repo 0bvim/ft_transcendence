@@ -20,7 +20,7 @@ export interface GameConfig {
 }
 
 // Show the embedded game canvas and initialize game
-export async function showMenuGame(container: HTMLElement, gameType: GameType): Promise<void> {
+export async function showMenuGame(container: HTMLElement, gameType: GameType, difficulty: 'easy' | 'medium' | 'hard' = 'medium'): Promise<void> {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
   const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
   const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
@@ -31,7 +31,7 @@ export async function showMenuGame(container: HTMLElement, gameType: GameType): 
 
   let config: GameConfig;
   if (gameType === GameType.AI) {
-    config = { type: GameType.AI, difficulty: 'medium', targetScore: 5 };
+    config = { type: GameType.AI, difficulty: difficulty, targetScore: 5 };
   } else {
     config = { type: GameType.Local, targetScore: 5 };
   }
