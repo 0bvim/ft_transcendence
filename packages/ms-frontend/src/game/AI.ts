@@ -151,19 +151,19 @@ export class AI {
 		// Update parameters based on new difficulty
 		switch (difficulty) {
 			case 'EASY':
-				this.tolerance = Board.height / 20;
-				this.predictionAccuracy = 0.6;
-				this.reactionDelay = 200;
+				this.tolerance = Board.height / 10;
+				this.predictionAccuracy = 0.2;
+				this.reactionDelay = 800;
 				break;
 			case 'MEDIUM':
-				this.tolerance = Board.height / 35;
-				this.predictionAccuracy = 0.8;
-				this.reactionDelay = 100;
+				this.tolerance = Board.height / 25;
+				this.predictionAccuracy = 0.5;
+				this.reactionDelay = 500;
 				break;
 			case 'HARD':
-				this.tolerance = Board.height / 50;
-				this.predictionAccuracy = 0.95;
-				this.reactionDelay = 50;
+				this.tolerance = Board.height / 30;
+				this.predictionAccuracy = 0.7;
+				this.reactionDelay = 250;
 				break;
 		}
 	}

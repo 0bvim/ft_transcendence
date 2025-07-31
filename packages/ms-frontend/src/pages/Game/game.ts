@@ -126,11 +126,8 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
         }
       },
       onGameEnd: (winner, _finalScore) => {
-        gameStatusElement.textContent = `GAME OVER! ${winner} WINS!`;
+        gameStatusElement.textContent = `GAME OVER! ${winner} WINS! Press R to Restart`;
         gameStatusElement.classList.remove('hidden');
-        setTimeout(() => {
-          hideGame(container);
-        }, 3000);
       },
     };
 

@@ -114,7 +114,6 @@ export class PongGame {
     // Draw game elements
     this.drawBackground(p);
     this.drawGameObjects(p);
-    this.drawUI();
 
     // Update game logic
     if (this.gameState === GameState.Playing) {
@@ -140,11 +139,6 @@ export class PongGame {
     
     // Draw ball
     this.ball.draw(p);
-  }
-
-  private drawUI(): void {
-    // All UI elements are now handled by the HTML overlay.
-    // This function is kept to avoid breaking the rendering loop.
   }
 
   private updateGame(p: p5): void {
