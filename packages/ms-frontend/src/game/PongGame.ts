@@ -3,6 +3,7 @@ import { Ball } from './Ball';
 import { Paddle } from './Paddle';
 import { Board, Side } from './Board';
 import { AI, AIDifficulty } from './AI';
+export type { AIDifficulty };
 
 export enum GameState {
   Loading,
@@ -39,7 +40,8 @@ export class PongGame {
   private config: GameConfig;
   private callbacks: GameCallbacks;
   
-  private keys: { [key: string]: boolean } = {};
+  private keys: { [key:string]: boolean } = {};
+  private scaleFactor = 1;
 
   
   constructor(config: GameConfig, callbacks: GameCallbacks) {
@@ -54,23 +56,23 @@ export class PongGame {
       p.draw = () => this.draw(p);
       p.keyPressed = () => this.keyPressed(p);
       p.keyReleased = () => this.keyReleased(p);
+      p.windowResized = () => this.handleResize(p, canvasContainer);
     };
 
-    this.p5Instance = new p5(sketch);
+    this.p5Instance = new p5(sketch, canvasContainer);
   }
 
   private setup(p: p5, container: HTMLElement): void {
-    // Create canvas and attach to container
-    const canvas = p.createCanvas(Board.width, Board.height);
-    canvas.parent(container);
-    
+    this.handleResize(p, container);
+    p.noSmooth();
+
     // Initialize game objects
     this.initializeGameObjects();
-    
+
     // Set initial state
     this.gameState = GameState.Ready;
     this.callbacks.onGameStateChange(this.gameState);
-    
+
     // Setup keyboard event listeners
     this.setupKeyboardEvents();
   }
@@ -98,15 +100,16 @@ export class PongGame {
 
   private draw(p: p5): void {
     if (!this.ball || !this.player1 || !this.player2) return;
-    
-    // Clear canvas
+
+    // Scale the canvas to fit the container
+    p.scale(this.scaleFactor);
     p.background(0);
-    
+
     // Draw game elements
     this.drawBackground(p);
     this.drawGameObjects(p);
-    this.drawUI(p);
-    
+    this.drawUI();
+
     // Update game logic
     if (this.gameState === GameState.Playing) {
       this.updateGame(p);
@@ -133,35 +136,9 @@ export class PongGame {
     this.ball.draw(p);
   }
 
-  private drawUI(p: p5): void {
-    if (!this.player1 || !this.player2) return;
-    
-    // Draw scores
-    p.fill(255);
-    p.textAlign(p.CENTER, p.CENTER);
-    p.textSize(48);
-    p.text(this.player1.getScore().toString(), Board.width / 4, 60);
-    p.text(this.player2.getScore().toString(), (3 * Board.width) / 4, 60);
-    
-    // Draw player names
-    p.textSize(16);
-    p.text(this.config.player1Name, Board.width / 4, 100);
-    p.text(this.config.player2Name, (3 * Board.width) / 4, 100);
-    
-    // Draw game state messages
-    if (this.gameState === GameState.Ready) {
-      p.textSize(24);
-      p.text("Press SPACE to start", Board.width / 2, Board.height / 2);
-    } else if (this.gameState === GameState.Paused) {
-      p.textSize(24);
-      p.text("PAUSED - Press SPACE to resume", Board.width / 2, Board.height / 2);
-    } else if (this.gameState === GameState.GameOver) {
-      p.textSize(32);
-      const winner = this.player1!.getScore() >= this.config.targetScore ? this.config.player1Name : this.config.player2Name;
-      p.text(`${winner} Wins!`, Board.width / 2, Board.height / 2);
-      p.textSize(16);
-      p.text("Press R to restart", Board.width / 2, Board.height / 2 + 40);
-    }
+  private drawUI(): void {
+    // All UI elements are now handled by the HTML overlay.
+    // This function is kept to avoid breaking the rendering loop.
   }
 
   private updateGame(p: p5): void {
@@ -196,17 +173,24 @@ export class PongGame {
 
   private handlePlayerInput(): void {
     if (!this.player1 || !this.player2) return;
-    
-    // Player 1 controls (W/S or Arrow keys if not AI)
-    if (!this.config.player1IsAI) {
-      this.player1.goUp = this.keys['KeyW'] || this.keys['ArrowUp'];
-      this.player1.goDown = this.keys['KeyS'] || this.keys['ArrowDown'];
-    }
-    
-    // Player 2 controls (Arrow keys if not AI and no player 1 using arrows)
-    if (!this.config.player2IsAI && this.config.player1IsAI) {
-      this.player2.goUp = this.keys['ArrowUp'];
-      this.player2.goDown = this.keys['ArrowDown'];
+
+    const isLocalDuel = !this.config.player1IsAI && !this.config.player2IsAI;
+
+    if (isLocalDuel) {
+      // Player 1 controls: W/S
+      this.player1.goUp = !!this.keys['KeyW'];
+      this.player1.goDown = !!this.keys['KeyS'];
+
+      // Player 2 controls: Arrow keys
+      this.player2.goUp = !!this.keys['ArrowUp'];
+      this.player2.goDown = !!this.keys['ArrowDown'];
+    } else {
+      // For AI games, the single human player can use either set of keys
+      if (!this.config.player1IsAI) {
+        this.player1.goUp = !!this.keys['KeyW'] || !!this.keys['ArrowUp'];
+        this.player1.goDown = !!this.keys['KeyS'] || !!this.keys['ArrowDown'];
+      }
+      // Player 2 is an AI, so no input is handled here
     }
   }
 
@@ -258,14 +242,8 @@ export class PongGame {
   }
 
   private setupKeyboardEvents(): void {
-    // Handle key press/release events
-    document.addEventListener('keydown', (event) => {
-      this.keys[event.code] = true;
-    });
-    
-    document.addEventListener('keyup', (event) => {
-      this.keys[event.code] = false;
-    });
+    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keyup', this.handleKeyUp);
   }
 
   private keyPressed(p: p5): boolean {
@@ -351,11 +329,11 @@ export class PongGame {
     document.removeEventListener('keyup', this.handleKeyUp);
   }
 
-  private handleKeyDown = (event: KeyboardEvent) => {
+  private handleKeyDown = (event: KeyboardEvent): void => {
     this.keys[event.code] = true;
   };
 
-  private handleKeyUp = (event: KeyboardEvent) => {
+  private handleKeyUp = (event: KeyboardEvent): void => {
     this.keys[event.code] = false;
   };
 
@@ -366,5 +344,14 @@ export class PongGame {
 
   getConfig(): GameConfig {
     return this.config;
+  }
+
+  private handleResize(p: p5, container: HTMLElement): void {
+    const containerWidth = container.clientWidth;
+    const aspectRatio = Board.width / Board.height;
+    const newHeight = containerWidth / aspectRatio;
+
+    p.resizeCanvas(containerWidth, newHeight);
+    this.scaleFactor = containerWidth / Board.width;
   }
 }

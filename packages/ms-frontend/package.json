@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "@ft-transcendence/observability": "file:../observability",
-    "@types/p5": "^1.7.6",
     "axios": "^1.6.0",
     "p5": "^2.0.3"
   },
   "devDependencies": {
     "@ft-transcendence/observability": "file:../observability",
     "@types/node": "^20.0.0",
+    "@types/p5": "^1.7.6",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "autoprefixer": "^10.4.16",

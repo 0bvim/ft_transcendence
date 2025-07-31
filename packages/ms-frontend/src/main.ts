@@ -92,7 +92,7 @@ router.addRoute({
 
 router.addRoute({
   path: '/game',
-  component: () => import('./pages/Game'),
+  component: () => import('./pages/Game/index'),
   requiresAuth: true,
   title: 'Game'
 });
