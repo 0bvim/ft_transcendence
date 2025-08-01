@@ -1,15 +1,55 @@
 import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
-import { WebSocketGameRenderer } from '../../game/WebSocketGameRenderer';
+import { PongGame } from '../../game/game';
+import { GameState } from '../../game/types';
+
+let game: PongGame | null = null;
+let animationFrameId: number | null = null;
+
+function renderGame(canvas: HTMLCanvasElement, gameState: GameState) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Clear canvas
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw center line
+  ctx.strokeStyle = 'grey';
+  ctx.lineWidth = 4;
+  ctx.setLineDash([10, 10]);
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw paddles
+  ctx.fillStyle = 'white';
+  gameState.players.forEach(paddle => {
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+  });
+
+  // Draw ball
+  ctx.beginPath();
+  ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function renderLoop(container: HTMLElement) {
+  if (!game) return;
+
+  const canvas = container.querySelector('canvas');
+  const gameState = game.getGameState();
+
+  if (canvas) {
+    renderGame(canvas, gameState);
+  }
+  animationFrameId = requestAnimationFrame(() => renderLoop(container));
+}
 
 // Show multiplayer WebSocket game
 export async function showMultiplayerGame(container: HTMLElement): Promise<void> {
-  const gameSection = container.querySelector('#gameSection') as HTMLElement;
-  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-  const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
-
-  if (gameModeSelection) gameModeSelection.classList.add('hidden');
-  if (tournamentSection) tournamentSection.classList.add('hidden');
-  if (gameSection) gameSection.classList.remove('hidden');
+  cleanupWebSocketGame(container); // Clean up any existing game
 
   const canvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
   const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
@@ -24,12 +64,20 @@ export async function showMultiplayerGame(container: HTMLElement): Promise<void>
     return;
   }
 
+  // Setup canvas and game instance
+  canvasContainer.innerHTML = ''; // Clear previous content
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 400;
+  canvasContainer.appendChild(canvas);
+
+  game = new PongGame();
+
   gameTitleElement.textContent = 'MULTIPLAYER MATCH';
   gameStatusElement.textContent = 'Connecting to game service...';
   gameStatusElement.classList.remove('hidden');
 
-  const gameServiceUrl = `https://${window.location.hostname}:3002`;
-  const renderer = new WebSocketGameRenderer(canvasContainer);
+  const gameServiceUrl = `wss://${window.location.hostname}:3002`;
   
   const callbacks: WSGameCallbacks = {
     onConnected: (data) => {
@@ -50,35 +98,45 @@ export async function showMultiplayerGame(container: HTMLElement): Promise<void>
           p2NameElement.textContent = data.user?.username || 'YOU';
         }
       }
+      renderLoop(container); // Start rendering
     },
     
-    onGameState: (gameState) => {
-      renderer.updateGameState(gameState);
+    onGameState: (serverState) => {
+      if (!game) return;
+      game.setState(serverState);
+      const localState = game.getGameState();
+
+      const p1 = Array.from(localState.players.values()).find(p => p.position === 'left');
+      const p2 = Array.from(localState.players.values()).find(p => p.position === 'right');
+
+      if (p1) p1ScoreElement.textContent = (localState.score[p1.id] || 0).toString();
+      if (p2) p2ScoreElement.textContent = (localState.score[p2.id] || 0).toString();
       
-      const players = gameState.players;
-      if (players.length >= 2) {
-        const leftPlayer = players.find(p => p.position === 'left');
-        const rightPlayer = players.find(p => p.position === 'right');
-        
-        if (leftPlayer && rightPlayer) {
-          p1ScoreElement.textContent = (gameState.score[leftPlayer.id] || 0).toString();
-          p2ScoreElement.textContent = (gameState.score[rightPlayer.id] || 0).toString();
-        }
-      }
-      
-      if (gameState.status === 'playing') {
+      if (localState.status === 'playing') {
         gameStatusElement.classList.add('hidden');
       }
     },
     
     onGameFinished: (data) => {
-      gameStatusElement.textContent = `Game Over! ${data.winner ? 'Winner: ' + data.winner : 'Game finished'}`;
+      const localState = game?.getGameState();
+      const winnerId = data.winner || localState?.winner;
+      let winnerName = 'Someone';
+      if (winnerId && localState) {
+        const winnerPlayer = localState.players.get(winnerId);
+        const p1 = Array.from(localState.players.values()).find(p => p.position === 'left');
+        if (winnerPlayer && p1) {
+            winnerName = winnerPlayer.id === p1.id ? p1NameElement.textContent || 'Player 1' : p2NameElement.textContent || 'Player 2';
+        }
+      }
+      gameStatusElement.textContent = `Game Over! Winner: ${winnerName}`;
       gameStatusElement.classList.remove('hidden');
+      stopMultiplayerGame(container);
     },
     
     onPlayerLeft: (data) => {
       gameStatusElement.textContent = `Player ${data.username || data.playerId} left the game`;
       gameStatusElement.classList.remove('hidden');
+      stopMultiplayerGame(container);
     },
     
     onError: (error) => {
@@ -94,21 +152,18 @@ export async function showMultiplayerGame(container: HTMLElement): Promise<void>
   
   const client = new WebSocketGameClient(gameServiceUrl, callbacks);
   
-  // Store client and renderer for cleanup
+  // Store client for cleanup
   (container as any).wsGameClient = client;
-  (container as any).wsGameRenderer = renderer;
   
   // Setup keyboard controls
   const keyHandler = (event: KeyboardEvent) => {
-    switch (event.key) {
+    switch (event.code) {
+      case 'KeyW':
       case 'ArrowUp':
-      case 'w':
-      case 'W':
         client.movePaddle('up');
         break;
+      case 'KeyS':
       case 'ArrowDown':
-      case 's':
-      case 'S':
         client.movePaddle('down');
         break;
     }
@@ -125,134 +180,31 @@ export async function showMultiplayerGame(container: HTMLElement): Promise<void>
   }
 }
 
-// Show local duel WebSocket game
-export async function showLocalDuelGame(container: HTMLElement): Promise<void> {
-  const gameSection = container.querySelector('#gameSection') as HTMLElement;
-  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-  const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
-
-  if (gameModeSelection) gameModeSelection.classList.add('hidden');
-  if (tournamentSection) tournamentSection.classList.add('hidden');
-  if (gameSection) gameSection.classList.remove('hidden');
-
-  const canvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
-  const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-  const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
-  const p1NameElement = container.querySelector('#player1Name') as HTMLElement;
-  const p2NameElement = container.querySelector('#player2Name') as HTMLElement;
-  const p1ScoreElement = container.querySelector('#player1Score') as HTMLElement;
-  const p2ScoreElement = container.querySelector('#player2Score') as HTMLElement;
-
-  if (!canvasContainer || !gameStatusElement || !gameTitleElement || !p1NameElement || !p2NameElement || !p1ScoreElement || !p2ScoreElement) {
-    console.error('Required game elements not found in the DOM');
-    return;
+function stopMultiplayerGame(container: HTMLElement) {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
   }
-
-  gameTitleElement.textContent = 'LOCAL DUEL';
-  p1NameElement.textContent = 'PLAYER 1';
-  p2NameElement.textContent = 'PLAYER 2';
-  gameStatusElement.textContent = 'Connecting to local game...';
-  gameStatusElement.classList.remove('hidden');
-
-  const gameServiceUrl = `https://${window.location.hostname}:3002`;
-  const renderer = new WebSocketGameRenderer(canvasContainer);
-  
-  const callbacks: WSGameCallbacks = {
-    onConnected: (data) => {
-      console.log('Connected to local game:', data);
-      gameStatusElement.textContent = 'Ready for local duel! Use WASD and Arrow Keys';
-    },
-    
-    onGameState: (gameState) => {
-      renderer.updateGameState(gameState);
-      
-      const players = gameState.players;
-      if (players.length >= 2) {
-        const leftPlayer = players.find(p => p.position === 'left');
-        const rightPlayer = players.find(p => p.position === 'right');
-        
-        if (leftPlayer && rightPlayer) {
-          p1ScoreElement.textContent = (gameState.score[leftPlayer.id] || 0).toString();
-          p2ScoreElement.textContent = (gameState.score[rightPlayer.id] || 0).toString();
-        }
-      }
-      
-      if (gameState.status === 'playing') {
-        gameStatusElement.classList.add('hidden');
-      }
-    },
-    
-    onGameFinished: (data) => {
-      gameStatusElement.textContent = `Game Over! ${data.winner ? 'Winner: ' + data.winner : 'Game finished'}`;
-      gameStatusElement.classList.remove('hidden');
-    },
-    
-    onError: (error) => {
-      gameStatusElement.textContent = `Error: ${error}`;
-      gameStatusElement.classList.remove('hidden');
-    },
-    
-    onDisconnected: () => {
-      gameStatusElement.textContent = 'Disconnected from game service';
-      gameStatusElement.classList.remove('hidden');
-    }
-  };
-  
-  const client = new WebSocketGameClient(gameServiceUrl, callbacks);
-  
-  // Store client and renderer for cleanup
-  (container as any).wsGameClient = client;
-  (container as any).wsGameRenderer = renderer;
-  
-  // Setup keyboard controls for both players
-  const keyHandler = (event: KeyboardEvent) => {
-    // Player 1 controls (WASD)
-    switch (event.key) {
-      case 'w':
-      case 'W':
-        client.movePaddle('up');
-        break;
-      case 's':
-      case 'S':
-        client.movePaddle('down');
-        break;
-      // Player 2 controls (Arrow keys) - would need separate connection
-      case 'ArrowUp':
-        // For local duel, we'd need to handle this differently
-        // This is a simplified version
-        client.movePaddle('up');
-        break;
-      case 'ArrowDown':
-        client.movePaddle('down');
-        break;
-    }
-  };
-  
-  document.addEventListener('keydown', keyHandler);
-  (container as any).keyHandler = keyHandler;
-  
-  try {
-    await client.connectLocal();
-  } catch (error) {
-    console.error('Failed to connect to local duel game:', error);
-    gameStatusElement.textContent = 'Failed to connect to game service';
+  const client = (container as any).wsGameClient as WebSocketGameClient;
+  if (client) {
+    client.disconnect();
   }
 }
 
 // Cleanup WebSocket game resources
 export function cleanupWebSocketGame(container: HTMLElement): void {
+  stopMultiplayerGame(container);
+
   const client = (container as any).wsGameClient as WebSocketGameClient;
-  const renderer = (container as any).wsGameRenderer as WebSocketGameRenderer;
   const keyHandler = (container as any).keyHandler;
   
   if (client) {
-    client.disconnect();
     delete (container as any).wsGameClient;
   }
   
-  if (renderer) {
-    renderer.destroy();
-    delete (container as any).wsGameRenderer;
+  if (game) {
+    game.cleanup();
+    game = null;
   }
   
   if (keyHandler) {

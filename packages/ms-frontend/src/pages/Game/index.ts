@@ -1,6 +1,26 @@
-import { showMenuGame, GameType, hideGame } from './game';
 import { showTournamentSection, setupTournamentEventListeners } from './tournament';
-import { showMultiplayerGame, showLocalDuelGame, cleanupWebSocketGame } from './multiplayerGame';
+import { showMultiplayerGame, cleanupWebSocketGame } from './multiplayerGame';
+import { startLocalGame, cleanupLocalGame } from './localGame';
+
+function showGameSection(container: HTMLElement, title: string) {
+  const gameSection = container.querySelector('#gameSection') as HTMLElement;
+  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
+  const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
+  const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
+
+  if (gameModeSelection) gameModeSelection.classList.add('hidden');
+  if (tournamentSection) tournamentSection.classList.add('hidden');
+  if (gameSection) gameSection.classList.remove('hidden');
+  if (gameTitleElement) gameTitleElement.textContent = title;
+}
+
+function hideGameSection(container: HTMLElement) {
+  const gameSection = container.querySelector('#gameSection') as HTMLElement;
+  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
+
+  if (gameSection) gameSection.classList.add('hidden');
+  if (gameModeSelection) gameModeSelection.classList.remove('hidden');
+}
 
 function setupPageEventListeners(container: HTMLElement): void {
   const playAiButton = container.querySelector('#playAiButton');
@@ -38,9 +58,18 @@ function setupPageEventListeners(container: HTMLElement): void {
     updateButtonStyles();
   });
 
-  playAiButton?.addEventListener('click', () => showMenuGame(container, GameType.AI, selectedDifficulty));
-  localGameButton?.addEventListener('click', () => showLocalDuelGame(container));
-  multiplayerButton?.addEventListener('click', () => showMultiplayerGame(container));
+  playAiButton?.addEventListener('click', () => {
+    showGameSection(container, 'PLAYER VS AI');
+    startLocalGame(container, { isAI: true, difficulty: selectedDifficulty.toUpperCase() as any });
+  });
+  localGameButton?.addEventListener('click', () => {
+    showGameSection(container, 'LOCAL DUEL');
+    startLocalGame(container, { isAI: false });
+  });
+  multiplayerButton?.addEventListener('click', () => {
+    showGameSection(container, 'MULTIPLAYER');
+    showMultiplayerGame(container);
+  });
 
   // Set initial styles
   updateButtonStyles();
@@ -51,16 +80,17 @@ function setupPageEventListeners(container: HTMLElement): void {
     const gameSection = container.querySelector('#gameSection') as HTMLElement;
     const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
     if (!gameSection.classList.contains('hidden')) {
-        hideGame(container);
-        cleanupWebSocketGame(container);
+      cleanupLocalGame();
+      cleanupWebSocketGame(container);
+      hideGameSection(container);
     }
     if (!tournamentSection.classList.contains('hidden')) {
-        const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-        tournamentSection.classList.add('hidden');
-        gameModeSelection.classList.remove('hidden');
+      const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
+      tournamentSection.classList.add('hidden');
+      gameModeSelection.classList.remove('hidden');
     } else {
-        window.history.pushState({}, '', '/dashboard');
-        window.dispatchEvent(new PopStateEvent('popstate'));
+      window.history.pushState({}, '', '/dashboard');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   });
 

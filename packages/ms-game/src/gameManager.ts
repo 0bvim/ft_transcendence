@@ -8,7 +8,6 @@ export class GameManager {
   private games: Map<string, PongGame> = new Map();
   private players: Map<string, PlayerConnection> = new Map();
   private waitingPlayers: Set<string> = new Set();
-  private localGames: Map<string, PongGame> = new Map(); // For local duel games
   private authService: AuthService;
 
   constructor() {
@@ -31,12 +30,13 @@ export class GameManager {
         return { success: false, error: 'Authentication required' };
       }
     } else {
-      // For local games, create a temporary user
+      // This case is for non-authed modes, which are now frontend only.
+      // We can keep a simplified version for potential future use or testing.
       isAuthenticated = true;
       user = {
         id: playerId,
-        username: `LocalPlayer_${playerId.substring(0, 8)}`,
-        email: 'local@game.com'
+        username: `Guest_${playerId.substring(0, 8)}`,
+        email: 'guest@game.com'
       };
     }
 
@@ -52,13 +52,6 @@ export class GameManager {
 
     // Handle different game modes
     switch (gameMode.type) {
-      case 'local':
-        this.sendToPlayer(playerId, {
-          type: 'connected',
-          data: { playerId, gameMode: 'local', user }
-        });
-        break;
-      
       case 'multiplayer':
         this.waitingPlayers.add(playerId);
         this.sendToPlayer(playerId, {
@@ -69,6 +62,7 @@ export class GameManager {
         break;
       
       case 'tournament':
+        // Tournament logic would be handled here
         this.sendToPlayer(playerId, {
           type: 'connected',
           data: { playerId, gameMode: 'tournament', user }
@@ -91,7 +85,7 @@ export class GameManager {
     this.waitingPlayers.delete(playerId);
 
     if (player.gameId) {
-      const game = this.games.get(player.gameId) || this.localGames.get(player.gameId);
+      const game = this.games.get(player.gameId);
       if (game) {
         game.removePlayer(playerId);
         
@@ -103,7 +97,6 @@ export class GameManager {
         if (game.playerCount === 0) {
           game.cleanup();
           this.games.delete(player.gameId);
-          this.localGames.delete(player.gameId);
         }
       }
     }
@@ -162,52 +155,6 @@ export class GameManager {
     }
   }
 
-  createLocalGame(playerId: string): string | null {
-    const player = this.players.get(playerId);
-    if (!player) return null;
-
-    const gameId = uuidv4();
-    const game = new PongGame(gameId);
-    
-    game.addPlayer(playerId);
-    player.gameId = gameId;
-    
-    this.localGames.set(gameId, game);
-    
-    this.sendToPlayer(playerId, {
-      type: 'localGameCreated',
-      data: { gameId }
-    });
-
-    console.log(`Local game ${gameId} created for player ${player.username}`);
-    return gameId;
-  }
-
-  joinLocalGame(gameId: string, playerId: string): boolean {
-    const game = this.localGames.get(gameId);
-    const player = this.players.get(playerId);
-    
-    if (!game || !player || game.playerCount >= 2) {
-      return false;
-    }
-
-    const success = game.addPlayer(playerId);
-    if (success) {
-      player.gameId = gameId;
-      
-      if (game.playerCount === 2) {
-        this.startGameUpdates(gameId, true);
-      }
-      
-      this.sendToPlayer(playerId, {
-        type: 'localGameJoined',
-        data: { gameId, playerCount: game.playerCount }
-      });
-    }
-
-    return success;
-  }
-
   handlePlayerMessage(playerId: string, message: WebSocketMessage): void {
     const player = this.players.get(playerId);
     if (!player) return;
@@ -215,14 +162,11 @@ export class GameManager {
     switch (message.type) {
       case 'move':
         if (player.gameId) {
-          const game = this.games.get(player.gameId) || this.localGames.get(player.gameId);
+          const game = this.games.get(player.gameId);
           if (game && message.data?.direction) {
             game.movePaddle(playerId, message.data.direction);
           }
         }
-        break;
-      case 'createLocalGame':
-        this.createLocalGame(playerId);
         break;
       case 'ping':
         this.sendToPlayer(playerId, { type: 'pong' });
@@ -230,12 +174,12 @@ export class GameManager {
     }
   }
 
-  private startGameUpdates(gameId: string, isLocal: boolean = false): void {
-    const game = isLocal ? this.localGames.get(gameId) : this.games.get(gameId);
+  private startGameUpdates(gameId: string): void {
+    const game = this.games.get(gameId);
     if (!game) return;
 
     const updateInterval = setInterval(() => {
-      const gameExists = isLocal ? this.localGames.has(gameId) : this.games.has(gameId);
+      const gameExists = this.games.has(gameId);
       if (!gameExists || game.playerCount < 2) {
         clearInterval(updateInterval);
         return;
@@ -279,6 +223,6 @@ export class GameManager {
   }
 
   getActiveGamesCount(): number {
-    return this.games.size + this.localGames.size;
+    return this.games.size;
   }
 }
