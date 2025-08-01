@@ -1,9 +1,11 @@
 import { showMenuGame, GameType, hideGame } from './game';
 import { showTournamentSection, setupTournamentEventListeners } from './tournament';
+import { showMultiplayerGame, showLocalDuelGame, cleanupWebSocketGame } from './multiplayerGame';
 
 function setupPageEventListeners(container: HTMLElement): void {
   const playAiButton = container.querySelector('#playAiButton');
   const localGameButton = container.querySelector('#localGameButton');
+  const multiplayerButton = container.querySelector('#multiplayerButton');
   const tournamentButton = container.querySelector('#tournamentButton');
   const backButton = container.querySelector('#backButton');
   const difficultyEasy = container.querySelector('#difficulty-easy');
@@ -37,7 +39,8 @@ function setupPageEventListeners(container: HTMLElement): void {
   });
 
   playAiButton?.addEventListener('click', () => showMenuGame(container, GameType.AI, selectedDifficulty));
-  localGameButton?.addEventListener('click', () => showMenuGame(container, GameType.Local));
+  localGameButton?.addEventListener('click', () => showLocalDuelGame(container));
+  multiplayerButton?.addEventListener('click', () => showMultiplayerGame(container));
 
   // Set initial styles
   updateButtonStyles();
@@ -49,6 +52,7 @@ function setupPageEventListeners(container: HTMLElement): void {
     const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
     if (!gameSection.classList.contains('hidden')) {
         hideGame(container);
+        cleanupWebSocketGame(container);
     }
     if (!tournamentSection.classList.contains('hidden')) {
         const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
@@ -109,7 +113,7 @@ export default function GamePage(): HTMLElement {
       </div>
 
       <!-- Game Mode Selection -->
-      <div id="gameModeSelection" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-slide-up">
+      <div id="gameModeSelection" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-slide-up">
         <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">PLAY VS AI</h3>
           <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Challenge our AI opponent.</p>
@@ -124,6 +128,11 @@ export default function GamePage(): HTMLElement {
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">LOCAL DUEL</h3>
           <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play with a friend on the same screen.</p>
           <button id="localGameButton" class="btn btn-primary w-full">START_LOCAL_GAME</button>
+        </div>
+        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
+          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">MULTIPLAYER</h3>
+          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play against other players online.</p>
+          <button id="multiplayerButton" class="btn btn-primary w-full">FIND_MATCH</button>
         </div>
         <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">TOURNAMENTS</h3>

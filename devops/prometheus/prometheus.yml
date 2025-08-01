@@ -12,22 +12,6 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # ELK Stack Services (HTTPS) - Note: Elasticsearch doesn't expose Prometheus metrics by default
-  # Uncomment and configure if you enable the Prometheus exporter plugin
-  # - job_name: "elasticsearch"
-  #   scheme: https
-  #   tls_config:
-  #     ca_file: /etc/prometheus/certs/ca.crt
-  #     server_name: elasticsearch.localhost
-  #     insecure_skip_verify: false
-  #   basic_auth:
-  #     username: ${ELASTIC_USER}
-  #     password: ${ELASTIC_PASSWORD}
-  #   static_configs:
-  #     - targets: ["elasticsearch:9200"]
-  #   metrics_path: "/_prometheus/metrics"
-  #   scrape_interval: 30s
-
   # Microservices 
   - job_name: "ms-game"
     scheme: https
@@ -51,18 +35,6 @@ scrape_configs:
       insecure_skip_verify: false
     static_configs:
       - targets: ["authentication:3001"]
-    metrics_path: "/metrics"
-    
-  - job_name: "ms-blockchain"
-    scheme: https
-    tls_config:
-      ca_file: /etc/prometheus/certs/ca.crt
-      cert_file: /etc/prometheus/certs/prometheus.crt
-      key_file: /etc/prometheus/certs/prometheus.key
-      server_name: localhost
-      insecure_skip_verify: false
-    static_configs:
-      - targets: ["blockchain:3004"]
     metrics_path: "/metrics"
     
   - job_name: "ms-tournament"

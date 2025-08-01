@@ -15,21 +15,23 @@ COPY --from=observability-builder /app/observability/ft-transcendence-observabil
 COPY ./ms-game/package*.json ./
 
 # Install the packed observability package
-RUN npm install ./ft-transcendence-observability-1.0.0.tgz
+RUN npm install ./ft-transcendence-observability-1.0.0.tgz --legacy-peer-deps
 
-RUN npm install
+RUN npm install --legacy-peer-deps
+RUN npm install --save-dev @types/ws @types/jsonwebtoken @types/uuid @types/node --legacy-peer-deps
 
 COPY ./ms-game/tsconfig.json ./
-COPY ./ms-game/tsconfig.server.json ./
 COPY ./ms-game/src ./src
 COPY ./ms-game/.env ./.env
 COPY ./ms-game/certs ./certs
 
 RUN npm run build
 
+# Expose port
+EXPOSE 3002
+
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f -k https://localhost:3002/api/health || exit 1
-
-EXPOSE 3002
 
 CMD ["npm", "start"]

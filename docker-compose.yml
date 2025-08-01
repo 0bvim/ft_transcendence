@@ -29,6 +29,8 @@ services:
       target: development
     ports:
       - "3001:3001"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./packages/ms-auth/prisma:/app/prisma
       - ./packages/ms-auth/src:/app/src
@@ -43,6 +45,19 @@ services:
     env_file: ./packages/ms-game/.env
     ports:
       - "${GAME_PORT:-3002}:3002"
+    environment:
+      - PORT=3002
+      - NODE_ENV=development
+      - AUTH_SERVICE_URL=https://authentication:3001
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./packages/ms-game/src:/app/src
+      - ./packages/ms-game/package.json:/app/package.json
+      - ./packages/ms-game/tsconfig.json:/app/tsconfig.json
+      - ./packages/ms-game/certs:/app/certs:ro
+    depends_on:
+      - ms-auth
     networks:
       - ${NETWORK_NAME:-ft-net}
 
