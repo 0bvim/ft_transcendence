@@ -5,6 +5,7 @@ import { AddressInfo } from "net";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+import { setupMultiplayerRoutes } from "./multiplayer";
 
 const pems = {
   private: fs.readFileSync(path.join(__dirname, "../certs/key.pem")),
@@ -60,72 +61,40 @@ const MatchResultSchema = z.object({
 const initializeApp = async () => {
   // Tournament API endpoints
   await registerTournamentRoutes();
+  
+  // Setup multiplayer WebSocket routes for real-time tournament matches
+  await setupMultiplayerRoutes(app);
 
-  // SPA fallback with tournament context injection via URL parameters and static file serving
-  app.get('/game/*', async (request: FastifyRequest, reply: FastifyReply) => {
-    const url = request.url;
-    
-    // Handle static files first (CSS, JS, images, etc.)
-    if (url.includes('.')) {
-      const filePath = path.join(__dirname, "../dist/game", url.replace('/game/', ''));
-      
-      try {
-        if (fs.existsSync(filePath)) {
-          const content = fs.readFileSync(filePath);
-          const ext = path.extname(filePath).toLowerCase();
-          
-          // Set appropriate content type
-          let contentType = 'text/plain';
-          switch (ext) {
-            case '.html': contentType = 'text/html'; break;
-            case '.js': contentType = 'application/javascript'; break;
-            case '.css': contentType = 'text/css'; break;
-            case '.png': contentType = 'image/png'; break;
-            case '.jpg': case '.jpeg': contentType = 'image/jpeg'; break;
-            case '.svg': contentType = 'image/svg+xml'; break;
-            case '.json': contentType = 'application/json'; break;
-          }
-          
-          return reply.type(contentType).send(content);
-        }
-      } catch (error) {
-        // File not found, fall through to SPA handling
-      }
-    }
-    
-    // SPA fallback - serve index.html with tournament context injection
-    const indexPath = path.join(__dirname, "../dist/game/index.html");
-    let content = fs.readFileSync(indexPath, 'utf8');
-    
-    // Check for tournament parameters
-    const tournamentId = (request.query as any)?.tournament as string;
-    const matchId = (request.query as any)?.match as string;
-    
-    if (tournamentId && matchId) {
-      // Create tournament context
-      const tournamentContext = {
-        matchId,
-        tournamentId,
-        isTournamentMatch: true,
-        gameServiceUrl: `http://${request.headers.host}`
-      };
-      
-      // Inject tournament context script
-      const tournamentScript = `
-        <script>
-          window.TOURNAMENT_CONTEXT = ${JSON.stringify(tournamentContext)};
-        </script>`;
-      
-      // Append the tournament script to the content
-      content = content + tournamentScript;
-    }
-    
-    return reply.type("text/html").send(content);
+  // API-only mode: No HTML serving, only API endpoints
+  // All game rendering is now handled by the frontend SPA
+  
+  // Health check endpoint for service monitoring
+  app.get('/api/health', async (request: FastifyRequest, reply: FastifyReply) => {
+    return reply.status(200).send({
+      success: true,
+      service: 'game-service',
+      status: 'healthy',
+      mode: 'api-only',
+      timestamp: new Date().toISOString()
+    });
   });
 
-  // Root route redirect to game
-  app.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    return reply.redirect('/game/');
+  // API info endpoint
+  app.get('/api/info', async (request: FastifyRequest, reply: FastifyReply) => {
+    return reply.status(200).send({
+      success: true,
+      service: 'game-service',
+      version: '2.0.0',
+      mode: 'api-only',
+      description: 'Game service converted to API-only mode for SPA architecture',
+      endpoints: [
+        'GET /api/health - Service health check',
+        'GET /api/info - Service information',
+        'GET /api/tournament/match/:matchId - Get tournament match details',
+        'POST /api/tournament/match/result - Submit tournament match result',
+        'WS /ws/match/:matchId - Real-time multiplayer match WebSocket'
+      ]
+    });
   });
 };
 

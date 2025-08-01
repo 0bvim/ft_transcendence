@@ -1,19 +1,20 @@
-import { Board } from './Board'
+import p5 from 'p5';
+import { Board } from './Board';
 
 export class Paddle {
-	readonly x: number
-	y: number
+	readonly x: number;
+	y: number;
 	static readonly height: number = Board.height / 4;
 	static readonly width: number = Board.width / 50;
-	static readonly baseSpeed: number = Board.height / 120; // Slightly faster for better responsiveness
+	static readonly baseSpeed: number = Board.height / 120;
 	goDown = false;
 	goUp = false;
 	private speed: number = 0;
 	private score: number = 0;
 
 	constructor(x: number, y: number) {
-		this.x = x
-		this.y = y - Paddle.height / 2
+		this.x = x;
+		this.y = y - Paddle.height / 2;
 	}
 
 	up() {
@@ -48,22 +49,33 @@ export class Paddle {
 		}
 		
 		// Ensure paddle stays within bounds (safety check)
-		this.y = Math.max(0, Math.min(Board.height - Paddle.height, this.y));
+		if (this.y < 0) this.y = 0;
+		if (this.y + Paddle.height > Board.height) this.y = Board.height - Paddle.height;
 	}
 
-	scoreUp() {
+	draw(p: p5) {
+		p.fill(255);
+		p.noStroke();
+		p.rect(this.x, this.y, Paddle.width, Paddle.height);
+	}
+
+	// Score management
+	incrementScore() {
 		this.score++;
 	}
 
-	reset() {
-		this.score = 0;
-	}
-
-	get currentScore(): number {
+	getScore(): number {
 		return this.score;
 	}
 
-	get currentSpeed(): number {
-		return this.speed;
+	resetScore() {
+		this.score = 0;
 	}
+
+	// Getters for position and properties
+	get posX(): number { return this.x; }
+	get posY(): number { return this.y; }
+	get width(): number { return Paddle.width; }
+	get height(): number { return Paddle.height; }
+	get currentSpeed(): number { return this.speed; }
 }

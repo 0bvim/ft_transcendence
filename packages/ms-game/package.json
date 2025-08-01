@@ -1,32 +1,26 @@
 {
   "name": "game-service",
-  "version": "1.0.0",
-  "description": "A simple pong game service built with p5.js and TypeScript",
+  "version": "2.0.0",
+  "description": "Game service API for tournament management and match data",
   "scripts": {
-    "build": "npm run build:server && npm run build:game",
-    "build:server": "tsc --project tsconfig.server.json",
-    "build:game": "parcel build index.html --dist-dir dist/game --public-url ./",
+    "build": "tsc --project tsconfig.server.json",
     "start": "node dist/index.js",
     "dev": "npm run build && node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["ft_transcendence", "pong", "game", "service"],
+  "keywords": ["ft_transcendence", "tournament", "api", "service"],
   "author": "ft-transcendence",
   "license": "MIT",
   "dependencies": {
-    "p5": "^1.9.4",
     "fastify": "^5.4.0",
-    "@fastify/static": "^8.0.1",
+    "@fastify/websocket": "^11.0.1",
     "dotenv": "^16.5.0",
     "zod": "^3.22.4",
     "@ft-transcendence/observability": "file:../observability"
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "^2.15.2",
-    "@types/p5": "^1.7.6",
-    "@types/node": "^24.0.7",
-    "parcel": "^2.12.0",
-    "sass": "^1.77.8",
-    "typescript": "^5.5.4"
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.0.0"
   }
 }
