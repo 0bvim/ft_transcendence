@@ -1,4 +1,4 @@
-import { tournamentApi, type Tournament as TournamentType } from '../api/tournament';
+import { tournamentApi, type Tournament as TournamentType } from '../api/tournament.ts';
 
 export default function Tournament(): HTMLElement {
   const container = document.createElement('div');
@@ -93,7 +93,7 @@ export default function Tournament(): HTMLElement {
           </div>
           <div>
             <h3 class="font-semibold mb-2">Scoring</h3>
-            <p>Results stored on blockchain</p>
+            <p>Match results are final</p>
           </div>
         </div>
       </div>

@@ -1,15 +1,14 @@
 # Core application services (without monitoring UI: kibana, prometheus, grafana)
-DEV_SERVICES = ms-frontend ms-auth ms-game tournament blockchain-node blockchain logstash elasticsearch
+DEV_SERVICES = ms-frontend ms-auth ms-game tournament logstash elasticsearch
 
 # Services paths
 MS-AUTH=packages/ms-auth
 MS-FRONTEND=packages/ms-frontend
 MS-GAME=packages/ms-game
-MS-BLOCKCHAIN=packages/ms-blockchain
 MS-TOURNAMENT=packages/ms-tournament
 
 # All Services
-SERVICES_PATH=$(MS-AUTH) $(MS-FRONTEND) $(MS-GAME) $(MS-BLOCKCHAIN) $(MS-TOURNAMENT)
+SERVICES_PATH=$(MS-AUTH) $(MS-FRONTEND) $(MS-GAME) $(MS-TOURNAMENT)
 
 # Default to Linux
 OS := Linux

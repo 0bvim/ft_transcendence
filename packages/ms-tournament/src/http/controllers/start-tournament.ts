@@ -61,7 +61,7 @@ export async function startTournament(request: FastifyRequest, reply: FastifyRep
       if (error.message.includes('Not enough players')) {
         return reply.status(409).send({
           success: false,
-          error: 'Not enough players to start tournament (minimum 4 required)'
+          error: 'Not enough players to start tournament (minimum 1 required)'
         });
       }
     }

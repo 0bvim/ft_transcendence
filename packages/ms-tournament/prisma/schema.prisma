@@ -69,6 +69,10 @@ model Match {
   round         Int      // 1 = first round, 2 = second round, etc.
   matchNumber   Int      // Match number within the round
   status        String @default("WAITING")
+  // Local-versus mode (two humans same keyboard)
+  localVersus   Boolean @default(false)
+  player1Keys   String?
+  player2Keys   String?
   
   // Match participants
   player1Id     String?

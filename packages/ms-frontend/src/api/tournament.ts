@@ -247,15 +247,27 @@ class TournamentApi {
 
   async submitMatchResult(
     matchId: string,
-    data: SubmitMatchResultRequest
+    result: any,
+    matchData: any
   ): Promise<{ match: Match; tournament: Tournament }> {
-    // Add user ID for authorization
+    // O backend espera o ID do vencedor, não a string 'PLAYER_1'/'PLAYER_2'.
+    const winnerId = result.winner === 'PLAYER_1' ? matchData.player1Id : matchData.player2Id;
+
+    const scorePayload = {
+      winnerId,
+      scorePlayer1: result.finalScore.player1,
+      scorePlayer2: result.finalScore.player2,
+    };
+
+    console.log('Submitting corrected match result payload:', scorePayload);
+
+    // Adiciona o ID do usuário para autorização, como no código original
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const requestData = {
-      ...data,
-      userId: user.id || 'anonymous'
+      ...scorePayload,
+      userId: user.id || 'anonymous',
     };
-    
+
     const response = await this.request<{ match: Match; tournament: Tournament }>(`/matches/${matchId}/result`, {
       method: 'POST',
       body: JSON.stringify(requestData),
@@ -264,8 +276,11 @@ class TournamentApi {
   }
 
   async getUserStats(userId: string): Promise<UserStats> {
-    const response = await this.request<UserStats>(`/users/${userId}/stats`);
-    return response;
+    return this.request<UserStats>(`/api/users/${userId}/stats`);
+  }
+
+  async getMatchDetails(matchId: string): Promise<{ success: boolean; data: any }> {
+    return this.request<{ success: boolean; data: any }>(`/matches/${matchId}`);
   }
 }
 

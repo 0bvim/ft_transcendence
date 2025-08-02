@@ -1,4 +1,4 @@
-import { tournamentApi, type CreateTournamentRequest } from '../api/tournament';
+import { tournamentApi, type CreateTournamentRequest } from '../api/tournament.ts';
 
 export default function TournamentCreate(): HTMLElement {
   const container = document.createElement('div');

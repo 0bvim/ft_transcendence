@@ -34,8 +34,9 @@ export async function startTournamentUseCase(input: StartTournamentInput) {
   }
 
   // Check if tournament has enough players
-  if (tournament.participants.length < 4) {
-    throw new Error('Not enough players to start tournament (minimum 4 required)');
+  // Allow tournament to start with a single participant. The host can begin at any time.
+  if (tournament.participants.length < 1) {
+    throw new Error('Not enough players to start tournament (minimum 1 required)');
   }
 
   // If tournament type is MIXED and doesn't have enough AI participants, add them
@@ -122,69 +123,80 @@ async function generateTournamentBracket(tournamentId: string) {
     [participants[i], participants[j]] = [participants[j], participants[i]];
   }
 
-  // Generate single-elimination bracket
-  const matches = generateSingleEliminationBracket(participants);
-  
-  // Create matches in database
-  for (const match of matches) {
-    await prisma.match.create({
-      data: {
-        tournamentId,
-        round: match.round,
-        matchNumber: match.matchNumber,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-        status: 'WAITING'
-      }
+  // Create first round matches
+  const matches = [];
+  const round = 1;
+  let matchNumber = 1;
+
+  // Handle byes for odd number of participants
+  let participantsForRound = [...participants];
+  if (participantsForRound.length % 2 !== 0) {
+    const byeParticipant = participantsForRound.pop()!;
+    matches.push({
+      tournamentId: tournament.id,
+      round,
+      matchNumber: matchNumber++,
+      player1Id: byeParticipant.id,
+      player2Id: null, // Bye
+      status: 'COMPLETED' as const,
+      winnerId: byeParticipant.id, // Auto-win
+      startedAt: new Date(),
+      completedAt: new Date(),
+    });
+    console.log(`[StartUC] Participant ${byeParticipant.displayName} gets a bye in round 1.`);
+  }
+
+  for (let i = 0; i < participantsForRound.length; i += 2) {
+    const player1 = participantsForRound[i];
+    const player2 = participantsForRound[i + 1];
+
+    // This check should not be necessary if logic is correct, but as a safeguard:
+    if (!player1 || !player2) {
+        console.error('[StartUC] Error creating match: player is undefined. Skipping match.', { player1, player2 });
+        continue;
+    }
+
+    matches.push({
+      tournamentId: tournament.id,
+      round,
+      matchNumber: matchNumber++,
+      player1Id: player1.id,
+      player2Id: player2.id,
+      status: 'WAITING' as const,
     });
   }
 
-  // Start first round matches
-  await startFirstRoundMatches(tournamentId);
-}
+  console.log(`[StartUC] Creating ${matches.length} matches for round 1.`);
 
-function generateSingleEliminationBracket(participants: any[]) {
-  const matches = [];
-  let currentRound = 1;
-  let currentParticipants = [...participants];
-
-  // Generate matches for each round until we have a winner
-  while (currentParticipants.length > 1) {
-    const roundMatches = [];
-    const nextRoundParticipants = [];
-    
-    for (let i = 0; i < currentParticipants.length; i += 2) {
-      if (i + 1 < currentParticipants.length) {
-        roundMatches.push({
-          round: currentRound,
-          matchNumber: Math.floor(i / 2) + 1,
-          player1Id: currentParticipants[i].id,
-          player2Id: currentParticipants[i + 1].id
-        });
-        // Add placeholder for winner to advance to next round
-        nextRoundParticipants.push({ id: `winner_${currentRound}_${Math.floor(i / 2) + 1}` });
-      } else {
-        // Odd number of participants, this one gets a bye
-        roundMatches.push({
-          round: currentRound,
-          matchNumber: Math.floor(i / 2) + 1,
-          player1Id: currentParticipants[i].id,
-          player2Id: null, // Bye
-          winnerId: currentParticipants[i].id // Automatic win
-        });
-        // Bye participant advances to next round
-        nextRoundParticipants.push(currentParticipants[i]);
-      }
-    }
-
-    matches.push(...roundMatches);
-    
-    // Fix: Use proper participant tracking instead of creating undefined array
-    currentParticipants = nextRoundParticipants;
-    currentRound++;
+  // Set the first match to IN_PROGRESS
+  const firstMatch = matches.find(m => m.status === 'WAITING');
+  if (firstMatch) {
+    firstMatch.status = 'IN_PROGRESS' as const;
+    (firstMatch as any).startedAt = new Date();
+    console.log(`[StartUC] Setting first match ${firstMatch.matchNumber} to IN_PROGRESS.`);
   }
 
-  return matches;
+  // Create matches in the database
+  await prisma.match.createMany({
+    data: matches,
+  });
+
+  console.log('[StartUC] First round matches created successfully.');
+
+  // Return the updated tournament object with matches
+  const updatedTournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    include: {
+      participants: true,
+      matches: {
+        include: {
+          participants: true
+        }
+      }
+    }
+  });
+
+  return updatedTournament;
 }
 
 async function startFirstRoundMatches(tournamentId: string) {

@@ -57,6 +57,11 @@ export async function getMatchDetails(request: FastifyRequest, reply: FastifyRep
 
     // Format response for game service
     const matchData = {
+      localVersus: match.localVersus,
+      controls: match.localVersus ? {
+        p1: match.player1Keys || 'W,S',
+        p2: match.player2Keys || 'ARROW_UP,ARROW_DOWN'
+      } : undefined,
       matchId: match.id,
       tournamentId: match.tournamentId,
       status: match.status,

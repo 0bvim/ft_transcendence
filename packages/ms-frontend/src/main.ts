@@ -82,7 +82,7 @@ router.addRoute({
   title: 'Tournament Details'
 });
 
-// Profile and blockchain verification routes
+// Profile routes
 router.addRoute({
   path: '/profile',
   component: () => import('./pages/Profile'),

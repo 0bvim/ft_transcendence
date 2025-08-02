@@ -1,5 +1,5 @@
-import { tournamentApi, Tournament } from '../api/tournament';
-import { authApi } from '../api/auth';
+import { tournamentApi, Tournament } from '../api/tournament.ts';
+import { authApi } from '../../../../ms-frontend_other/src/api/auth.ts';
 
 export default function TournamentDetail(): HTMLElement {
   const container = document.createElement('div');

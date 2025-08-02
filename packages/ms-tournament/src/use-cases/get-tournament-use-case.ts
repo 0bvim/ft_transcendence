@@ -33,6 +33,9 @@ export async function getTournamentUseCase(tournamentId: string) {
           winnerId: true,
           player1Score: true,
           player2Score: true,
+          localVersus: true,
+          player1Keys: true,
+          player2Keys: true,
           startedAt: true,
           completedAt: true,
           createdAt: true

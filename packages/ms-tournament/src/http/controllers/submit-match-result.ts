@@ -8,21 +8,21 @@ const submitMatchResultParamsSchema = z.object({
 
 const submitMatchResultBodySchema = z.object({
   winnerId: z.string().min(1, 'Winner ID is required'),
-  player1Score: z.number().int().min(0),
-  player2Score: z.number().int().min(0),
+  scorePlayer1: z.number().int().min(0),
+  scorePlayer2: z.number().int().min(0),
   userId: z.string().min(1, 'User ID is required'), // TODO: Get from auth middleware - for authorization
 });
 
 export async function submitMatchResult(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { id } = submitMatchResultParamsSchema.parse(request.params);
-    const { winnerId, player1Score, player2Score, userId } = submitMatchResultBodySchema.parse(request.body);
+    const { winnerId, scorePlayer1, scorePlayer2, userId } = submitMatchResultBodySchema.parse(request.body);
     
     const result = await submitMatchResultUseCase({
       matchId: id,
       winnerId,
-      player1Score,
-      player2Score,
+      player1Score: scorePlayer1,
+      player2Score: scorePlayer2,
       submittedBy: userId,
     });
     

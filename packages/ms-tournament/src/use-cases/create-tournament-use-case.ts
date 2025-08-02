@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { TournamentType, AIDifficulty } from '@prisma/client';
-import { blockchainClient } from '../services/blockchain-client';
 
 const prisma = new PrismaClient();
 
@@ -76,33 +75,6 @@ export async function createTournamentUseCase(input: CreateTournamentInput, logg
       status: 'ACTIVE'
     }
   });
-
-  // Create tournament on blockchain (non-blocking)
-  try {
-    const blockchainResult = await blockchainClient.createTournament({
-      name,
-      description: description || '',
-      maxParticipants: maxPlayers
-    });
-
-    if (blockchainResult) {
-      logger?.info({
-        action: 'tournament_blockchain_created',
-        tournamentId: tournament.id,
-        blockchainTournamentId: blockchainResult.tournamentId
-      }, `Tournament registered on blockchain: ${blockchainResult.tournamentId}`);
-      // Store blockchain tournament ID for future reference
-      // Note: We could add a blockchainTournamentId field to the Tournament model
-    }
-  } catch (error) {
-    // Blockchain creation failed, but tournament creation in DB succeeded
-    logger?.warn({
-      action: 'tournament_blockchain_failed',
-      tournamentId: tournament.id,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, `Failed to register tournament ${tournament.id} on blockchain`);
-    // Log silently or handle gracefully without exposing debug info
-  }
 
   // Always add AI participants to fill remaining slots
   await addAIParticipants(tournament.id, maxPlayers, aiDifficulty, 1, logger); // Pass 1 since creator is already added
