@@ -125,7 +125,7 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
               break;
           }
         },
-        onGameEnd: (winner, finalScore) => {
+        onGameEnd: (winner) => {
           gameStatusElement.textContent = `GAME OVER! ${winner} WINS!`;
           gameStatusElement.classList.remove('hidden');
         },
@@ -141,7 +141,7 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
     } else if (config.type === GameType.Multiplayer || config.type === GameType.Tournament) {
       // MULTIPLAYER / TOURNAMENT LOGIC
       gameTitleElement.textContent = config.type === GameType.Tournament ? 'TOURNAMENT MATCH' : 'MULTIPLAYER MATCH';
-      
+
       const hostname = window.location.hostname;
       const gameServiceUrl = `https://${hostname}:3002`; // Game service runs on port 3002
 
@@ -170,7 +170,7 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
             try {
               await tournamentApi.submitMatchResult(config.matchId, data.result, data.matchData);
               showNotification('Match result submitted successfully!', 'success');
-            } catch (error) { 
+            } catch (error) {
               showNotification('Failed to submit match result.', 'error');
               console.error('Failed to submit match result:', error);
             }
