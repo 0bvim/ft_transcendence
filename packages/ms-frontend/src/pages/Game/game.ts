@@ -137,9 +137,80 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
       pongGame.init(canvasContainer);
       pongGame.startGame();
 
-    } else if (config.type === GameType.Multiplayer || config.type === GameType.Tournament) {
-      // MULTIPLAYER / TOURNAMENT LOGIC
-      gameTitleElement.textContent = config.type === GameType.Tournament ? 'TOURNAMENT MATCH' : 'MULTIPLAYER MATCH';
+    } else if (config.type === GameType.Tournament) {
+      // TOURNAMENT GAME LOGIC (Local tournament matches)
+      gameTitleElement.textContent = 'TOURNAMENT MATCH';
+      p1NameElement.textContent = config.player1Name || player1Name;
+      p2NameElement.textContent = config.player2Name || 'PLAYER 2';
+
+      const gameConfig: PongGameConfig = {
+        player1Name: config.player1Name || player1Name,
+        player2Name: config.player2Name || 'PLAYER 2',
+        player1IsAI: false, // Tournament players determined by match
+        player2IsAI: config.player2Name?.includes('AI') || false,
+        aiDifficulty: config.difficulty?.toUpperCase() as AIDifficulty || 'MEDIUM',
+        targetScore: config.targetScore || 5,
+      };
+
+      const gameCallbacks: GameCallbacks = {
+        onScoreUpdate: (player1Score, player2Score) => {
+          if (p1ScoreElement) p1ScoreElement.textContent = player1Score.toString();
+          if (p2ScoreElement) p2ScoreElement.textContent = player2Score.toString();
+        },
+        onGameStateChange: (state) => {
+          switch (state) {
+            case GameState.Paused:
+              gameStatusElement.textContent = 'PAUSED';
+              gameStatusElement.classList.remove('hidden');
+              break;
+            case GameState.GameOver:
+              // This is handled by onGameEnd
+              break;
+            default:
+              gameStatusElement.classList.add('hidden');
+              break;
+          }
+        },
+        onGameEnd: async (winner, finalScore) => {
+          gameStatusElement.textContent = `GAME OVER! ${winner} WINS!`;
+          gameStatusElement.classList.remove('hidden');
+          
+          // Handle tournament match completion
+          if (config.tournamentId && config.matchId) {
+            try {
+              // Import tournament functions dynamically to avoid circular imports
+              const { completeMatch, getBracket, showTournamentBracket } = await import('./tournament');
+              
+              // Determine winner ID based on winner name
+              const winnerId = winner === gameConfig.player1Name ? 'player1' : 'player2';
+              
+              // Complete the match via API
+              await completeMatch(config.tournamentId, config.matchId, winnerId);
+              
+              // Return to tournament bracket after delay
+              setTimeout(async () => {
+                hideGame(container);
+                const tournament = await (await import('./tournament')).getTournament(config.tournamentId!);
+                const bracket = await getBracket(config.tournamentId!);
+                showTournamentBracket(container, tournament, bracket);
+              }, 2000);
+            } catch (error) {
+              console.error('Failed to complete tournament match:', error);
+            }
+          }
+        },
+      };
+
+      const pongGame = new PongGame(gameConfig, gameCallbacks);
+      activeGame = pongGame;
+      (container as any).pongGame = pongGame; // For backward compatibility if needed
+
+      pongGame.init(canvasContainer);
+      pongGame.startGame();
+
+    } else if (config.type === GameType.Multiplayer) {
+      // MULTIPLAYER LOGIC
+      gameTitleElement.textContent = 'MULTIPLAYER MATCH';
       
       const hostname = window.location.hostname;
       const gameServiceUrl = `https://${hostname}:3002`; // Game service runs on port 3002
@@ -164,16 +235,6 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
         onGameFinished: async (data) => {
           gameStatusElement.textContent = `GAME OVER! Winner: ${data.winnerName}`;
           gameStatusElement.classList.remove('hidden');
-          // If it's a tournament match, submit the result
-          if (config.type === GameType.Tournament && config.matchId) {
-            try {
-              await tournamentApi.submitMatchResult(config.matchId, data.result, data.matchData);
-              showNotification('Match result submitted successfully!', 'success');
-            } catch (error) { 
-              showNotification('Failed to submit match result.', 'error');
-              console.error('Failed to submit match result:', error);
-            }
-          }
         },
         onError: (error) => {
           gameStatusElement.textContent = `Error: ${error}`;
@@ -189,11 +250,7 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
       const client = new WebSocketGameClient(gameServiceUrl, wsCallbacks);
       activeGame = client;
 
-      if (config.type === GameType.Tournament) {
-        await client.connectTournament(config.matchId!);
-      } else {
-        await client.connectMultiplayer();
-      }
+      await client.connectMultiplayer();
 
       // Handle keyboard input for paddle movement
       const handleKeyDown = (e: KeyboardEvent) => {

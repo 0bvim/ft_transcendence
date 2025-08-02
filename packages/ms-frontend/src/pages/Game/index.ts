@@ -1,5 +1,6 @@
 import { showMultiplayerGame, cleanupWebSocketGame } from './multiplayerGame';
 import { startLocalGame, cleanupLocalGame } from './localGame';
+import { showTournamentSetup } from './tournament';
 
 function showGameSection(container: HTMLElement, title: string) {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
@@ -23,6 +24,7 @@ function setupPageEventListeners(container: HTMLElement): void {
   const playAiButton = container.querySelector('#playAiButton');
   const localGameButton = container.querySelector('#localGameButton');
   const multiplayerButton = container.querySelector('#multiplayerButton');
+  const tournamentButton = container.querySelector('#tournamentButton');
   const backButton = container.querySelector('#backButton');
   const difficultyEasy = container.querySelector('#difficulty-easy');
   const difficultyMedium = container.querySelector('#difficulty-medium');
@@ -54,21 +56,26 @@ function setupPageEventListeners(container: HTMLElement): void {
     updateButtonStyles();
   });
 
+  updateButtonStyles();
+
   playAiButton?.addEventListener('click', () => {
     showGameSection(container, 'PLAYER VS AI');
     startLocalGame(container, { isAI: true, difficulty: selectedDifficulty.toUpperCase() as any });
   });
+
   localGameButton?.addEventListener('click', () => {
     showGameSection(container, 'LOCAL DUEL');
     startLocalGame(container, { isAI: false });
   });
+
   multiplayerButton?.addEventListener('click', () => {
     showGameSection(container, 'MULTIPLAYER');
     showMultiplayerGame(container);
   });
 
-  // Set initial styles
-  updateButtonStyles();
+  tournamentButton?.addEventListener('click', () => {
+    showTournamentSetup(container);
+  });
 
   backButton?.addEventListener('click', () => {
     // Hide any active game or tournament section before navigating
@@ -147,6 +154,11 @@ export default function GamePage(): HTMLElement {
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">MULTIPLAYER</h3>
           <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play against other players online.</p>
           <button id="multiplayerButton" class="btn btn-primary w-full">FIND_MATCH</button>
+        </div>
+        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
+          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">TOURNAMENT</h3>
+          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Compete in bracket tournaments with AI.</p>
+          <button id="tournamentButton" class="btn btn-primary w-full">CREATE_TOURNAMENT</button>
         </div>
       </div>
 

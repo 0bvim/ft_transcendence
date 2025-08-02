@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Tournament model
+model Tournament {
+  id          String   @id @default(cuid())
+  hostUserId  String   // ID of the authenticated user who created the tournament
+  size        Int      // 4 or 8 players
+  aiDifficulty String  // "Easy", "Medium", or "Hard"
+  status      String   @default("setup") // "setup", "in_progress", "completed"
+  winnerId    String?  // Winner's user ID (if human) or "AI" if AI wins
+  winnerName  String?  // Winner's display name or alias
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  // Tournament participants
+  participants TournamentParticipant[]
+  
+  @@map("tournaments")
+}
+
+// Tournament participant model
+model TournamentParticipant {
+  id           String @id @default(cuid())
+  tournamentId String
+  userId       String? // null for AI players
+  alias        String  // Display name/alias for the tournament
+  isAI         Boolean @default(false)
+  position     Int     // Position in the bracket (0-7 for 8-player, 0-3 for 4-player)
+  
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  
+  @@map("tournament_participants")
+}
