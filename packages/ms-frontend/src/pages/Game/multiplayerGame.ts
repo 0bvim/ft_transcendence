@@ -1,5 +1,4 @@
-import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
-import { PongGame } from '../../game/game';
+//import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
 import { GameState } from '../../game/types';
 
 let game: PongGame | null = null;

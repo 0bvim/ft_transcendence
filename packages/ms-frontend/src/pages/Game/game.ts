@@ -1,7 +1,7 @@
 import { PongGame, GameConfig as PongGameConfig, GameCallbacks, GameState, AIDifficulty } from '../../game/PongGame';
 import { authApi } from '../../api/auth';
-import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
-import { WebSocketGameRenderer } from '../../game/WebSocketGameRenderer';
+//import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
+//import { WebSocketGameRenderer } from '../../game/WebSocketGameRenderer';
 import { tournamentApi } from '../../api/tournament';
 
 // Game types for embedded game functionality
