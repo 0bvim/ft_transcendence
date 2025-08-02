@@ -97,13 +97,6 @@ router.addRoute({
   title: 'Game'
 });
 
-router.addRoute({
-  path: '/blockchain',
-  component: () => import('./pages/BlockchainVerification'),
-  requiresAuth: false,
-  title: 'Blockchain Verification'
-});
-
 // Start the router
 router.start(); 
 
