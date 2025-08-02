@@ -1,0 +1,391 @@
+import p5 from 'p5';
+import { Ball } from './Ball';
+import { Paddle } from './Paddle';
+import { Board, Side } from './Board';
+import { AI, AIDifficulty } from './AI';
+
+export enum GameState {
+  Loading,
+  Ready,
+  Playing,
+  Paused,
+  GameOver
+}
+
+export interface GameConfig {
+  player1Name: string;
+  player2Name: string;
+  player1IsAI: boolean;
+  player2IsAI: boolean;
+  aiDifficulty: AIDifficulty;
+  targetScore: number;
+}
+
+export interface GameCallbacks {
+  onScoreUpdate: (player1Score: number, player2Score: number) => void;
+  onGameStateChange: (state: GameState) => void;
+  onGameEnd: (winner: string, finalScore: { player1: number; player2: number }) => void;
+}
+
+export class PongGame {
+  private p5Instance: p5 | null = null;
+  private ball: Ball | null = null;
+  private player1: Paddle | null = null;
+  private player2: Paddle | null = null;
+  private ai1: AI | null = null;
+  private ai2: AI | null = null;
+  
+  private gameState: GameState = GameState.Loading;
+  private config: GameConfig;
+  private callbacks: GameCallbacks;
+  
+  private keys: { [key: string]: boolean } = {};
+
+  
+  constructor(config: GameConfig, callbacks: GameCallbacks) {
+    this.config = config;
+    this.callbacks = callbacks;
+  }
+
+  // Initialize the p5.js instance and attach to container element (div). p5 will create its own canvas.
+  init(containerElement: HTMLElement): void {
+    const sketch = (p: p5) => {
+      p.setup = () => this.setup(p, containerElement);
+      p.draw = () => this.draw(p);
+      p.keyPressed = () => this.keyPressed(p);
+      p.keyReleased = () => this.keyReleased(p);
+    };
+
+    this.p5Instance = new p5(sketch, containerElement);
+  }
+
+  private setup(p: p5, container: HTMLElement): void {
+    // Create canvas and attach to container
+    console.log('🎨 [P5] Creating canvas with dimensions:', { width: Board.width, height: Board.height });
+    const canvas = p.createCanvas(Board.width, Board.height);
+    
+    // Anexa o canvas ao container e aplica estilos explícitos
+    canvas.parent(container);
+    
+    // Aplicar estilos diretamente ao canvas p5.js para garantir visibilidade
+    const canvasElement = canvas.elt as HTMLCanvasElement;
+    if (canvasElement) {
+      console.log('✅ [P5] Canvas element created, applying styles');
+      canvasElement.style.display = 'block';
+      canvasElement.style.margin = 'auto';
+      canvasElement.style.position = 'relative';
+      canvasElement.style.zIndex = '15';
+      canvasElement.style.backgroundColor = '#000';
+      canvasElement.style.border = '1px solid rgba(0, 255, 255, 0.3)';
+      canvasElement.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.5)';
+      console.log('💅 [P5] Canvas styles applied');
+    } else {
+      console.error('❌ [P5] Failed to get canvas element');
+    }
+    
+    // Initialize game objects
+    this.initializeGameObjects();
+    
+    // Set initial state
+    this.gameState = GameState.Ready;
+    this.callbacks.onGameStateChange(this.gameState);
+    
+    // Setup keyboard event listeners
+    this.setupKeyboardEvents();
+    
+    console.log('✅ [P5] Setup completed');
+  }
+
+  private initializeGameObjects(): void {
+    // Create paddles
+    this.player1 = new Paddle(Board.backBorder, Board.height / 2);
+    this.player2 = new Paddle(
+      Board.width - Board.backBorder - Paddle.width,
+      Board.height / 2
+    );
+    
+    // Create ball
+    this.ball = new Ball();
+    this.ball.resetToCenter();
+    
+    // Create AI instances if needed
+    if (this.config.player1IsAI && this.player1 && this.ball) {
+      this.ai1 = new AI(this.ball, this.player1, this.player2!, this.config.aiDifficulty);
+    }
+    if (this.config.player2IsAI && this.player2 && this.ball) {
+      this.ai2 = new AI(this.ball, this.player2, this.player1!, this.config.aiDifficulty);
+    }
+  }
+
+  private draw(p: p5): void {
+    if (!this.ball || !this.player1 || !this.player2) return;
+    
+    // Clear canvas
+    p.background(0);
+    
+    // Draw game elements
+    this.drawBackground(p);
+    this.drawGameObjects(p);
+    this.drawUI(p);
+    
+    // Update game logic
+    if (this.gameState === GameState.Playing) {
+      this.updateGame(p);
+    }
+  }
+
+  private drawBackground(p: p5): void {
+    // Draw center line
+    p.stroke(100);
+    p.strokeWeight(2);
+    for (let i = 0; i < Board.height; i += 20) {
+      p.line(Board.width / 2, i, Board.width / 2, i + 10);
+    }
+  }
+
+  private drawGameObjects(p: p5): void {
+    if (!this.ball || !this.player1 || !this.player2) return;
+    
+    // Draw paddles
+    this.player1.draw(p);
+    this.player2.draw(p);
+    
+    // Draw ball
+    this.ball.draw(p);
+  }
+
+  private drawUI(p: p5): void {
+    if (!this.player1 || !this.player2) return;
+    
+    // Draw scores
+    p.fill(255);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(48);
+    p.text(this.player1.getScore().toString(), Board.width / 4, 60);
+    p.text(this.player2.getScore().toString(), (3 * Board.width) / 4, 60);
+    
+    // Draw player names
+    p.textSize(16);
+    p.text(this.config.player1Name, Board.width / 4, 100);
+    p.text(this.config.player2Name, (3 * Board.width) / 4, 100);
+    
+    // Draw game state messages
+    if (this.gameState === GameState.Ready) {
+      p.textSize(24);
+      p.text("Press SPACE to start", Board.width / 2, Board.height / 2);
+    } else if (this.gameState === GameState.Paused) {
+      p.textSize(24);
+      p.text("PAUSED - Press SPACE to resume", Board.width / 2, Board.height / 2);
+    } else if (this.gameState === GameState.GameOver) {
+      p.textSize(32);
+      const winner = this.player1!.getScore() >= this.config.targetScore ? this.config.player1Name : this.config.player2Name;
+      p.text(`${winner} Wins!`, Board.width / 2, Board.height / 2);
+      p.textSize(16);
+      p.text("Press R to restart", Board.width / 2, Board.height / 2 + 40);
+    }
+  }
+
+  private updateGame(p: p5): void {
+    if (!this.ball || !this.player1 || !this.player2) return;
+    
+    const currentTime = p.millis();
+    
+    // Update AI
+    if (this.ai1) {
+      this.ai1.update(this.ball, currentTime);
+    }
+    if (this.ai2) {
+      this.ai2.update(this.ball, currentTime);
+    }
+    
+    // Handle player input
+    this.handlePlayerInput();
+    
+    // Update paddles
+    this.player1.update();
+    this.player2.update();
+    
+    // Update ball
+    this.ball.update();
+    
+    // Check paddle collisions
+    this.checkPaddleCollisions();
+    
+    // Check for scoring
+    this.checkScoring();
+  }
+
+  private handlePlayerInput(): void {
+    if (!this.player1 || !this.player2) return;
+    
+    // Player 1 controls (W/S or Arrow keys if not AI)
+    if (!this.config.player1IsAI) {
+      this.player1.goUp = this.keys['KeyW'] || this.keys['ArrowUp'];
+      this.player1.goDown = this.keys['KeyS'] || this.keys['ArrowDown'];
+    }
+    
+    // Player 2 controls (Arrow keys if not AI and no player 1 using arrows)
+    if (!this.config.player2IsAI && this.config.player1IsAI) {
+      this.player2.goUp = this.keys['ArrowUp'];
+      this.player2.goDown = this.keys['ArrowDown'];
+    }
+  }
+
+  private checkPaddleCollisions(): void {
+    if (!this.ball || !this.player1 || !this.player2) return;
+    
+    // Check collision with player 1 paddle
+    if (this.ball.collidesWith(this.player1.posX, this.player1.posY, this.player1.width, this.player1.height)) {
+      this.ball.handlePaddleCollision(this.player1.posX, this.player1.posY, this.player1.height);
+    }
+    
+    // Check collision with player 2 paddle
+    if (this.ball.collidesWith(this.player2.posX, this.player2.posY, this.player2.width, this.player2.height)) {
+      this.ball.handlePaddleCollision(this.player2.posX, this.player2.posY, this.player2.height);
+    }
+  }
+
+  private checkScoring(): void {
+    if (!this.ball || !this.player1 || !this.player2) return;
+    
+    const outOfBounds = this.ball.isOutOfBounds();
+    
+    if (outOfBounds !== null) {
+      // Score point
+      if (outOfBounds === Side.Left) {
+        this.player2.incrementScore();
+      } else {
+        this.player1.incrementScore();
+      }
+      
+      // Update score display
+      this.callbacks.onScoreUpdate(this.player1.getScore(), this.player2.getScore());
+      
+      // Check for game end
+      if (this.player1.getScore() >= this.config.targetScore || this.player2.getScore() >= this.config.targetScore) {
+        this.gameState = GameState.GameOver;
+        this.callbacks.onGameStateChange(this.gameState);
+        
+        const winner = this.player1.getScore() >= this.config.targetScore ? this.config.player1Name : this.config.player2Name;
+        this.callbacks.onGameEnd(winner, {
+          player1: this.player1.getScore(),
+          player2: this.player2.getScore()
+        });
+      } else {
+        // Reset ball for next point
+        this.ball.reset(outOfBounds === Side.Left ? Side.Right : Side.Left);
+      }
+    }
+  }
+
+  private setupKeyboardEvents(): void {
+    // Handle key press/release events
+    document.addEventListener('keydown', (event) => {
+      this.keys[event.code] = true;
+    });
+    
+    document.addEventListener('keyup', (event) => {
+      this.keys[event.code] = false;
+    });
+  }
+
+  private keyPressed(p: p5): boolean {
+    if (!p.keyCode) return false;
+    
+    // Space bar - start/pause game
+    if (p.key === ' ') {
+      if (this.gameState === GameState.Ready) {
+        this.startGame();
+      } else if (this.gameState === GameState.Playing) {
+        this.pauseGame();
+      } else if (this.gameState === GameState.Paused) {
+        this.resumeGame();
+      }
+      return false; // Prevent default
+    }
+    
+    // R key - restart game
+    if (p.key === 'r' || p.key === 'R') {
+      if (this.gameState === GameState.GameOver) {
+        this.restartGame();
+      }
+      return false;
+    }
+    
+    return true;
+  }
+
+  private keyReleased(_p: p5): boolean {
+    return true;
+  }
+
+  // Public game control methods
+  startGame(): void {
+    if (this.gameState === GameState.Ready && this.ball) {
+      this.ball.reset(Side.Left);
+      this.gameState = GameState.Playing;
+      this.callbacks.onGameStateChange(this.gameState);
+    }
+  }
+
+  pauseGame(): void {
+    if (this.gameState === GameState.Playing) {
+      this.gameState = GameState.Paused;
+      this.callbacks.onGameStateChange(this.gameState);
+    }
+  }
+
+  resumeGame(): void {
+    if (this.gameState === GameState.Paused) {
+      this.gameState = GameState.Playing;
+      this.callbacks.onGameStateChange(this.gameState);
+    }
+  }
+
+  restartGame(): void {
+    // Reset scores
+    this.player1?.resetScore();
+    this.player2?.resetScore();
+    
+    // Reset ball
+    this.ball?.resetToCenter();
+    
+    // Reset AI
+    this.ai1?.reset();
+    this.ai2?.reset();
+    
+    // Reset state
+    this.gameState = GameState.Ready;
+    this.callbacks.onGameStateChange(this.gameState);
+    this.callbacks.onScoreUpdate(0, 0);
+  }
+
+  // Cleanup method
+  destroy(): void {
+    if (this.p5Instance) {
+      this.p5Instance.remove();
+      this.p5Instance = null;
+    }
+    
+    // Clear keyboard event listeners
+    document.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('keyup', this.handleKeyUp);
+  }
+
+  private handleKeyDown = (event: KeyboardEvent) => {
+    this.keys[event.code] = true;
+  };
+
+  private handleKeyUp = (event: KeyboardEvent) => {
+    this.keys[event.code] = false;
+  };
+
+  // Getters
+  getCurrentState(): GameState {
+    return this.gameState;
+  }
+
+  getConfig(): GameConfig {
+    return this.config;
+  }
+}
