@@ -36,17 +36,24 @@ export class PongGame {
   private ai1: AI | null = null;
   private ai2: AI | null = null;
   private aiUpdateTimer: number = 0;
+  private aiViewBoardInterval: number;
 
   private gameState: GameState = GameState.Loading;
   private config: GameConfig;
   private callbacks: GameCallbacks;
 
-  private keys: { [key:string]: boolean } = {};
+  private keys: { [key: string]: boolean } = {};
   private scaleFactor = 1;
 
   constructor(config: GameConfig, callbacks: GameCallbacks) {
     this.config = config;
     this.callbacks = callbacks;
+    const aiDifficultyMap: Record<string, number> = {
+      EASY: 3000,
+      MEDIUM: 1000,
+      HARD: 800,
+    };
+    this.aiViewBoardInterval = aiDifficultyMap[this.config.aiDifficulty] ?? 1000;
   }
 
   // Initialize the p5.js instance and attach to canvas container
@@ -121,13 +128,9 @@ export class PongGame {
 
   private drawGameObjects(p: p5): void {
     if (!this.ball || !this.player1 || !this.player2) return;
-
-    // Draw paddles
+    this.ball.draw(p);
     this.player1.draw(p);
     this.player2.draw(p);
-
-    // Draw ball
-    this.ball.draw(p);
   }
 
   private updateGame(p: p5): void {
@@ -136,7 +139,7 @@ export class PongGame {
     const currentTime = p.millis();
 
     // Update AI
-    if (currentTime - this.aiUpdateTimer >= 1000) {
+    if (currentTime - this.aiUpdateTimer >= this.aiViewBoardInterval) {
       if (this.ai1) {
         this.ai1.predict(this.ball);
       }
@@ -195,44 +198,44 @@ export class PongGame {
 
   private checkPaddleCollisions(): void {
     if (!this.ball || !this.player1 || !this.player2) return;
-		this.ball.collisionFromBottomToTop(0);
-		this.ball.collisionFromTopToBottom(Board.height);
-		if (this.ball.isInFrontOf(this.player1.y + Paddle.height, this.player1.y) &&
-			this.ball.collisionFromRightToLeft(this.player1.x + Paddle.width)) {
-			this.ball.ballPaddleHit(this.player1.currentSpeed);
-			return;
-		}
-		if (this.ball.isInFrontOf(this.player2.y + Paddle.height, this.player2.y) &&
-			this.ball.collisionFromLeftToRight(this.player2.x)) {
-			this.ball.ballPaddleHit(this.player2.currentSpeed)
-			return;
-		}
+    this.ball.collisionFromBottomToTop(0);
+    this.ball.collisionFromTopToBottom(Board.height);
+    if (this.ball.isInFrontOf(this.player1.y + Paddle.height, this.player1.y) &&
+      this.ball.collisionFromRightToLeft(this.player1.x + Paddle.width)) {
+      this.ball.ballPaddleHit(this.player1.currentSpeed);
+      return;
+    }
+    if (this.ball.isInFrontOf(this.player2.y + Paddle.height, this.player2.y) &&
+      this.ball.collisionFromLeftToRight(this.player2.x)) {
+      this.ball.ballPaddleHit(this.player2.currentSpeed)
+      return;
+    }
   }
 
   private checkScoring(): void {
     if (!this.ball || !this.player1 || !this.player2) return;
 
-		if (this.ball.currentX <= 0) {
-			this.ball.reset(Side.Left);
-			this.player2.incrementScore();
-		} else if (this.ball.currentX + 2 * Ball.radius >= Board.width) {
-			this.ball.reset(Side.Right);
-			this.player1.incrementScore();
-		}
+    if (this.ball.currentX <= 0) {
+      this.ball.reset(Side.Left);
+      this.player2.incrementScore();
+    } else if (this.ball.currentX + 2 * Ball.radius >= Board.width) {
+      this.ball.reset(Side.Right);
+      this.player1.incrementScore();
+    }
 
-      // Update score display
-      this.callbacks.onScoreUpdate(this.player1.getScore(), this.player2.getScore());
+    // Update score display
+    this.callbacks.onScoreUpdate(this.player1.getScore(), this.player2.getScore());
 
-      // Check for game end
-      if (this.player1.getScore() >= this.config.targetScore || this.player2.getScore() >= this.config.targetScore) {
-        this.gameState = GameState.GameOver;
-        this.callbacks.onGameStateChange(this.gameState);
+    // Check for game end
+    if (this.player1.getScore() >= this.config.targetScore || this.player2.getScore() >= this.config.targetScore) {
+      this.gameState = GameState.GameOver;
+      this.callbacks.onGameStateChange(this.gameState);
 
-        const winner = this.player1.getScore() >= this.config.targetScore ? this.config.player1Name : this.config.player2Name;
-        this.callbacks.onGameEnd(winner, {
-          player1: this.player1.getScore(),
-          player2: this.player2.getScore()
-        });
+      const winner = this.player1.getScore() >= this.config.targetScore ? this.config.player1Name : this.config.player2Name;
+      this.callbacks.onGameEnd(winner, {
+        player1: this.player1.getScore(),
+        player2: this.player2.getScore()
+      });
     }
   }
 
@@ -303,16 +306,6 @@ export class PongGame {
     if (this.ball) {
       this.ball.reset(Side.Left);
     }
-
-    // Reset AI
-    // if (this.ai1) {
-    //   this.ai1.setDifficulty(this.config.aiDifficulty);
-    //   this.ai1.reset();
-    // }
-    // if (this.ai2) {
-    //   this.ai2.setDifficulty(this.config.aiDifficulty);
-    //   this.ai2.reset();
-    // }
 
     // Reset state
     this.gameState = GameState.Ready;
