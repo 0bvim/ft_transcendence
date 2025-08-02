@@ -1,5 +1,4 @@
 import { authApi, User } from '../api/auth';
-import { tournamentApi } from '../api/tournament';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
@@ -55,13 +54,8 @@ export default function Dashboard(): HTMLElement {
 
 async function loadRealData(container: HTMLElement, user: User) {
   try {
-    // Load user stats and tournaments in parallel
-    await Promise.all([
-      loadUserStats(container),
-      loadRecentTournaments(container, user.id),
-      loadActiveTournaments(container, user.id),
-      refreshUserData(container)
-    ]);
+    // Load user data
+    await refreshUserData(container);
   } catch (error) {
     console.error('Failed to load dashboard data:', error);
   }
@@ -413,141 +407,3 @@ async function setupEventListeners(container: HTMLElement) {
     window.location.href = '/game?section=tournament&action=create';
   });
 }
-
-async function loadUserStats(container: HTMLElement) {
-  try {
-    // Use existing user data and tournament API to get some stats
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const response = await tournamentApi.getTournaments({ limit: 50 });
-    const tournaments = response.tournaments || [];
-    
-    // Calculate basic stats from available data
-    const userTournaments = tournaments.filter(t => t.createdBy === user.id);
-    const totalTournaments = userTournaments.length;
-    
-    // Update UI with calculated stats
-    const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
-    const winRateEl = container.querySelector('#winRate') as HTMLElement;
-    const totalTournamentsEl = container.querySelector('#totalTournaments') as HTMLElement;
-    const statsLastUpdatedEl = container.querySelector('#statsLastUpdated') as HTMLElement;
-
-    if (totalGamesEl) totalGamesEl.textContent = totalTournaments.toString();
-    if (winRateEl) winRateEl.textContent = '0%'; // Will be calculated when match system is implemented
-    if (totalTournamentsEl) totalTournamentsEl.textContent = totalTournaments.toString();
-    if (statsLastUpdatedEl) statsLastUpdatedEl.textContent = 'UPDATED: ' + new Date().toLocaleTimeString();
-
-  } catch (error) {
-    console.error('Failed to load user stats:', error);
-    // Set fallback values
-    const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
-    const winRateEl = container.querySelector('#winRate') as HTMLElement;
-    const totalTournamentsEl = container.querySelector('#totalTournaments') as HTMLElement;
-    
-    if (totalGamesEl) totalGamesEl.textContent = '0';
-    if (winRateEl) winRateEl.textContent = '0%';
-    if (totalTournamentsEl) totalTournamentsEl.textContent = '0';
-  }
-}
-
-async function loadRecentTournaments(container: HTMLElement, userId: string) {
-  try {
-    const response = await tournamentApi.getTournaments({ limit: 10 });
-    const tournaments = response.tournaments || [];
-    const recentTournamentsEl = container.querySelector('#recentTournaments') as HTMLElement;
-    
-    if (!recentTournamentsEl) return;
-    
-    recentTournamentsEl.innerHTML = ''; // Clear loading state
-
-    if (tournaments.length === 0) {
-      recentTournamentsEl.innerHTML = `
-        <div class="text-center py-8 text-neon-cyan/50">
-          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          <p class="text-sm font-mono uppercase">No tournaments found. Create one!</p>
-        </div>
-      `;
-    } else {
-      // Show recent tournaments (limit to 3)
-      tournaments.slice(0, 3).forEach((tournament: any) => {
-        const statusColor = tournament.status === 'ACTIVE' ? 'neon-green' : 
-                           tournament.status === 'WAITING' ? 'warning-500' : 'neon-cyan';
-        const statusDot = tournament.status === 'ACTIVE' ? 'bg-neon-green' : 
-                         tournament.status === 'WAITING' ? 'bg-warning-500' : 'bg-neon-cyan';
-        
-        recentTournamentsEl.innerHTML += `
-          <div class="flex items-center justify-between p-6 bg-secondary-900/20 backdrop-blur-lg border border-${statusColor}/30 clip-cyber-button hover:border-${statusColor}/50 transition-all duration-300">
-            <div class="flex items-center space-x-4">
-              <div class="w-3 h-3 ${statusDot} rounded-full animate-glow-pulse"></div>
-              <div>
-                <p class="font-medium text-neon-cyan font-retro">${tournament.name}</p>
-                <p class="text-sm text-neon-pink/70 font-mono">${new Date(tournament.createdAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="font-semibold text-${statusColor} font-mono uppercase">${tournament.status}</div>
-              <div class="text-sm text-neon-cyan/70 font-mono">${tournament.currentPlayers}/${tournament.maxPlayers}</div>
-            </div>
-          </div>
-        `;
-      });
-    }
-  } catch (error) {
-    console.error('Failed to load recent tournaments:', error);
-    const recentTournamentsEl = container.querySelector('#recentTournaments') as HTMLElement;
-    if (recentTournamentsEl) {
-      recentTournamentsEl.innerHTML = `
-        <div class="text-center py-8 text-danger-500">
-          <p class="text-sm font-mono uppercase">Failed to load tournaments</p>
-        </div>
-      `;
-    }
-  }
-}
-
-async function loadActiveTournaments(container: HTMLElement, userId: string) {
-  try {
-    const response = await tournamentApi.getTournaments({ status: 'ACTIVE', limit: 5 });
-    const tournaments = response.tournaments || [];
-    const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
-    
-    if (!activeTournamentsEl) return;
-    
-    activeTournamentsEl.innerHTML = ''; // Clear loading state
-
-    if (tournaments.length === 0) {
-      activeTournamentsEl.innerHTML = `
-        <div class="text-center py-8 text-neon-cyan/50">
-          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          <p class="text-sm font-mono uppercase">No active tournaments</p>
-        </div>
-      `;
-    } else {
-      // Show active tournaments
-      tournaments.slice(0, 2).forEach((tournament: any) => {
-        activeTournamentsEl.innerHTML += `
-          <div class="p-4 bg-secondary-900/20 backdrop-blur-lg border border-neon-green/30 clip-cyber-button hover:border-neon-green/50 transition-all duration-300">
-            <div class="flex items-center justify-between mb-3">
-              <p class="font-medium text-neon-cyan font-retro">${tournament.name}</p>
-              <span class="badge badge-success">ACTIVE</span>
-            </div>
-            <p class="text-xs text-neon-pink/70 font-mono uppercase">Players: ${tournament.currentPlayers}/${tournament.maxPlayers}</p>
-          </div>
-        `;
-      });
-    }
-  } catch (error) {
-    console.error('Failed to load active tournaments:', error);
-    const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
-    if (activeTournamentsEl) {
-      activeTournamentsEl.innerHTML = `
-        <div class="text-center py-8 text-danger-500">
-          <p class="text-sm font-mono uppercase">Failed to load active tournaments</p>
-        </div>
-      `;
-    }
-  }
-} 

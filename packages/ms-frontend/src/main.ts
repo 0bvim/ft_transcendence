@@ -60,29 +60,7 @@ router.addRoute({
   title: 'Google Sign-In'
 });
 
-// Tournament routes
-router.addRoute({
-  path: '/tournament',
-  component: () => import('./pages/Tournament'),
-  requiresAuth: true,
-  title: 'Tournament Hub'
-});
-
-router.addRoute({
-  path: '/tournament/create',
-  component: () => import('./pages/TournamentCreate'),
-  requiresAuth: true,
-  title: 'Create Tournament'
-});
-
-router.addRoute({
-  path: '/tournament/:id',
-  component: () => import('./pages/TournamentDetail'),
-  requiresAuth: true,
-  title: 'Tournament Details'
-});
-
-// Profile and blockchain verification routes
+// Profile routes
 router.addRoute({
   path: '/profile',
   component: () => import('./pages/Profile'),

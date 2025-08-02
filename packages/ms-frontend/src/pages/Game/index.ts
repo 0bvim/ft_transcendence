@@ -1,15 +1,12 @@
-import { showTournamentSection, setupTournamentEventListeners } from './tournament';
 import { showMultiplayerGame, cleanupWebSocketGame } from './multiplayerGame';
 import { startLocalGame, cleanupLocalGame } from './localGame';
 
 function showGameSection(container: HTMLElement, title: string) {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
   const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-  const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
   const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
 
   if (gameModeSelection) gameModeSelection.classList.add('hidden');
-  if (tournamentSection) tournamentSection.classList.add('hidden');
   if (gameSection) gameSection.classList.remove('hidden');
   if (gameTitleElement) gameTitleElement.textContent = title;
 }
@@ -26,7 +23,6 @@ function setupPageEventListeners(container: HTMLElement): void {
   const playAiButton = container.querySelector('#playAiButton');
   const localGameButton = container.querySelector('#localGameButton');
   const multiplayerButton = container.querySelector('#multiplayerButton');
-  const tournamentButton = container.querySelector('#tournamentButton');
   const backButton = container.querySelector('#backButton');
   const difficultyEasy = container.querySelector('#difficulty-easy');
   const difficultyMedium = container.querySelector('#difficulty-medium');
@@ -73,37 +69,25 @@ function setupPageEventListeners(container: HTMLElement): void {
 
   // Set initial styles
   updateButtonStyles();
-  tournamentButton?.addEventListener('click', () => showTournamentSection(container));
 
   backButton?.addEventListener('click', () => {
     // Hide any active game or tournament section before navigating
     const gameSection = container.querySelector('#gameSection') as HTMLElement;
-    const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
     if (!gameSection.classList.contains('hidden')) {
       cleanupLocalGame();
       cleanupWebSocketGame(container);
       hideGameSection(container);
-    }
-    if (!tournamentSection.classList.contains('hidden')) {
-      const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-      tournamentSection.classList.add('hidden');
-      gameModeSelection.classList.remove('hidden');
     } else {
       window.history.pushState({}, '', '/dashboard');
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
   });
-
-  setupTournamentEventListeners(container);
 }
 
 function handleUrlParameters(container: HTMLElement): void {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
 
-  if (view === 'tournaments') {
-    showTournamentSection(container);
-  }
   cleanupUrlParameters();
 }
 
@@ -164,11 +148,6 @@ export default function GamePage(): HTMLElement {
           <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play against other players online.</p>
           <button id="multiplayerButton" class="btn btn-primary w-full">FIND_MATCH</button>
         </div>
-        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
-          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">TOURNAMENTS</h3>
-          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Compete and climb the leaderboard.</p>
-          <button id="tournamentButton" class="btn btn-primary w-full">VIEW_TOURNAMENTS</button>
-        </div>
       </div>
 
       <!-- Game Section (hidden by default) -->
@@ -195,15 +174,6 @@ export default function GamePage(): HTMLElement {
                 <div id="gameStatus" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold text-neon-pink font-retro hidden"></div>
             </div>
         </div>
-      </div>
-
-      <!-- Tournament Section (hidden by default) -->
-      <div id="tournamentSection" class="hidden animate-fade-in">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold text-neon-green font-retro tracking-wider">TOURNAMENTS</h2>
-            <button id="createTournamentButton" class="btn btn-primary">CREATE_TOURNAMENT</button>
-        </div>
-        <div id="tournamentList" class="space-y-4"></div>
       </div>
     </div>
   `;
