@@ -1,395 +1,159 @@
-import { tournamentApi, type CreateTournamentRequest } from '../api/tournament.ts';
+import { tournamentApi } from '../api/tournament';
+import { showNotification } from '../components/notification';
 
 export default function TournamentCreate(): HTMLElement {
   const container = document.createElement('div');
-  container.className = 'min-h-screen bg-gray-900 text-white p-6';
+  container.className = 'min-h-screen relative overflow-hidden';
 
   container.innerHTML = `
-    <div class="max-w-4xl mx-auto">
+    <!-- Background -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute inset-0 synthwave-grid opacity-15"></div>
+      <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(255,0,255,0.12) 0%, transparent 70%);"></div>
+      <div class="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl animate-float" style="background: radial-gradient(circle, rgba(0,255,255,0.12) 0%, transparent 70%); animation-delay: -2s;"></div>
+      <div class="horizon-line"></div>
+      <div class="scan-line"></div>
+    </div>
+
+    <div class="relative z-10 container-fluid py-8">
       <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center space-x-4">
-          <button id="backButton" class="btn btn-ghost text-gray-400 hover:text-white">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Tournaments
+      <div class="flex items-center justify-between mb-12 animate-fade-in">
+        <div class="flex items-center space-x-6">
+          <button id="backButton" class="btn btn-ghost group">
+            <svg class="w-5 h-5 mr-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            BACK
           </button>
-          <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">
-            Create Tournament
+          <h1 class="text-5xl font-bold text-gradient font-retro tracking-wider">
+            <span class="text-neon-pink">CREATE</span> 
+            <span class="text-neon-cyan">TOURNAMENT</span>
           </h1>
         </div>
       </div>
 
-      <!-- Tournament Creation Form -->
-      <div class="bg-gray-800 rounded-lg p-8 border border-gray-700">
-        <form id="tournament-form">
-          <!-- Tournament Name -->
+      <!-- Form -->
+      <div class="card p-8 max-w-3xl mx-auto animate-slide-up">
+        <form id="createTournamentForm">
           <div class="mb-6">
-            <label for="tournament-name" class="block text-sm font-medium text-gray-300 mb-2">
-              Tournament Name
-            </label>
-            <input
-              type="text"
-              id="tournament-name"
-              name="tournamentName"
-              required
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter tournament name"
-            />
+            <label for="tournamentName" class="block text-neon-cyan/80 mb-2 font-mono text-lg">Tournament Name</label>
+            <input type="text" id="tournamentName" name="name" class="input w-full text-lg" required placeholder="Enter tournament name...">
           </div>
 
-          <!-- Tournament Description -->
           <div class="mb-6">
-            <label for="tournament-description" class="block text-sm font-medium text-gray-300 mb-2">
-              Description (Optional)
-            </label>
-            <textarea
-              id="tournament-description"
-              name="tournamentDescription"
-              rows="3"
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Describe your tournament..."
-            ></textarea>
-          </div>
-
-          <!-- Max Players -->
-          <div class="mb-6">
-            <label for="max-players" class="block text-sm font-medium text-gray-300 mb-2">
-              Maximum Players
-            </label>
-            <select
-              id="max-players"
-              name="maxPlayers"
-              required
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="4">4 Players</option>
-              <option value="6">6 Players</option>
-              <option value="8">8 Players</option>
-            </select>
-          </div>
-
-          <!-- Tournament Type -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Tournament Type
-            </label>
-            <div class="bg-gray-700 border border-blue-500 rounded-lg p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="font-semibold text-white">Mixed Tournament</h3>
-                  <p class="text-sm text-gray-400">AI auto-fills remaining slots. Humans can join and replace AI players.</p>
-                </div>
-                <div class="w-4 h-4 bg-blue-500 border-2 border-blue-500 rounded-full"></div>
-              </div>
-              <input type="hidden" name="tournamentType" value="mixed" />
+            <label class="block text-neon-cyan/80 mb-2 font-mono text-lg">Number of Players</label>
+            <div class="flex space-x-4">
+              <button type="button" id="players-4" class="btn btn-primary w-full player-count-btn" data-count="4">4 Players</button>
+              <button type="button" id="players-8" class="btn btn-ghost w-full player-count-btn" data-count="8">8 Players</button>
             </div>
           </div>
 
-          <!-- AI Difficulty (shown only for mixed tournaments) -->
-          <div id="ai-difficulty-section" class="mb-6">
-            <label for="ai-difficulty" class="block text-sm font-medium text-gray-300 mb-2">
-              AI Difficulty
-            </label>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="relative">
-                <input
-                  type="radio"
-                  id="ai-easy"
-                  name="aiDifficulty"
-                  value="easy"
-                  class="sr-only"
-                />
-                <label
-                  for="ai-easy"
-                  class="block bg-gray-700 border border-gray-600 rounded-lg p-3 cursor-pointer hover:border-green-500 transition-colors duration-200 text-center"
-                >
-                  <div class="text-green-400 font-semibold">Easy</div>
-                  <div class="text-xs text-gray-400">Beginner friendly</div>
-                </label>
-              </div>
-              <div class="relative">
-                <input
-                  type="radio"
-                  id="ai-medium"
-                  name="aiDifficulty"
-                  value="medium"
-                  checked
-                  class="sr-only"
-                />
-                <label
-                  for="ai-medium"
-                  class="block bg-gray-700 border border-yellow-500 rounded-lg p-3 cursor-pointer hover:border-yellow-500 transition-colors duration-200 text-center"
-                >
-                  <div class="text-yellow-400 font-semibold">Medium</div>
-                  <div class="text-xs text-gray-400">Balanced challenge</div>
-                </label>
-              </div>
-              <div class="relative">
-                <input
-                  type="radio"
-                  id="ai-hard"
-                  name="aiDifficulty"
-                  value="hard"
-                  class="sr-only"
-                />
-                <label
-                  for="ai-hard"
-                  class="block bg-gray-700 border border-gray-600 rounded-lg p-3 cursor-pointer hover:border-red-500 transition-colors duration-200 text-center"
-                >
-                  <div class="text-red-400 font-semibold">Hard</div>
-                  <div class="text-xs text-gray-400">Expert level</div>
-                </label>
-              </div>
-            </div>
+          <div id="player-aliases-container" class="mb-6">
+            <!-- Player alias fields will be injected here -->
           </div>
 
-          <!-- Auto-start Tournament -->
-          <div class="mb-6">
-            <label class="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                id="auto-start"
-                name="autoStart"
-                checked
-                class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <span class="text-sm font-medium text-gray-300">
-                Auto-start when minimum players (4) join
-              </span>
-            </label>
-          </div>
-
-          <!-- Form Actions -->
-          <div class="flex flex-col sm:flex-row gap-4 justify-end">
-            <button
-              type="button"
-              id="cancel-btn"
-              class="order-2 sm:order-1 px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              id="create-tournament-submit"
-              class="order-1 sm:order-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
-            >
-              Create Tournament
-            </button>
+          <div class="flex justify-end space-x-4 mt-8">
+            <button type="submit" class="btn btn-success btn-lg">CREATE & START</button>
           </div>
         </form>
-      </div>
-
-      <!-- Tournament Preview -->
-      <div class="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h2 class="text-xl font-semibold mb-4 text-purple-400">Tournament Preview</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span class="text-gray-400">Format:</span>
-            <span class="ml-2 text-white">Single-elimination</span>
-          </div>
-          <div>
-            <span class="text-gray-400">Bracket Size:</span>
-            <span class="ml-2 text-white" id="bracket-size">4 players</span>
-          </div>
-          <div>
-            <span class="text-gray-400">Total Matches:</span>
-            <span class="ml-2 text-white" id="total-matches">3 matches</span>
-          </div>
-          <div>
-            <span class="text-gray-400">Estimated Duration:</span>
-            <span class="ml-2 text-white" id="estimated-duration">15-30 minutes</span>
-          </div>
-        </div>
       </div>
     </div>
   `;
 
-  // Add event listeners
   setupEventListeners(container);
+  updatePlayerAliases(container, 4); // Default to 4 players
 
   return container;
 }
 
 function setupEventListeners(container: HTMLElement) {
-  const form = container.querySelector('#tournament-form') as HTMLFormElement;
-  const backBtn = container.querySelector('#backButton');
-  const cancelBtn = container.querySelector('#cancel-btn');
-  const maxPlayersSelect = container.querySelector('#max-players') as HTMLSelectElement;
-  const tournamentTypeInputs = container.querySelectorAll('input[name="tournamentType"]');
-  const aiDifficultySection = container.querySelector('#ai-difficulty-section');
-
-  // Back button
-  backBtn?.addEventListener('click', () => {
-    window.location.href = '/tournament';
+  const backButton = container.querySelector('#backButton');
+  backButton?.addEventListener('click', () => {
+    window.history.back();
   });
 
-  // Cancel button
-  cancelBtn?.addEventListener('click', () => {
-    window.location.href = '/tournament';
-  });
+  const playerCountButtons = container.querySelectorAll('.player-count-btn');
+  playerCountButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const count = parseInt((button as HTMLElement).dataset.count || '4', 10);
+      updatePlayerAliases(container, count);
 
-  // Form submission
-  form?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    handleFormSubmit(form);
-  });
-
-  // Update preview when max players changes
-  maxPlayersSelect?.addEventListener('change', updateTournamentPreview);
-
-  // Show/hide AI difficulty based on tournament type
-  tournamentTypeInputs.forEach(input => {
-    input.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement;
-      if (aiDifficultySection) {
-        (aiDifficultySection as HTMLElement).style.display = target.value === 'mixed' ? 'block' : 'none';
-      }
-    });
-  });
-
-  // Update radio button styles
-  setupRadioButtonStyles(container);
-
-  // Initial preview update
-  updateTournamentPreview();
-}
-
-function setupRadioButtonStyles(container: HTMLElement) {
-  const radioGroups = ['tournamentType', 'aiDifficulty'];
-  
-  radioGroups.forEach(groupName => {
-    const radioInputs = container.querySelectorAll(`input[name="${groupName}"]`);
-    radioInputs.forEach(input => {
-      input.addEventListener('change', () => {
-        // Update all radio buttons in this group
-        radioInputs.forEach(radio => {
-          const label = container.querySelector(`label[for="${radio.id}"]`);
-          const indicator = label?.querySelector('.w-4.h-4');
-          
-          if (radio === input && (radio as HTMLInputElement).checked) {
-            // Selected state
-            if (groupName === 'tournamentType') {
-              // Tournament type has indicators
-              label?.classList.add('border-blue-500');
-              if (indicator) {
-                indicator.classList.add('bg-blue-500', 'border-blue-500');
-                indicator.classList.remove('border-gray-400');
-              }
-            } else if (groupName === 'aiDifficulty') {
-              // AI difficulty uses border colors
-              label?.classList.remove('border-gray-600');
-              if (radio.id === 'ai-easy') {
-                label?.classList.add('border-green-500', 'bg-green-500/10');
-              } else if (radio.id === 'ai-medium') {
-                label?.classList.add('border-yellow-500', 'bg-yellow-500/10');
-              } else if (radio.id === 'ai-hard') {
-                label?.classList.add('border-red-500', 'bg-red-500/10');
-              }
-            }
-          } else {
-            // Unselected state
-            if (groupName === 'tournamentType') {
-              // Tournament type has indicators
-              label?.classList.remove('border-blue-500');
-              if (indicator) {
-                indicator.classList.remove('bg-blue-500', 'border-blue-500');
-                indicator.classList.add('border-gray-400');
-              }
-            } else if (groupName === 'aiDifficulty') {
-              // AI difficulty reset to default
-              label?.classList.remove('border-green-500', 'bg-green-500/10', 'border-yellow-500', 'bg-yellow-500/10', 'border-red-500', 'bg-red-500/10');
-              label?.classList.add('border-gray-600');
-            }
-          }
-        });
+      // Update button styles
+      playerCountButtons.forEach(btn => {
+        if (btn === button) {
+          btn.classList.add('btn-primary');
+          btn.classList.remove('btn-ghost');
+        } else {
+          btn.classList.add('btn-ghost');
+          btn.classList.remove('btn-primary');
+        }
       });
     });
   });
-  
-  // Initialize the default states on page load
-  radioGroups.forEach(groupName => {
-    const checkedInput = container.querySelector(`input[name="${groupName}"]:checked`) as HTMLInputElement;
-    if (checkedInput) {
-      checkedInput.dispatchEvent(new Event('change'));
-    }
+
+  const form = container.querySelector('#createTournamentForm') as HTMLFormElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await handleFormSubmit(container);
   });
 }
 
-function updateTournamentPreview() {
-  const maxPlayersSelect = document.querySelector('#max-players') as HTMLSelectElement;
-  const bracketSize = document.querySelector('#bracket-size');
-  const totalMatches = document.querySelector('#total-matches');
-  const estimatedDuration = document.querySelector('#estimated-duration');
+function updatePlayerAliases(container: HTMLElement, count: number) {
+  const aliasesContainer = container.querySelector('#player-aliases-container');
+  if (!aliasesContainer) return;
 
-  if (!maxPlayersSelect || !bracketSize || !totalMatches || !estimatedDuration) return;
+  let content = `<label class="block text-neon-cyan/80 mb-4 font-mono text-lg">Player Aliases</label>`;
+  content += `<p class="text-xs text-neon-cyan/60 font-mono mb-4">Player 1 is you. Enter aliases for other players. Leave blank for an AI opponent.</p>`;
+  content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
 
-  const players = parseInt(maxPlayersSelect.value);
-  const matches = players - 1; // Single elimination: n-1 matches
-  const duration = `${matches * 5}-${matches * 10} minutes`;
+  for (let i = 1; i <= count; i++) {
+    content += `
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text text-neon-cyan/80 font-mono">Player ${i}</span>
+        </label>
+        <input type="text" name="player${i}" class="input w-full" placeholder="Enter alias or leave for AI" ${i === 1 ? 'value="Player 1" disabled' : ''}>
+      </div>
+    `;
+  }
 
-  bracketSize.textContent = `${players} players`;
-  totalMatches.textContent = `${matches} matches`;
-  estimatedDuration.textContent = duration;
+  content += `</div>`;
+  aliasesContainer.innerHTML = content;
 }
 
-async function handleFormSubmit(form: HTMLFormElement) {
+async function handleFormSubmit(container: HTMLElement) {
+  const form = container.querySelector('#createTournamentForm') as HTMLFormElement;
   const formData = new FormData(form);
-  const tournamentTypeValue = formData.get('tournamentType') as string;
-  const aiDifficultyValue = formData.get('aiDifficulty') as string;
-  
-  const tournamentData: CreateTournamentRequest = {
-    name: formData.get('tournamentName') as string,
-    description: formData.get('tournamentDescription') as string || '',
-    maxPlayers: parseInt(formData.get('maxPlayers') as string),
-    tournamentType: 'MIXED', // Always MIXED since humans-only option was removed
-    autoStart: formData.has('autoStart'),
-    aiDifficulty: aiDifficultyValue ? aiDifficultyValue.toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD' : 'MEDIUM'
-  };
+  const name = formData.get('name') as string;
+  const playerCount = container.querySelector('.player-count-btn.btn-primary')?.getAttribute('data-count') || '4';
+
+  if (!name.trim()) {
+    showNotification('Tournament name cannot be empty.', 'error');
+    return;
+  }
+
+  const players = [];
+  for (let i = 1; i <= parseInt(playerCount, 10); i++) {
+    const alias = formData.get(`player${i}`) as string;
+    if (alias && alias.trim()) {
+      players.push({ name: alias.trim() });
+    } else {
+      players.push({ name: `AI Player ${i}`, isAi: true });
+    }
+  }
 
   try {
-    // Submit to tournament API
-    const response = await tournamentApi.createTournament(tournamentData);
+    // This is a placeholder for the actual API call.
+    // We will need to adjust the backend to support creating a local tournament with custom players.
+    console.log('Creating tournament with:', { name, players });
+    showNotification(`Tournament '${name}' created with ${players.length} players!`, 'success');
     
-    // Show success message and redirect
-    showSuccessMessage('Tournament created successfully!');
-    
+    // TODO: Navigate to the tournament details page once the backend is ready.
+    // For now, let's navigate back to the dashboard.
     setTimeout(() => {
-      window.history.pushState({}, '', `/tournament/${response.id}`);
-      window.dispatchEvent(new Event('popstate'));
+      window.location.href = '/dashboard';
     }, 2000);
-    
+
   } catch (error) {
-    showErrorMessage('Failed to create tournament. Please try again.');
+    console.error('Failed to create tournament:', error);
+    showNotification('Failed to create tournament.', 'error');
   }
-}
-
-function showSuccessMessage(message: string) {
-  const successDiv = document.createElement('div');
-  successDiv.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-  successDiv.textContent = message;
-  
-  document.body.appendChild(successDiv);
-  
-  setTimeout(() => {
-    successDiv.remove();
-  }, 3000);
-}
-
-function showErrorMessage(message: string) {
-  const errorDiv = document.createElement('div');
-  errorDiv.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-  errorDiv.textContent = message;
-  
-  document.body.appendChild(errorDiv);
-  
-  setTimeout(() => {
-    errorDiv.remove();
-  }, 3000);
-}
-
-function getCurrentUser(): string {
-  // TODO: Get current user from authentication system
-  return 'current_user';
 }

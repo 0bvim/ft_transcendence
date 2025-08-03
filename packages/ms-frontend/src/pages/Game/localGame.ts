@@ -1,11 +1,9 @@
 import { PongGame, GameConfig, GameCallbacks, GameState, AIDifficulty } from '../../game/PongGame';
-
-
+import {getCurrentUser} from "@/auth/auth.ts";
 
 let game: PongGame | null = null;
-
-
-
+const user = await getCurrentUser();
+const usernameP1 = user?.username || 'PLAYER 1';
 export function startLocalGame(container: HTMLElement, options: { isAI: boolean; difficulty?: AIDifficulty }) {
   cleanupLocalGame(); // Ensure any previous game is stopped
 
@@ -13,7 +11,7 @@ export function startLocalGame(container: HTMLElement, options: { isAI: boolean;
   if (!canvasContainer) return;
 
   // Prepare config and callbacks for PongGame
-  const player1Name = 'PLAYER 1';
+  const player1Name = usernameP1;
   const player2Name = options.isAI ? 'COMPUTER' : 'PLAYER 2';
   const config: GameConfig = {
     player1Name,

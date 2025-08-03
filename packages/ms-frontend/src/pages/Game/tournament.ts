@@ -69,7 +69,10 @@ function displayTournamentError(container: HTMLElement, message: string): void {
 
 export function setupTournamentEventListeners(container: HTMLElement): void {
   const createButton = container.querySelector('#createTournamentButton');
-  createButton?.addEventListener('click', () => showCreateTournamentModal(container));
+  createButton?.addEventListener('click', () => {
+    window.history.pushState({}, '', '/tournament/create');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
 
   const tournamentList = container.querySelector('#tournamentList');
   tournamentList?.addEventListener('click', (e) => {
@@ -96,59 +99,6 @@ async function joinTournament(container: HTMLElement, tournamentId: string): Pro
   } catch (error) {
     console.error('Failed to join tournament:', error);
     showNotification('Failed to join tournament.', 'error');
-  }
-}
-
-function showCreateTournamentModal(container: HTMLElement): void {
-  const modalHTML = `
-    <div id="createTournamentModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-      <div class="card p-8 rounded-lg shadow-lg w-full max-w-md animate-fade-in-scale">
-        <h3 class="text-2xl font-bold text-neon-green mb-6 font-retro">CREATE_TOURNAMENT</h3>
-        <form id="createTournamentForm">
-          <div class="mb-4">
-            <label for="tournamentName" class="block text-neon-cyan/80 mb-2 font-mono">Tournament Name</label>
-            <input type="text" id="tournamentName" name="name" class="input w-full" required>
-          </div>
-          <div class="flex justify-end space-x-4">
-            <button type="button" id="cancelCreateTournament" class="btn btn-ghost">CANCEL</button>
-            <button type="submit" class="btn btn-primary">CREATE</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-  container.insertAdjacentHTML('beforeend', modalHTML);
-
-  const modal = container.querySelector('#createTournamentModal');
-  const form = container.querySelector('#createTournamentForm') as HTMLFormElement;
-  const cancelButton = container.querySelector('#cancelCreateTournament');
-
-  const closeModal = () => modal?.remove();
-
-  cancelButton?.addEventListener('click', closeModal);
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await handleCreateTournament(container, form);
-    closeModal();
-  });
-}
-
-async function handleCreateTournament(container: HTMLElement, form: HTMLFormElement): Promise<void> {
-  const formData = new FormData(form);
-  const name = formData.get('name') as string;
-
-  if (!name.trim()) {
-    showNotification('Tournament name cannot be empty.', 'error');
-    return;
-  }
-
-  try {
-    await tournamentApi.createTournament({ name, maxPlayers: 8, tournamentType: 'MIXED', autoStart: true });
-    showNotification('Tournament created successfully!', 'success');
-    await loadTournaments(container);
-  } catch (error) {
-    console.error('Failed to create tournament:', error);
-    showNotification('Failed to create tournament.', 'error');
   }
 }
 

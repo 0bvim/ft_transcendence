@@ -2,127 +2,39 @@ import { showTournamentSection, setupTournamentEventListeners } from './tourname
 import { showMultiplayerGame, cleanupWebSocketGame, findMultiplayerMatch, cleanupMultiplayerGame } from './multiplayerGame';
 import { startLocalGame, cleanupLocalGame } from './localGame';
 import { getCurrentUser } from '../../auth/auth'; // Adjust the path as needed
+import TournamentCreate from '../TournamentCreate';
 
 function showGameSection(container: HTMLElement, title: string) {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
-  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-  const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
-  const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
-
-  if (gameModeSelection) gameModeSelection.classList.add('hidden');
-  if (tournamentSection) tournamentSection.classList.add('hidden');
   if (gameSection) gameSection.classList.remove('hidden');
+  const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
   if (gameTitleElement) gameTitleElement.textContent = title;
 }
 
 function hideGameSection(container: HTMLElement) {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
-  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-
   if (gameSection) gameSection.classList.add('hidden');
-  if (gameModeSelection) gameModeSelection.classList.remove('hidden');
 }
 
 function setupPageEventListeners(container: HTMLElement): void {
-  const playAiButton = container.querySelector('#playAiButton');
-  const localGameButton = container.querySelector('#localGameButton');
-  const multiplayerButton = container.querySelector('#multiplayerButton');
-  const tournamentButton = container.querySelector('#tournamentButton');
   const backButton = container.querySelector('#backButton');
-  const difficultyEasy = container.querySelector('#difficulty-easy');
-  const difficultyMedium = container.querySelector('#difficulty-medium');
-  const difficultyHard = container.querySelector('#difficulty-hard');
-
-  let selectedDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
-
-  const updateButtonStyles = () => {
-    difficultyEasy?.classList.toggle('btn-success', selectedDifficulty === 'easy');
-    difficultyEasy?.classList.toggle('opacity-50', selectedDifficulty !== 'easy');
-    difficultyMedium?.classList.toggle('btn-warning', selectedDifficulty === 'medium');
-    difficultyMedium?.classList.toggle('opacity-50', selectedDifficulty !== 'medium');
-    difficultyHard?.classList.toggle('btn-error', selectedDifficulty === 'hard');
-    difficultyHard?.classList.toggle('opacity-50', selectedDifficulty !== 'hard');
-  };
-
-  difficultyEasy?.addEventListener('click', () => {
-    selectedDifficulty = 'easy';
-    updateButtonStyles();
-  });
-
-  difficultyMedium?.addEventListener('click', () => {
-    selectedDifficulty = 'medium';
-    updateButtonStyles();
-  });
-
-  difficultyHard?.addEventListener('click', () => {
-    selectedDifficulty = 'hard';
-    updateButtonStyles();
-  });
-
-  playAiButton?.addEventListener('click', () => {
-    showGameSection(container, 'PLAYER VS AI');
-    startLocalGame(container, { isAI: true, difficulty: selectedDifficulty.toUpperCase() as any });
-  });
-  localGameButton?.addEventListener('click', () => {
-    showGameSection(container, 'LOCAL DUEL');
-    startLocalGame(container, { isAI: false });
-  });
-  multiplayerButton?.addEventListener('click', async () => {
-    console.log('Multiplayer button clicked');
-    showGameSection(container, 'MULTIPLAYER MATCH');
-    
-    // Check if user is authenticated
-    const authToken = localStorage.getItem('jwt') || localStorage.getItem('token');
-    const user = getCurrentUser();
-    
-    if (!authToken || !user) {
-      console.log('No auth token found, showing login message');
-      const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-      if (gameStatusElement) {
-        gameStatusElement.textContent = 'Please log in to play multiplayer';
-        gameStatusElement.classList.remove('hidden');
-        gameStatusElement.style.display = 'block';
-      }
-      return;
-    }
-    
-    const username = user.username || 'Player';
-    console.log('Starting multiplayer with username:', username);
-    
-    try {
-      await findMultiplayerMatch(container, username);
-    } catch (error) {
-      console.error('Failed to start multiplayer match:', error);
-      const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-      if (gameStatusElement) {
-        gameStatusElement.textContent = 'Connection failed: ' + (error as Error).message;
-        gameStatusElement.classList.remove('hidden');
-        gameStatusElement.style.display = 'block';
-      }
-    }
-  });
-
-  // Set initial styles
-  updateButtonStyles();
-  tournamentButton?.addEventListener('click', () => showTournamentSection(container));
 
   backButton?.addEventListener('click', () => {
-    // Hide any active game or tournament section before navigating
     const gameSection = container.querySelector('#gameSection') as HTMLElement;
     const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
-    if (!gameSection.classList.contains('hidden')) {
+
+    if (gameSection && !gameSection.classList.contains('hidden')) {
       cleanupLocalGame();
       cleanupMultiplayerGame();
       hideGameSection(container);
     }
-    if (!tournamentSection.classList.contains('hidden')) {
-      const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
+
+    if (tournamentSection && !tournamentSection.classList.contains('hidden')) {
       tournamentSection.classList.add('hidden');
-      gameModeSelection.classList.remove('hidden');
-    } else {
-      window.history.pushState({}, '', '/dashboard');
-      window.dispatchEvent(new PopStateEvent('popstate'));
     }
+
+    window.history.pushState({}, '', '/dashboard');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   });
 
   setupTournamentEventListeners(container);
@@ -131,17 +43,73 @@ function setupPageEventListeners(container: HTMLElement): void {
 function handleUrlParameters(container: HTMLElement): void {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
+  const mode = params.get('mode');
+  const difficulty = params.get('difficulty');
+
+  if (window.location.pathname === '/tournament/create') {
+    const tournamentCreatePage = TournamentCreate();
+    container.innerHTML = '';
+    container.appendChild(tournamentCreatePage);
+    return;
+  }
 
   if (view === 'tournaments') {
     showTournamentSection(container);
+  } else if (mode) {
+    switch (mode) {
+      case 'ai':
+        showGameSection(container, 'PLAYER VS AI');
+        startLocalGame(container, { isAI: true, difficulty: (difficulty?.toUpperCase() as any) || 'MEDIUM' });
+        break;
+      case 'local':
+        showGameSection(container, 'LOCAL DUEL');
+        startLocalGame(container, { isAI: false });
+        break;
+      case 'multiplayer':
+        handleMultiplayer(container);
+        break;
+    }
   }
+
   cleanupUrlParameters();
 }
 
+async function handleMultiplayer(container: HTMLElement) {
+  showGameSection(container, 'MULTIPLAYER MATCH');
+
+  const authToken = localStorage.getItem('jwt') || localStorage.getItem('token');
+  const user = getCurrentUser();
+
+  if (!authToken || !user) {
+    const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
+    if (gameStatusElement) {
+      gameStatusElement.textContent = 'Please log in to play multiplayer';
+      gameStatusElement.classList.remove('hidden');
+      gameStatusElement.style.display = 'block';
+    }
+    return;
+  }
+
+  const username = user.username || 'Player';
+  try {
+    await findMultiplayerMatch(container, username);
+  } catch (error) {
+    console.error('Failed to start multiplayer match:', error);
+    const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
+    if (gameStatusElement) {
+      gameStatusElement.textContent = 'Connection failed: ' + (error as Error).message;
+      gameStatusElement.classList.remove('hidden');
+      gameStatusElement.style.display = 'block';
+    }
+  }
+}
+
 function cleanupUrlParameters(): void {
-  const url = new URL(window.location.href);
-  url.searchParams.delete('view');
-  window.history.replaceState({}, '', url.toString());
+  // const url = new URL(window.location.href);
+  // url.searchParams.delete('view');
+  // url.searchParams.delete('mode');
+  // url.searchParams.delete('difficulty');
+  // window.history.replaceState({}, '', url.toString());
 }
 
 export default function GamePage(): HTMLElement {
@@ -168,37 +136,8 @@ export default function GamePage(): HTMLElement {
           </button>
           <h1 id="pageTitle" class="text-5xl font-bold text-gradient font-retro tracking-wider">
             <span class="text-neon-pink">GAME</span> 
-            <span class="text-neon-cyan">OPTIONS</span>
+            <span class="text-neon-cyan">ON</span>
           </h1>
-        </div>
-      </div>
-
-      <!-- Game Mode Selection -->
-      <div id="gameModeSelection" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-slide-up">
-        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
-          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">PLAY VS AI</h3>
-          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Challenge our AI opponent.</p>
-          <button id="playAiButton" class="btn btn-primary w-full">START_AI_GAME</button>
-          <div id="difficulty-selection" class="flex justify-center space-x-2 my-2">
-            <button id="difficulty-easy" class="btn btn-sm btn-success">Easy</button>
-            <button id="difficulty-medium" class="btn btn-sm btn-warning">Medium</button>
-            <button id="difficulty-hard" class="btn btn-sm btn-error">Hard</button>
-          </div>
-        </div>
-        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
-          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">LOCAL DUEL</h3>
-          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play with a friend on the same screen.</p>
-          <button id="localGameButton" class="btn btn-primary w-full">START_LOCAL_GAME</button>
-        </div>
-        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
-          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">MULTIPLAYER</h3>
-          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play against other players online.</p>
-          <button id="multiplayerButton" class="btn btn-primary w-full">FIND_MATCH</button>
-        </div>
-        <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
-          <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">TOURNAMENTS</h3>
-          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Compete and climb the leaderboard.</p>
-          <button id="tournamentButton" class="btn btn-primary w-full">VIEW_TOURNAMENTS</button>
         </div>
       </div>
 

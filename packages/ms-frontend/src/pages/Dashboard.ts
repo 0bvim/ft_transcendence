@@ -1,5 +1,6 @@
 import { authApi, User } from '../api/auth';
 import { tournamentApi } from '../api/tournament';
+import { renderGameOptions, setupGameOptionsEventListeners } from '../components/GameOptions';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
@@ -120,12 +121,6 @@ function renderDashboardContent(container: HTMLElement, user: User) {
               </svg>
               Dashboard
             </a>
-            <a href="/game?section=tournament" data-link class="nav-link">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
-              </svg>
-              Tournaments
-            </a>
             <a href="/profile" data-link class="nav-link">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -171,38 +166,8 @@ function renderDashboardContent(container: HTMLElement, user: User) {
         </p>
       </div>
 
-      <!-- Quick Actions (without Statistics) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 animate-slide-up">
-        <button class="card p-8 text-center group hover:scale-105 transition-all duration-500" id="quickMatchBtn">
-          <div class="w-16 h-16 bg-gradient-to-br from-neon-pink to-neon-purple clip-cyberpunk mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-neon-cyan mb-3 font-retro text-lg">QUICK MATCH</h3>
-          <p class="text-sm text-neon-cyan/70 font-mono">Start a game right now</p>
-        </button>
-
-        <button class="card p-8 text-center group hover:scale-105 transition-all duration-500" id="joinTournamentBtn">
-          <div class="w-16 h-16 bg-gradient-to-br from-neon-green to-neon-cyan clip-cyberpunk mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-neon-cyan mb-3 font-retro text-lg">JOIN TOURNAMENT</h3>
-          <p class="text-sm text-neon-cyan/70 font-mono">Compete with others</p>
-        </button>
-
-        <button class="card p-8 text-center group hover:scale-105 transition-all duration-500" id="createTournamentBtn">
-          <div class="w-16 h-16 bg-gradient-to-br from-warning-500 to-neon-purple clip-cyberpunk mx-auto mb-6 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-neon-cyan mb-3 font-retro text-lg">CREATE TOURNAMENT</h3>
-          <p class="text-sm text-neon-cyan/70 font-mono">Host your own event</p>
-        </button>
-      </div>
+      <!-- Game Options Section -->
+      ${renderGameOptions()}
 
       <!-- Dashboard Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up" style="animation-delay: 0.2s;">
@@ -241,7 +206,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           <div class="card p-8">
             <div class="flex items-center justify-between mb-8">
               <h2 class="text-2xl font-bold text-gradient font-retro">Recent Tournaments</h2>
-              <a href="/game?section=tournament" data-link class="text-sm text-neon-pink hover:text-neon-cyan transition-colors font-mono uppercase tracking-wider">
+              <a href="/game?view=tournaments" data-link class="text-sm text-neon-pink hover:text-neon-cyan transition-colors font-mono uppercase tracking-wider">
                 View all >>
               </a>
             </div>
@@ -335,31 +300,6 @@ function renderDashboardContent(container: HTMLElement, user: User) {
               ` : ''}
             </div>
           </div>
-
-          <!-- User Stats -->
-          <div class="card p-8">
-            <h3 class="text-xl font-bold text-gradient mb-6 font-retro">Quick Stats</h3>
-            <div class="space-y-4" id="quickStats">
-              <!-- Loading states -->
-              <div class="flex justify-between items-center p-3 bg-secondary-900/20 backdrop-blur-lg border border-neon-cyan/20 clip-cyber-button">
-                <span class="text-sm text-neon-cyan font-mono">RANK</span>
-                <div class="bg-neon-pink/20 h-4 w-8 rounded clip-cyber-button animate-pulse"></div>
-              </div>
-              <div class="flex justify-between items-center p-3 bg-secondary-900/20 backdrop-blur-lg border border-neon-green/20 clip-cyber-button">
-                <span class="text-sm text-neon-cyan font-mono">TOURNAMENTS WON</span>
-                <div class="bg-neon-green/20 h-4 w-6 rounded clip-cyber-button animate-pulse"></div>
-              </div>
-              <div class="flex justify-between items-center p-3 bg-secondary-900/20 backdrop-blur-lg border border-warning-500/20 clip-cyber-button">
-                <span class="text-sm text-neon-cyan font-mono">BEST POSITION</span>
-                <div class="bg-warning-500/20 h-4 w-10 rounded clip-cyber-button animate-pulse"></div>
-              </div>
-              <div class="flex justify-between items-center p-3 bg-secondary-900/20 backdrop-blur-lg border border-neon-pink/20 clip-cyber-button">
-                <span class="text-sm text-neon-cyan font-mono">MEMBER SINCE</span>
-                <span class="text-sm font-medium text-neon-pink font-mono">${new Date(user.createdAt).toLocaleDateString()}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
   `;
@@ -393,25 +333,8 @@ async function setupEventListeners(container: HTMLElement) {
     window.location.href = '/login';
   });
 
-  // Quick action buttons (without statistics)
-  const quickMatchBtn = container.querySelector('#quickMatchBtn') as HTMLElement;
-  const joinTournamentBtn = container.querySelector('#joinTournamentBtn') as HTMLElement;
-  const createTournamentBtn = container.querySelector('#createTournamentBtn') as HTMLElement;
-
-  quickMatchBtn.addEventListener('click', () => {
-    // Navigate to game page - quick match section
-    window.location.href = '/game';
-  });
-
-  joinTournamentBtn.addEventListener('click', () => {
-    // Navigate to game page - tournament section
-    window.location.href = '/game?section=tournament';
-  });
-
-  createTournamentBtn.addEventListener('click', () => {
-    // Navigate to game page - tournament section with create modal
-    window.location.href = '/game?section=tournament&action=create';
-  });
+  // Setup game options event listeners
+  setupGameOptionsEventListeners(container);
 }
 
 async function loadUserStats(container: HTMLElement) {
