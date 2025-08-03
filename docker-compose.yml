@@ -1,5 +1,3 @@
-name: ${PROJECT_NAME:-ft_transcendence}
-
 services:
   # Core application services
   ms-frontend:
@@ -221,6 +219,15 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       - prometheus
+
+  game-server:
+    build:
+      context: ./packages/game-server
+      dockerfile: Dockerfile
+    ports:
+      - "3010:3010"
+    environment:
+      - PORT=3010
 
 volumes:
   esdata:

@@ -1,233 +1,239 @@
-//import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
-import { GameState } from '../../game/types';
+import { PongGame, GameState, GameConfig } from '../../game/PongGame';
+import { WebSocketGameClient } from '../../game/WebSocketGameClient';
 
+let wsClient: WebSocketGameClient | null = null;
 let game: PongGame | null = null;
-let animationFrameId: number | null = null;
 
-function renderGame(canvas: HTMLCanvasElement, gameState: GameState) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  // Clear canvas
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Draw center line
-  ctx.strokeStyle = 'grey';
-  ctx.lineWidth = 4;
-  ctx.setLineDash([10, 10]);
-  ctx.beginPath();
-  ctx.moveTo(canvas.width / 2, 0);
-  ctx.lineTo(canvas.width / 2, canvas.height);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Draw paddles
-  ctx.fillStyle = 'white';
-  gameState.players.forEach(paddle => {
-    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-  });
-
-  // Draw ball
-  ctx.beginPath();
-  ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function renderLoop(container: HTMLElement) {
-  if (!game) return;
-
-  const canvas = container.querySelector('canvas');
-  const gameState = game.getGameState();
-
-  if (canvas) {
-    renderGame(canvas, gameState);
+export function cleanupMultiplayerGame(): void {
+  if (wsClient) {
+    wsClient.disconnect();
+    wsClient = null;
   }
-  animationFrameId = requestAnimationFrame(() => renderLoop(container));
+
+  if (game) {
+    game.destroy();
+    game = null;
+  }
 }
 
-// Show multiplayer WebSocket game
-export async function showMultiplayerGame(container: HTMLElement): Promise<void> {
-  cleanupWebSocketGame(container); // Clean up any existing game
+export async function findMultiplayerMatch(container: HTMLElement, username: string): Promise<void> {
+  console.log('Finding multiplayer match for:', username);
+  cleanupMultiplayerGame();
 
-  const canvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
   const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-  const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
-  const p1NameElement = container.querySelector('#player1Name') as HTMLElement;
-  const p2NameElement = container.querySelector('#player2Name') as HTMLElement;
-  const p1ScoreElement = container.querySelector('#player1Score') as HTMLElement;
-  const p2ScoreElement = container.querySelector('#player2Score') as HTMLElement;
-
-  if (!canvasContainer || !gameStatusElement || !gameTitleElement || !p1NameElement || !p2NameElement || !p1ScoreElement || !p2ScoreElement) {
-    console.error('Required game elements not found in the DOM');
-    return;
+  if (gameStatusElement) {
+    gameStatusElement.textContent = 'Connecting to game service...';
+    gameStatusElement.classList.remove('hidden');
+    gameStatusElement.style.display = 'block';
   }
 
-  // --- Unify canvas sizing with local game ---
-  canvasContainer.innerHTML = '';
-  const canvas = document.createElement('canvas');
-  // Responsive: fill container
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  // Set base size (should match Board.ts or be dynamic)
-  canvas.width = 800;
-  canvas.height = 600;
-  canvasContainer.appendChild(canvas);
+  const gameServiceUrl = process.env.GAME_SERVER_URL || `ws://${window.location.hostname}:3002`;
+  console.log('Connecting to:', gameServiceUrl);
 
-  game = new PongGame();
+  wsClient = new WebSocketGameClient(gameServiceUrl, {
+    onConnected: () => {
+      console.log('Connected to game service');
+    },
 
-  gameTitleElement.textContent = 'MULTIPLAYER MATCH';
-  gameStatusElement.textContent = 'Connecting to game service...';
-  gameStatusElement.classList.remove('hidden');
-
-  // Reset overlays to default style (unified with local)
-  p1NameElement.className = 'text-xl font-bold text-white font-retro tracking-wider truncate max-w-xs';
-  p2NameElement.className = 'text-xl font-bold text-white font-retro tracking-wider truncate max-w-xs';
-  p1ScoreElement.className = 'text-4xl font-bold text-white font-mono tracking-widest mt-2';
-  p2ScoreElement.className = 'text-4xl font-bold text-white font-mono tracking-widest mt-2';
-
-  // Helper to truncate long names for visual consistency
-  function truncateName(name: string, maxLength = 12) {
-    return name.length > maxLength ? name.slice(0, maxLength - 1) + '…' : name;
-  }
-
-  const gameServiceUrl = `wss://${window.location.hostname}:3002`;
-
-  const callbacks: WSGameCallbacks = {
-    onConnected: (data) => {
-      console.log('Connected to game service:', data);
-      gameStatusElement.textContent = 'Waiting for opponent...';
+    onWaiting: (message) => {
+      console.log('Waiting message:', message);
+      if (gameStatusElement) {
+        gameStatusElement.textContent = message;
+      }
     },
 
     onGameJoined: (data) => {
       console.log('Game joined:', data);
-      gameStatusElement.textContent = 'Game starting...';
-
-      // --- Unify name setting logic ---
-      if (data.opponent) {
-        if (data.position === 'left') {
-          p1NameElement.textContent = truncateName(data.user?.username || 'YOU');
-          p2NameElement.textContent = truncateName(data.opponent.username || 'OPPONENT');
-        } else {
-          p1NameElement.textContent = truncateName(data.opponent.username || 'OPPONENT');
-          p2NameElement.textContent = truncateName(data.user?.username || 'YOU');
-        }
-      } else {
-        // fallback
-        p1NameElement.textContent = 'PLAYER 1';
-        p2NameElement.textContent = 'PLAYER 2';
+      if (gameStatusElement) {
+        gameStatusElement.style.display = 'none';
       }
-      renderLoop(container); // Start rendering
+
+      startMultiplayerGame(container, {
+        username: data.user.username,
+        opponent: data.opponent.username,
+        position: data.position,
+        isHost: data.isHost
+      });
     },
 
-    onGameState: (serverState) => {
+    onOpponentMove: (direction, position) => {
       if (!game) return;
-      game.setState(serverState);
-      const localState = game.getGameState();
 
-      const p1 = Array.from(localState.players.values()).find(p => p.position === 'left');
-      const p2 = Array.from(localState.players.values()).find(p => p.position === 'right');
+      const player1 = game['player1'];
+      const player2 = game['player2'];
 
-      if (p1) p1ScoreElement.textContent = (localState.score[p1.id] || 0).toString();
-      if (p2) p2ScoreElement.textContent = (localState.score[p2.id] || 0).toString();
+      if (!player1 || !player2) return;
 
-      if (localState.status === 'playing') {
-        gameStatusElement.classList.add('hidden');
+      // Determine which paddle to move based on opponent position
+      const paddle = position === 'left' ? player1 : player2;
+
+      if (direction === 'up') {
+        paddle.goUp = true;
+        paddle.goDown = false;
+      } else if (direction === 'down') {
+        paddle.goDown = true;
+        paddle.goUp = false;
+      } else {
+        paddle.goUp = false;
+        paddle.goDown = false;
       }
-    },
-
-    onGameFinished: (data) => {
-      const localState = game?.getGameState();
-      const winnerId = data.winner || localState?.winner;
-      let winnerName = 'Someone';
-      if (winnerId && localState) {
-        const winnerPlayer = localState.players.get(winnerId);
-        const p1 = Array.from(localState.players.values()).find(p => p.position === 'left');
-        if (winnerPlayer && p1) {
-          winnerName = winnerPlayer.id === p1.id ? p1NameElement.textContent || 'Player 1' : p2NameElement.textContent || 'Player 2';
-        }
-      }
-      gameStatusElement.textContent = `Game Over! Winner: ${winnerName}`;
-      gameStatusElement.classList.remove('hidden');
-      stopMultiplayerGame(container);
     },
 
     onPlayerLeft: (data) => {
-      gameStatusElement.textContent = `Player ${data.username || data.playerId} left the game`;
-      gameStatusElement.classList.remove('hidden');
-      stopMultiplayerGame(container);
+      console.log('Player left:', data);
+      if (gameStatusElement) {
+        gameStatusElement.textContent = data.message;
+        gameStatusElement.style.display = 'block';
+      }
+
+      // End the game if it's still running
+      if (game && game.getCurrentState() === GameState.Playing) {
+        const winner = username;
+        const player1Score = game['player1']?.getScore() || 0;
+        const player2Score = game['player2']?.getScore() || 0;
+
+        game['callbacks'].onGameEnd(winner, {
+          player1: player1Score,
+          player2: player2Score
+        });
+      }
     },
 
     onError: (error) => {
-      gameStatusElement.textContent = `Error: ${error}`;
-      gameStatusElement.classList.remove('hidden');
+      console.error('Game service error:', error);
+      if (gameStatusElement) {
+        gameStatusElement.textContent = `Error: ${error}`;
+        gameStatusElement.style.display = 'block';
+      }
     },
 
     onDisconnected: () => {
-      gameStatusElement.textContent = 'Disconnected from game service';
-      gameStatusElement.classList.remove('hidden');
+      console.log('Disconnected from game service');
+      if (gameStatusElement && !game) {
+        gameStatusElement.textContent = 'Disconnected from game service';
+        gameStatusElement.style.display = 'block';
+      }
     }
-  };
-
-  const client = new WebSocketGameClient(gameServiceUrl, callbacks);
-
-  // Store client for cleanup
-  (container as any).wsGameClient = client;
-
-  // Setup keyboard controls
-  const keyHandler = (event: KeyboardEvent) => {
-    switch (event.code) {
-      case 'KeyW':
-      case 'ArrowUp':
-        client.movePaddle('up');
-        break;
-      case 'KeyS':
-      case 'ArrowDown':
-        client.movePaddle('down');
-        break;
-    }
-  };
-
-  document.addEventListener('keydown', keyHandler);
-  (container as any).keyHandler = keyHandler;
+  });
 
   try {
-    await client.connectMultiplayer();
+    await wsClient.connectAndJoinQueue(username);
   } catch (error) {
     console.error('Failed to connect to multiplayer game:', error);
-    gameStatusElement.textContent = 'Failed to connect to game service';
+    if (gameStatusElement) {
+      gameStatusElement.textContent = 'Failed to connect to game service';
+      gameStatusElement.style.display = 'block';
+    }
+    throw error;
   }
 }
 
-function stopMultiplayerGame(container: HTMLElement) {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-  const client = (container as any).wsGameClient as WebSocketGameClient;
-  if (client) {
-    client.disconnect();
-  }
-}
+function startMultiplayerGame(container: HTMLElement, options: {
+  username: string;
+  opponent: string;
+  position: 'left' | 'right';
+  isHost: boolean;
+}): void {
+  console.log('Starting multiplayer game with options:', options);
 
-// Cleanup WebSocket game resources
-export function cleanupWebSocketGame(container: HTMLElement): void {
-  stopMultiplayerGame(container);
-
-  const client = (container as any).wsGameClient as WebSocketGameClient;
-  const keyHandler = (container as any).keyHandler;
-
-  if (client) {
-    delete (container as any).wsGameClient;
+  // Create canvas container if it doesn't exist
+  let canvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+  if (!canvasContainer) {
+    canvasContainer = document.createElement('div');
+    canvasContainer.id = 'canvasContainer';
+    container.appendChild(canvasContainer);
   }
 
+  // Create score display if it doesn't exist
+  let scoreDisplay = container.querySelector('#scoreDisplay') as HTMLElement;
+  if (!scoreDisplay) {
+    scoreDisplay = document.createElement('div');
+    scoreDisplay.id = 'scoreDisplay';
+    scoreDisplay.classList.add('score-display');
+    container.insertBefore(scoreDisplay, canvasContainer);
+  }
+
+  // Configure the game
+  const gameConfig: GameConfig = {
+    player1Name: options.position === 'left' ? options.username : options.opponent,
+    player2Name: options.position === 'left' ? options.opponent : options.username,
+    player1IsAI: false,
+    player2IsAI: false,
+    aiDifficulty: 'MEDIUM', // Not used in multiplayer
+    targetScore: 5
+  };
+
+  // Create game instance
+  game = new PongGame(gameConfig, {
+    onScoreUpdate: (player1Score, player2Score) => {
+      if (scoreDisplay) {
+        scoreDisplay.textContent = `${gameConfig.player1Name} ${player1Score} - ${player2Score} ${gameConfig.player2Name}`;
+      }
+    },
+
+    onGameStateChange: (state) => {
+      console.log('Game state changed:', state);
+
+      // Show appropriate messages based on game state
+      const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
+      if (gameStatusElement) {
+        if (state === GameState.Ready) {
+          gameStatusElement.textContent = 'Press SPACE to start';
+          gameStatusElement.style.display = 'block';
+        } else if (state === GameState.GameOver) {
+          gameStatusElement.textContent = 'Game Over! Press R to restart';
+          gameStatusElement.style.display = 'block';
+        } else {
+          gameStatusElement.style.display = 'none';
+        }
+      }
+    },
+
+    onGameEnd: (winner, finalScore) => {
+      console.log('Game ended. Winner:', winner, 'Score:', finalScore);
+
+      // Show game over message
+      const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
+      if (gameStatusElement) {
+        gameStatusElement.textContent = `Game Over! ${winner} wins!`;
+        gameStatusElement.style.display = 'block';
+      }
+    }
+  });
+
+  // Initialize the game
+  game.init(canvasContainer);
+
+  // Override the handlePlayerInput method to work with multiplayer
   if (game) {
-    game.cleanup();
-    game = null;
+    const originalHandlePlayerInput = game['handlePlayerInput'];
+
+    // Create a new function that only controls the local player's paddle
+    game['handlePlayerInput'] = function (): void {
+      if (!this.player1 || !this.player2) return;
+
+      // Determine which paddle the local player controls
+      const localPaddle = options.position === 'left' ? this.player1 : this.player2;
+
+      // Set paddle movement based on keys
+      localPaddle.goUp = !!this.keys['KeyW'] || !!this.keys['ArrowUp'];
+      localPaddle.goDown = !!this.keys['KeyS'] || !!this.keys['ArrowDown'];
+
+      // Send paddle movements to the server
+      if (wsClient) {
+        if (localPaddle.goUp) {
+          wsClient.movePaddle('up');
+        } else if (localPaddle.goDown) {
+          wsClient.movePaddle('down');
+        }
+      }
+    };
   }
 
-  if (keyHandler) {
-    document.removeEventListener('keydown', keyHandler);
-    delete (container as any).keyHandler;
+  // If this client is the host, start the game after a brief delay
+  if (options.isHost) {
+    setTimeout(() => {
+      game?.startGame();
+    }, 1000);
   }
 }

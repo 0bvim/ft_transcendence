@@ -1,6 +1,7 @@
 import { showTournamentSection, setupTournamentEventListeners } from './tournament';
-import { showMultiplayerGame, cleanupWebSocketGame } from './multiplayerGame';
+import { showMultiplayerGame, cleanupWebSocketGame, findMultiplayerMatch, cleanupMultiplayerGame } from './multiplayerGame';
 import { startLocalGame, cleanupLocalGame } from './localGame';
+import { getCurrentUser } from '../../auth/auth'; // Adjust the path as needed
 
 function showGameSection(container: HTMLElement, title: string) {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
@@ -66,9 +67,39 @@ function setupPageEventListeners(container: HTMLElement): void {
     showGameSection(container, 'LOCAL DUEL');
     startLocalGame(container, { isAI: false });
   });
-  multiplayerButton?.addEventListener('click', () => {
-    showGameSection(container, 'MULTIPLAYER');
-    showMultiplayerGame(container);
+  multiplayerButton?.addEventListener('click', async () => {
+    console.log('Multiplayer button clicked');
+    showGameSection(container, 'MULTIPLAYER MATCH');
+    
+    // Check if user is authenticated
+    const authToken = localStorage.getItem('jwt') || localStorage.getItem('token');
+    const user = getCurrentUser();
+    
+    if (!authToken || !user) {
+      console.log('No auth token found, showing login message');
+      const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
+      if (gameStatusElement) {
+        gameStatusElement.textContent = 'Please log in to play multiplayer';
+        gameStatusElement.classList.remove('hidden');
+        gameStatusElement.style.display = 'block';
+      }
+      return;
+    }
+    
+    const username = user.username || 'Player';
+    console.log('Starting multiplayer with username:', username);
+    
+    try {
+      await findMultiplayerMatch(container, username);
+    } catch (error) {
+      console.error('Failed to start multiplayer match:', error);
+      const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
+      if (gameStatusElement) {
+        gameStatusElement.textContent = 'Connection failed: ' + (error as Error).message;
+        gameStatusElement.classList.remove('hidden');
+        gameStatusElement.style.display = 'block';
+      }
+    }
   });
 
   // Set initial styles
@@ -81,7 +112,7 @@ function setupPageEventListeners(container: HTMLElement): void {
     const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
     if (!gameSection.classList.contains('hidden')) {
       cleanupLocalGame();
-      cleanupWebSocketGame(container);
+      cleanupMultiplayerGame();
       hideGameSection(container);
     }
     if (!tournamentSection.classList.contains('hidden')) {
