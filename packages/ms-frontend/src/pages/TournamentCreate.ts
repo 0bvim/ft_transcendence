@@ -130,30 +130,29 @@ async function handleFormSubmit(container: HTMLElement) {
     return;
   }
 
-  const players = [];
-  for (let i = 1; i <= parseInt(playerCount, 10); i++) {
-    const alias = formData.get(`player${i}`) as string;
-    if (alias && alias.trim()) {
-      players.push({ name: alias.trim() });
-    } else {
-      players.push({ name: `AI Player ${i}`, isAi: true });
-    }
-  }
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  // The backend expects a simplified structure, not a full participant list.
+  // The use-case will create the tournament and add the creator as the first participant.
+  const tournamentData = {
+    name: name.trim(),
+    maxPlayers: parseInt(playerCount, 10),
+    aiDifficulty: 'MEDIUM', // Default AI difficulty, can be made a user setting later.
+    userId: user.id,
+    displayName: user.username || 'Player 1', // Fallback for display name
+  };
 
   try {
-    // This is a placeholder for the actual API call.
-    // We will need to adjust the backend to support creating a local tournament with custom players.
-    console.log('Creating tournament with:', { name, players });
-    showNotification(`Tournament '${name}' created with ${players.length} players!`, 'success');
+    const newTournament = await tournamentApi.createTournament(tournamentData);
+    showNotification(`Tournament '${newTournament.name}' created successfully!`, 'success');
     
-    // TODO: Navigate to the tournament details page once the backend is ready.
-    // For now, let's navigate back to the dashboard.
+    // Navigate to the new tournament's detail page
     setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 2000);
+      window.location.href = `/tournament/${newTournament.id}`;
+    }, 1500);
 
   } catch (error) {
     console.error('Failed to create tournament:', error);
-    showNotification('Failed to create tournament.', 'error');
+    showNotification('Failed to create tournament. Please check the details and try again.', 'error');
   }
 }

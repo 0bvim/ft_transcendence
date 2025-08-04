@@ -251,7 +251,17 @@ class TournamentApi {
     matchData: any
   ): Promise<{ match: Match; tournament: Tournament }> {
     // O backend espera o ID do vencedor, não a string 'PLAYER_1'/'PLAYER_2'.
-    const winnerId = result.winner === 'PLAYER_1' ? matchData.player1Id : matchData.player2Id;
+    // Fix: matchData has player1.id and player2.id, not player1Id/player2Id
+    const winnerId = result.winner === 'PLAYER_1' 
+      ? (matchData.player1?.id || matchData.player1Id) 
+      : (matchData.player2?.id || matchData.player2Id);
+
+    console.log('Winner ID mapping:', {
+      resultWinner: result.winner,
+      player1Id: matchData.player1?.id || matchData.player1Id,
+      player2Id: matchData.player2?.id || matchData.player2Id,
+      selectedWinnerId: winnerId
+    });
 
     const scorePayload = {
       winnerId,

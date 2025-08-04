@@ -1,7 +1,5 @@
 import { PongGame, GameConfig as PongGameConfig, GameCallbacks, GameState, AIDifficulty } from '../../game/PongGame';
 import { authApi } from '../../api/auth';
-//import { WebSocketGameClient, GameCallbacks as WSGameCallbacks } from '../../game/WebSocketGameClient';
-//import { WebSocketGameRenderer } from '../../game/WebSocketGameRenderer';
 import { tournamentApi } from '../../api/tournament';
 
 // Game types for embedded game functionality
@@ -20,11 +18,15 @@ export interface GameConfig {
   matchId?: string;
   player1Name?: string;
   player2Name?: string;
+  matchData?: any; // Add match data property
+  onScoreUpdate?: (player1Score: number, player2Score: number) => void;
+  onGameStateChange?: (state: GameState) => void;
+  onGameEnd?: (winner: string, finalScore: { player1: number; player2: number }) => Promise<void>;
 }
 
 // Store game instances globally to manage them
-let activeGame: PongGame | WebSocketGameClient | null = null;
-let activeRenderer: WebSocketGameRenderer | null = null;
+let activeGame: PongGame | null = null;
+let activeRenderer: any = null;
 
 // Show the embedded game canvas and initialize game
 export async function showMenuGame(container: HTMLElement, gameType: GameType, difficulty: 'easy' | 'medium' | 'hard' = 'medium'): Promise<void> {
@@ -59,160 +61,66 @@ export function hideGame(container: HTMLElement): void {
 
 // Initialize the embedded game with real p5.js PongGame and player name
 export async function showGame(container: HTMLElement, config: GameConfig): Promise<void> {
-  const gameSection = container.querySelector('#gameSection') as HTMLElement;
-  const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
-  const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
-
-  if (gameModeSelection) gameModeSelection.classList.add('hidden');
-  if (tournamentSection) tournamentSection.classList.add('hidden');
-  if (gameSection) gameSection.classList.remove('hidden');
-
   // Cleanup any existing game instance before starting a new one
   cleanupGame(container);
 
-  const canvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
-  const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-  const gameTitleElement = container.querySelector('#gameTitle') as HTMLElement;
-  const p1NameElement = container.querySelector('#player1Name') as HTMLElement;
-  const p2NameElement = container.querySelector('#player2Name') as HTMLElement;
-  const p1ScoreElement = container.querySelector('#player1Score') as HTMLElement;
-  const p2ScoreElement = container.querySelector('#player2Score') as HTMLElement;
-
-  if (!canvasContainer || !gameStatusElement || !gameTitleElement || !p1NameElement || !p2NameElement || !p1ScoreElement || !p2ScoreElement) {
-    console.error('Required game elements not found in the DOM');
+  const canvasContainer = container; // The passed container IS the canvas container
+  if (!canvasContainer) {
+    console.error('An invalid container was provided to showGame');
+    // Optionally, call a game state change callback to indicate an error
+    config.onGameStateChange?.(GameState.Error);
     return;
   }
 
   // Set game title and behavior based on type
   try {
     const { user } = await authApi.getProfile();
-    const player1Name = user.username;
 
-    // Default to local game settings
-    p1NameElement.textContent = player1Name;
-    p2NameElement.textContent = 'PLAYER 2';
+    // Determine player names
+    const player1Name = config.player1Name || user.username;
+    const player2Name = config.player2Name || (config.type === GameType.AI ? 'COMPUTER' : 'PLAYER 2');
 
-    if (config.type === GameType.AI || config.type === GameType.Local) {
-      // LOCAL GAME LOGIC (AI or Human vs Human)
-      gameTitleElement.textContent = config.type === GameType.AI ? 'AGAINST THE MACHINE' : 'LOCAL DUEL';
-      p2NameElement.textContent = config.type === GameType.AI ? 'COMPUTER' : (config.player2Name || 'PLAYER 2');
+    // Determine if players are AI
+    const player1IsAI = config.matchData?.player1?.participantType === 'AI';
+    const player2IsAI = config.type === GameType.AI || config.matchData?.player2?.participantType === 'AI';
 
-      const gameConfig: PongGameConfig = {
-        player1Name: player1Name,
-        player2Name: p2NameElement.textContent,
-        player1IsAI: false,
-        player2IsAI: config.type === GameType.AI,
-        aiDifficulty: config.difficulty?.toUpperCase() as AIDifficulty || 'MEDIUM',
-        targetScore: config.targetScore || 5,
-      };
+    // Get AI difficulty and target score from config, with fallbacks
+    const aiDifficulty = (config.difficulty?.toUpperCase() as AIDifficulty) || 
+                         (config.matchData?.tournament?.aiDifficulty?.toUpperCase() as AIDifficulty) || 
+                         'MEDIUM';
+    const targetScore = config.targetScore || config.matchData?.tournament?.targetScore || 5;
 
-      const gameCallbacks: GameCallbacks = {
-        onScoreUpdate: (player1Score, player2Score) => {
-          if (p1ScoreElement) p1ScoreElement.textContent = player1Score.toString();
-          if (p2ScoreElement) p2ScoreElement.textContent = player2Score.toString();
-        },
-        onGameStateChange: (state) => {
-          switch (state) {
-            case GameState.Paused:
-              gameStatusElement.textContent = 'PAUSED';
-              gameStatusElement.classList.remove('hidden');
-              break;
-            case GameState.GameOver:
-              // This is handled by onGameEnd
-              break;
-            default:
-              gameStatusElement.classList.add('hidden');
-              break;
-          }
-        },
-        onGameEnd: (winner) => {
-          gameStatusElement.textContent = `GAME OVER! ${winner} WINS!`;
-          gameStatusElement.classList.remove('hidden');
-        },
-      };
+    const gameConfig: PongGameConfig = {
+      player1Name: player1Name,
+      player2Name: player2Name,
+      player1IsAI: player1IsAI,
+      player2IsAI: player2IsAI,
+      aiDifficulty: aiDifficulty,
+      targetScore: targetScore,
+    };
 
-      const pongGame = new PongGame(gameConfig, gameCallbacks);
-      activeGame = pongGame;
-      (container as any).pongGame = pongGame; // For backward compatibility if needed
+    // The callbacks are now directly passed from the config, making this function generic.
+    const gameCallbacks: GameCallbacks = {
+      onScoreUpdate: config.onScoreUpdate,
+      onGameStateChange: config.onGameStateChange,
+      onGameEnd: config.onGameEnd,
+    };
 
-      pongGame.init(canvasContainer);
-      pongGame.startGame();
+    console.log('[showGame] PongGame config created:', gameConfig);
 
-    } else if (config.type === GameType.Multiplayer || config.type === GameType.Tournament) {
-      // MULTIPLAYER / TOURNAMENT LOGIC
-      gameTitleElement.textContent = config.type === GameType.Tournament ? 'TOURNAMENT MATCH' : 'MULTIPLAYER MATCH';
+    const pongGame = new PongGame(gameConfig, gameCallbacks);
+    activeGame = pongGame;
+    (container as any).pongGame = pongGame; // For backward compatibility
 
-      const hostname = window.location.hostname;
-      const gameServiceUrl = `https://${hostname}:3002`; // Game service runs on port 3002
+    pongGame.init(canvasContainer);
+    pongGame.startGame();
 
-      const renderer = new WebSocketGameRenderer(canvasContainer);
-      activeRenderer = renderer;
-
-      const wsCallbacks: WSGameCallbacks = {
-        onConnected: () => {
-          gameStatusElement.textContent = 'Connected! Waiting for match...';
-          gameStatusElement.classList.remove('hidden');
-        },
-        onGameJoined: (data) => {
-          p1NameElement.textContent = data.player1.name;
-          p2NameElement.textContent = data.player2.name;
-        },
-        onGameState: (gameState) => {
-          renderer.updateGameState(gameState);
-          p1ScoreElement.textContent = (gameState.score[gameState.players[0].id] || 0).toString();
-          p2ScoreElement.textContent = (gameState.score[gameState.players[1].id] || 0).toString();
-        },
-        onGameFinished: async (data) => {
-          gameStatusElement.textContent = `GAME OVER! Winner: ${data.winnerName}`;
-          gameStatusElement.classList.remove('hidden');
-          // If it's a tournament match, submit the result
-          if (config.type === GameType.Tournament && config.matchId) {
-            try {
-              await tournamentApi.submitMatchResult(config.matchId, data.result, data.matchData);
-              showNotification('Match result submitted successfully!', 'success');
-            } catch (error) {
-              showNotification('Failed to submit match result.', 'error');
-              console.error('Failed to submit match result:', error);
-            }
-          }
-        },
-        onError: (error) => {
-          gameStatusElement.textContent = `Error: ${error}`;
-          gameStatusElement.classList.remove('hidden');
-          console.error('WebSocket Error:', error);
-        },
-        onDisconnected: () => {
-          gameStatusElement.textContent = 'Disconnected from server.';
-          gameStatusElement.classList.remove('hidden');
-        },
-      };
-
-      const client = new WebSocketGameClient(gameServiceUrl, wsCallbacks);
-      activeGame = client;
-
-      if (config.type === GameType.Tournament) {
-        await client.connectTournament(config.matchId!);
-      } else {
-        await client.connectMultiplayer();
-      }
-
-      // Handle keyboard input for paddle movement
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'w' || e.key === 'ArrowUp') {
-          client.movePaddle('up');
-        } else if (e.key === 's' || e.key === 'ArrowDown') {
-          client.movePaddle('down');
-        }
-      };
-      document.addEventListener('keydown', handleKeyDown);
-      // Store the handler to remove it later
-      (container as any).keydownHandler = handleKeyDown;
-    }
+    console.log('[showGame] PongGame started successfully');
 
   } catch (error) {
     console.error('Failed to initialize game:', error);
-    gameStatusElement.textContent = 'Failed to initialize game.';
-    gameStatusElement.classList.remove('hidden');
+    // Use callback to signal error state to the UI
+    config.onGameStateChange?.(GameState.Error);
   }
 }
 
@@ -222,11 +130,6 @@ export function cleanupGame(container: HTMLElement): void {
   const pongGame = (container as any).pongGame as PongGame;
   if (pongGame && typeof pongGame.destroy === 'function') {
     pongGame.destroy();
-  }
-
-  // Disconnect WebSocket client
-  if (activeGame instanceof WebSocketGameClient) {
-    activeGame.disconnect();
   }
 
   // Cleanup renderer

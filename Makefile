@@ -28,6 +28,11 @@ up: generate-certs
 	@echo "🔐 Setting up Prometheus authentication automatically..."
 	@$(call setup_prometheus_auth)
 
+upnc: generate-certs
+	@echo "🚀 Starting services in detached mode..."
+	docker compose build --no-cache
+	docker compose up -d
+
 dev:
 	@echo "Starting development services (without monitoring stack)..."
 	docker compose up -d --build $(DEV_SERVICES)

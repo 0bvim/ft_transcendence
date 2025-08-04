@@ -79,7 +79,32 @@ export async function createTournamentUseCase(input: CreateTournamentInput, logg
   // Always add AI participants to fill remaining slots
   await addAIParticipants(tournament.id, maxPlayers, aiDifficulty, 1, logger); // Pass 1 since creator is already added
 
-  // Fetch the updated tournament with all participants
+  // If autoStart is enabled, generate matches and start the tournament immediately
+  if (autoStart) {
+    logger?.info({
+      action: 'tournament_auto_starting',
+      tournamentId: tournament.id
+    }, `Auto-starting tournament: ${tournament.id}`);
+
+    // Generate tournament bracket
+    await generateTournamentBracket(tournament.id, logger);
+
+    // Update tournament status to ACTIVE
+    await prisma.tournament.update({
+      where: { id: tournament.id },
+      data: {
+        status: 'ACTIVE',
+        startedAt: new Date()
+      }
+    });
+
+    logger?.info({
+      action: 'tournament_auto_started',
+      tournamentId: tournament.id
+    }, `Tournament auto-started successfully: ${tournament.id}`);
+  }
+
+  // Fetch the updated tournament with all participants and matches
   const updatedTournament = await prisma.tournament.findUnique({
     where: { id: tournament.id },
     include: {
@@ -127,4 +152,93 @@ async function addAIParticipants(tournamentId: string, maxPlayers: number, diffi
     where: { id: tournamentId },
     data: { currentPlayers: maxPlayers } // Always fill to max capacity
   });
+}
+
+// Tournament bracket generation logic (copied from start-tournament-use-case.ts)
+async function generateTournamentBracket(tournamentId: string, logger?: any) {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    include: {
+      participants: {
+        where: { status: 'ACTIVE' },
+        orderBy: { createdAt: 'asc' }
+      }
+    }
+  });
+
+  if (!tournament) {
+    throw new Error('Tournament not found');
+  }
+
+  // Shuffle participants for fair bracket
+  const participants = [...tournament.participants];
+  for (let i = participants.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [participants[i], participants[j]] = [participants[j], participants[i]];
+  }
+
+  logger?.info({
+    action: 'bracket_generation_started',
+    tournamentId,
+    participantCount: participants.length
+  }, `Generating bracket for tournament ${tournamentId} with ${participants.length} participants`);
+
+  // Generate first round matches
+  const matches = [];
+  const firstRound = 1;
+  let matchNumber = 1;
+
+  for (let i = 0; i < participants.length; i += 2) {
+    const player1 = participants[i];
+    const player2 = participants[i + 1];
+
+    // Create match data
+    const matchData = {
+      tournamentId,
+      round: firstRound,
+      matchNumber: matchNumber++,
+      player1Id: player1.id,
+      player2Id: player2.id,
+      status: 'WAITING' as const,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    matches.push(matchData);
+
+    logger?.info({
+      action: 'match_created',
+      tournamentId,
+      matchNumber: matchData.matchNumber,
+      player1: player1.displayName,
+      player2: player2.displayName
+    }, `Created match ${matchData.matchNumber}: ${player1.displayName} vs ${player2.displayName}`);
+  }
+
+  // Set the first match to IN_PROGRESS if it involves at least one human
+  if (matches.length > 0) {
+    const firstMatch = matches[0];
+    const player1 = participants.find(p => p.id === firstMatch.player1Id);
+    const player2 = participants.find(p => p.id === firstMatch.player2Id);
+    
+    if (player1?.participantType === 'HUMAN' || player2?.participantType === 'HUMAN') {
+      firstMatch.status = 'IN_PROGRESS';
+      logger?.info({
+        action: 'first_match_started',
+        tournamentId,
+        matchNumber: firstMatch.matchNumber
+      }, `Setting first match ${firstMatch.matchNumber} to IN_PROGRESS`);
+    }
+  }
+
+  // Create matches in the database
+  await prisma.match.createMany({
+    data: matches,
+  });
+
+  logger?.info({
+    action: 'bracket_generation_completed',
+    tournamentId,
+    matchesCreated: matches.length
+  }, `First round matches created successfully for tournament ${tournamentId}`);
 }
