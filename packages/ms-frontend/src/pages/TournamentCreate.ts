@@ -1,5 +1,14 @@
 import { tournamentApi } from '../api/tournament';
+import { authApi } from '../api/auth';
 import { showNotification } from '../components/notification';
+
+interface SelectedPlayer {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  isCreator?: boolean;
+}
 
 export default function TournamentCreate(): HTMLElement {
   const container = document.createElement('div');
@@ -31,7 +40,7 @@ export default function TournamentCreate(): HTMLElement {
       </div>
 
       <!-- Form -->
-      <div class="card p-8 max-w-3xl mx-auto animate-slide-up">
+      <div class="card p-8 max-w-4xl mx-auto animate-slide-up">
         <form id="createTournamentForm">
           <div class="mb-6">
             <label for="tournamentName" class="block text-neon-cyan/80 mb-2 font-mono text-lg">Tournament Name</label>
@@ -46,12 +55,31 @@ export default function TournamentCreate(): HTMLElement {
             </div>
           </div>
 
-          <div id="player-aliases-container" class="mb-6">
-            <!-- Player alias fields will be injected here -->
+          <!-- Player Management Section -->
+          <div class="mb-6">
+            <label class="block text-neon-cyan/80 mb-4 font-mono text-lg">Tournament Players</label>
+            <p class="text-xs text-neon-cyan/60 font-mono mb-4">
+              You are the tournament host. Add registered players or leave slots empty for AI opponents.
+              <br><strong>Note:</strong> All matches will be played on your machine. Other players must come to your location to play.
+            </p>
+            
+            <!-- Player Search -->
+            <div class="mb-4">
+              <div class="flex space-x-2">
+                <input type="text" id="playerSearch" class="input flex-1" placeholder="Search for registered players by username...">
+                <button type="button" id="searchPlayerBtn" class="btn btn-secondary">Search</button>
+              </div>
+              <div id="searchResults" class="mt-2 hidden"></div>
+            </div>
+
+            <!-- Selected Players List -->
+            <div id="selectedPlayersList" class="space-y-2">
+              <!-- Players will be populated here -->
+            </div>
           </div>
 
           <div class="flex justify-end space-x-4 mt-8">
-            <button type="submit" class="btn btn-success btn-lg">CREATE & START</button>
+            <button type="submit" class="btn btn-success btn-lg">CREATE TOURNAMENT</button>
           </div>
         </form>
       </div>
@@ -59,7 +87,7 @@ export default function TournamentCreate(): HTMLElement {
   `;
 
   setupEventListeners(container);
-  updatePlayerAliases(container, 4); // Default to 4 players
+  initializePlayerList(container, 4); // Default to 4 players
 
   return container;
 }
@@ -74,7 +102,7 @@ function setupEventListeners(container: HTMLElement) {
   playerCountButtons.forEach(button => {
     button.addEventListener('click', () => {
       const count = parseInt((button as HTMLElement).dataset.count || '4', 10);
-      updatePlayerAliases(container, count);
+      initializePlayerList(container, count);
 
       // Update button styles
       playerCountButtons.forEach(btn => {
@@ -89,6 +117,31 @@ function setupEventListeners(container: HTMLElement) {
     });
   });
 
+  // Player search functionality
+  const searchInput = container.querySelector('#playerSearch') as HTMLInputElement;
+  const searchBtn = container.querySelector('#searchPlayerBtn');
+  
+  const performSearch = async () => {
+    const username = searchInput.value.trim();
+    if (!username) return;
+
+    try {
+      const result = await authApi.searchUsers(username);
+      displaySearchResults(container, result);
+    } catch (error) {
+      console.error('Search error:', error);
+      showNotification('Error searching for users', 'error');
+    }
+  };
+
+  searchBtn?.addEventListener('click', performSearch);
+  searchInput?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      performSearch();
+    }
+  });
+
   const form = container.querySelector('#createTournamentForm') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -96,34 +149,195 @@ function setupEventListeners(container: HTMLElement) {
   });
 }
 
-function updatePlayerAliases(container: HTMLElement, count: number) {
-  const aliasesContainer = container.querySelector('#player-aliases-container');
-  if (!aliasesContainer) return;
+function initializePlayerList(container: HTMLElement, maxPlayers: number) {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const selectedPlayersList = container.querySelector('#selectedPlayersList');
+  if (!selectedPlayersList) return;
 
-  let content = `<label class="block text-neon-cyan/80 mb-4 font-mono text-lg">Player Aliases</label>`;
-  content += `<p class="text-xs text-neon-cyan/60 font-mono mb-4">Player 1 is you. Enter aliases for other players. Leave blank for an AI opponent.</p>`;
-  content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+  // Initialize with creator as first player
+  const players: SelectedPlayer[] = [{
+    id: user.id,
+    username: user.username || 'Player 1',
+    displayName: user.displayName || user.username || 'Player 1',
+    avatarUrl: user.avatarUrl,
+    isCreator: true
+  }];
 
-  for (let i = 1; i <= count; i++) {
-    content += `
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text text-neon-cyan/80 font-mono">Player ${i}</span>
-        </label>
-        <input type="text" name="player${i}" class="input w-full" placeholder="Enter alias or leave for AI" ${i === 1 ? 'value="Player 1" disabled' : ''}>
+  // Store max players and current list
+  (container as any).maxPlayers = maxPlayers;
+  (container as any).selectedPlayers = players;
+
+  updatePlayersList(container);
+}
+
+function displaySearchResults(container: HTMLElement, result: any) {
+  const searchResults = container.querySelector('#searchResults');
+  if (!searchResults) return;
+
+  if (!result.success || !result.user) {
+    searchResults.innerHTML = `
+      <div class="p-3 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-sm">
+        User not found. Make sure the username is correct.
+      </div>
+    `;
+    searchResults.classList.remove('hidden');
+    return;
+  }
+
+  const user = result.user;
+  const selectedPlayers = (container as any).selectedPlayers || [];
+  const isAlreadySelected = selectedPlayers.some((p: SelectedPlayer) => p.id === user.id);
+
+  searchResults.innerHTML = `
+    <div class="p-3 bg-neon-cyan/10 border border-neon-cyan/30 rounded">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          ${user.avatarUrl ? 
+            `<img src="${user.avatarUrl}" alt="${user.displayName}" class="w-8 h-8 rounded-full">` :
+            `<div class="w-8 h-8 rounded-full bg-neon-pink/20 flex items-center justify-center text-neon-pink font-bold">${user.displayName[0].toUpperCase()}</div>`
+          }
+          <div>
+            <div class="text-white font-semibold">${user.displayName}</div>
+            <div class="text-neon-cyan/60 text-sm">@${user.username}</div>
+          </div>
+        </div>
+        ${isAlreadySelected ? 
+          `<span class="text-neon-cyan/60 text-sm">Already added</span>` :
+          `<button type="button" class="btn btn-sm btn-primary" onclick="addPlayerToTournament('${user.id}', '${user.username}', '${user.displayName}', '${user.avatarUrl || ''}')">Add Player</button>`
+        }
+      </div>
+    </div>
+  `;
+  searchResults.classList.remove('hidden');
+
+  // Clear search input
+  const searchInput = container.querySelector('#playerSearch') as HTMLInputElement;
+  if (searchInput) searchInput.value = '';
+}
+
+// Global function to add player (called from button onclick)
+(window as any).addPlayerToTournament = function(id: string, username: string, displayName: string, avatarUrl: string) {
+  console.log('[TournamentCreate] Adding player to tournament:', { id, username, displayName, avatarUrl });
+  
+  const container = document.querySelector('.min-h-screen') as HTMLElement;
+  if (!container) return;
+
+  const selectedPlayers = (container as any).selectedPlayers || [];
+  const maxPlayers = (container as any).maxPlayers || 4;
+
+  console.log('[TournamentCreate] Current state:', {
+    currentPlayersCount: selectedPlayers.length,
+    maxPlayers,
+    selectedPlayers: selectedPlayers.map((p: SelectedPlayer) => ({ id: p.id, displayName: p.displayName }))
+  });
+
+  if (selectedPlayers.length >= maxPlayers) {
+    showNotification('Tournament is full', 'error');
+    return;
+  }
+
+  if (selectedPlayers.some((p: SelectedPlayer) => p.id === id)) {
+    showNotification('Player already added', 'error');
+    return;
+  }
+
+  selectedPlayers.push({
+    id,
+    username,
+    displayName,
+    avatarUrl: avatarUrl || undefined
+  });
+
+  (container as any).selectedPlayers = selectedPlayers;
+  console.log('[TournamentCreate] Player added successfully. New list:', selectedPlayers.map((p: SelectedPlayer) => ({ id: p.id, displayName: p.displayName })));
+  
+  updatePlayersList(container);
+
+  // Hide search results
+  const searchResults = container.querySelector('#searchResults');
+  if (searchResults) searchResults.classList.add('hidden');
+
+  showNotification(`${displayName} added to tournament`, 'success');
+};
+
+function updatePlayersList(container: HTMLElement) {
+  const selectedPlayersList = container.querySelector('#selectedPlayersList');
+  if (!selectedPlayersList) return;
+
+  const selectedPlayers = (container as any).selectedPlayers || [];
+  const maxPlayers = (container as any).maxPlayers || 4;
+
+  let html = '';
+
+  // Show selected players
+  selectedPlayers.forEach((player: SelectedPlayer, index: number) => {
+    html += `
+      <div class="flex items-center justify-between p-3 bg-neon-cyan/10 border border-neon-cyan/30 rounded">
+        <div class="flex items-center space-x-3">
+          <span class="text-neon-cyan font-mono text-sm">Player ${index + 1}</span>
+          ${player.avatarUrl ? 
+            `<img src="${player.avatarUrl}" alt="${player.displayName}" class="w-8 h-8 rounded-full">` :
+            `<div class="w-8 h-8 rounded-full bg-neon-pink/20 flex items-center justify-center text-neon-pink font-bold">${player.displayName[0].toUpperCase()}</div>`
+          }
+          <div>
+            <div class="text-white font-semibold">${player.displayName}</div>
+            <div class="text-neon-cyan/60 text-sm">@${player.username} ${player.isCreator ? '(Host)' : ''}</div>
+          </div>
+        </div>
+        ${!player.isCreator ? 
+          `<button type="button" class="btn btn-sm btn-ghost text-red-400 hover:text-red-300" onclick="removePlayerFromTournament('${player.id}')">Remove</button>` :
+          `<span class="text-neon-cyan/60 text-sm">Tournament Host</span>`
+        }
+      </div>
+    `;
+  });
+
+  // Show empty slots
+  for (let i = selectedPlayers.length; i < maxPlayers; i++) {
+    html += `
+      <div class="flex items-center justify-between p-3 bg-gray-800/30 border border-gray-600/30 rounded">
+        <div class="flex items-center space-x-3">
+          <span class="text-gray-400 font-mono text-sm">Player ${i + 1}</span>
+          <div class="text-gray-400">Empty slot (will be filled with AI)</div>
+        </div>
       </div>
     `;
   }
 
-  content += `</div>`;
-  aliasesContainer.innerHTML = content;
+  selectedPlayersList.innerHTML = html;
 }
 
+// Global function to remove player
+(window as any).removePlayerFromTournament = function(playerId: string) {
+  const container = document.querySelector('.min-h-screen') as HTMLElement;
+  if (!container) return;
+
+  const selectedPlayers = (container as any).selectedPlayers || [];
+  const updatedPlayers = selectedPlayers.filter((p: SelectedPlayer) => p.id !== playerId);
+  
+  (container as any).selectedPlayers = updatedPlayers;
+  updatePlayersList(container);
+  
+  showNotification('Player removed from tournament', 'success');
+};
+
 async function handleFormSubmit(container: HTMLElement) {
+  console.log('[TournamentCreate] Form submission started');
+  console.log('[TournamentCreate] Container:', container);
+  
   const form = container.querySelector('#createTournamentForm') as HTMLFormElement;
   const formData = new FormData(form);
   const name = formData.get('name') as string;
-  const playerCount = container.querySelector('.player-count-btn.btn-primary')?.getAttribute('data-count') || '4';
+  const selectedPlayers = (container as any).selectedPlayers || [];
+  const maxPlayers = (container as any).maxPlayers || 4;
+
+  console.log('[TournamentCreate] Form data extracted:', {
+    name,
+    selectedPlayersFromContainer: selectedPlayers,
+    maxPlayers,
+    containerHasSelectedPlayers: !!(container as any).selectedPlayers,
+    selectedPlayersLength: selectedPlayers.length
+  });
 
   if (!name.trim()) {
     showNotification('Tournament name cannot be empty.', 'error');
@@ -132,17 +346,58 @@ async function handleFormSubmit(container: HTMLElement) {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // The backend expects a simplified structure, not a full participant list.
-  // The use-case will create the tournament and add the creator as the first participant.
+  // Build player list
+  const players = [];
+  
+  console.log('[TournamentCreate] Building player list from selectedPlayers:', selectedPlayers);
+  
+  // Add selected players
+  selectedPlayers.forEach((player: SelectedPlayer, index: number) => {
+    console.log(`[TournamentCreate] Processing player ${index}:`, player);
+    players.push({
+      displayName: player.displayName,
+      userId: player.id,
+      participantType: 'HUMAN'
+    });
+  });
+
+  console.log('[TournamentCreate] Players after adding selected players:', players);
+
+  // Fill remaining slots with AI
+  for (let i = players.length; i < maxPlayers; i++) {
+    players.push({
+      displayName: `AI Player ${i}`,
+      userId: null,
+      participantType: 'AI'
+    });
+  }
+
+  console.log('[TournamentCreate] Final players list:', players);
+
   const tournamentData = {
     name: name.trim(),
-    maxPlayers: parseInt(playerCount, 10),
+    maxPlayers: maxPlayers,
     userId: user.id,
-    displayName: user.username || 'Player 1', // Fallback for display name
+    displayName: user.username || 'Player 1',
+    players: players
   };
+
+  console.log('[TournamentCreate] Creating tournament with data:', {
+    name: tournamentData.name,
+    maxPlayers: tournamentData.maxPlayers,
+    totalPlayers: players.length,
+    humanPlayers: players.filter(p => p.participantType === 'HUMAN').length,
+    aiPlayers: players.filter(p => p.participantType === 'AI').length,
+    players: players.map(p => ({
+      displayName: p.displayName,
+      participantType: p.participantType,
+      hasUserId: !!p.userId
+    }))
+  });
 
   try {
     const newTournament = await tournamentApi.createTournament(tournamentData);
+    console.log('[TournamentCreate] Tournament created successfully:', newTournament);
     showNotification(`Tournament '${newTournament.name}' created successfully!`, 'success');
     
     // Navigate to the new tournament's detail page

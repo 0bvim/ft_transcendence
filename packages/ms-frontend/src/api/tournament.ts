@@ -244,37 +244,38 @@ class TournamentApi {
 
   async submitMatchResult(
     matchId: string,
-    result: any,
-    matchData: any
+    result: any, // Contains winnerId, scorePlayer1, scorePlayer2 for AI matches
+    matchData: any // Contains player1, player2 for human matches
   ): Promise<{ match: Match; tournament: Tournament }> {
-    // O backend espera o ID do vencedor, não a string 'PLAYER_1'/'PLAYER_2'.
-    // Fix: matchData has player1.id and player2.id, not player1Id/player2Id
-    const winnerId = result.winner === 'PLAYER_1' 
-      ? (matchData.player1?.id || matchData.player1Id) 
-      : (matchData.player2?.id || matchData.player2Id);
+    let winnerId: string;
+    let scorePlayer1: number;
+    let scorePlayer2: number;
 
-    console.log('Winner ID mapping:', {
-      resultWinner: result.winner,
-      player1Id: matchData.player1?.id || matchData.player1Id,
-      player2Id: matchData.player2?.id || matchData.player2Id,
-      selectedWinnerId: winnerId
-    });
+    // Check if the result is from an AI simulation or a human match
+    if (result.winnerId) {
+      // AI vs AI match: winnerId and scores are provided directly
+      winnerId = result.winnerId;
+      scorePlayer1 = result.scorePlayer1;
+      scorePlayer2 = result.scorePlayer2;
+    } else {
+      // Human match: determine winnerId from 'PLAYER_1' or 'PLAYER_2'
+      winnerId = result.winner === 'PLAYER_1' 
+        ? (matchData.player1?.id || matchData.player1Id) 
+        : (matchData.player2?.id || matchData.player2Id);
+      scorePlayer1 = result.score.player1;
+      scorePlayer2 = result.score.player2;
+    }
 
-    const scorePayload = {
-      winnerId,
-      scorePlayer1: result.player1Score,
-      scorePlayer2: result.player2Score,
-      userId: winnerId, // Use winnerId as userId for now - this should be the authenticated user
-    };
-
-    console.log('Submitting corrected match result payload:', scorePayload);
-
-    // Adiciona o ID do usuário para autorização, como no código original
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+
     const requestData = {
-      ...scorePayload,
-      userId: user.id || 'anonymous',
+      winnerId,
+      scorePlayer1,
+      scorePlayer2,
+      userId: user.id, // The user submitting the result
     };
+
+    console.log('Submitting match result payload:', requestData);
 
     const response = await this.request<{ match: Match; tournament: Tournament }>(`/matches/${matchId}/result`, {
       method: 'POST',

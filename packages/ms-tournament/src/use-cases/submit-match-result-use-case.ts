@@ -75,7 +75,7 @@ export async function submitMatchResultUseCase(input: SubmitMatchResultInput) {
   console.log(`[UC] Match ${matchId} status updated to COMPLETED.`);
 
   // Update user stats
-  await updateUserStats(match.player1Id!, match.player2Id!, winnerId);
+  await updateUserStats(match.player1Id, match.player2Id, winnerId);
 
   // Eliminate the loser
   const loserId = winnerId === match.player1Id ? match.player2Id : match.player1Id;
@@ -90,15 +90,21 @@ export async function submitMatchResultUseCase(input: SubmitMatchResultInput) {
   // Progress tournament to next round
   await progressTournament(match.tournament.id, match.round);
 
+  // Ensure the progression is complete before returning
+  // This prevents race conditions where frontend requests data before new matches are created
+  await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay to ensure DB operations complete
+
   return updatedMatch;
 }
 
-async function updateUserStats(player1Id: string, player2Id: string, winnerId: string) {
+async function updateUserStats(player1Id: string | null, player2Id: string | null, winnerId: string) {
   // Get participant details to check if they're human players
-  const [player1, player2] = await Promise.all([
-    prisma.tournamentParticipant.findUnique({ where: { id: player1Id } }),
-    prisma.tournamentParticipant.findUnique({ where: { id: player2Id } })
+  const players = await Promise.all([
+    player1Id ? prisma.tournamentParticipant.findUnique({ where: { id: player1Id } }) : Promise.resolve(null),
+    player2Id ? prisma.tournamentParticipant.findUnique({ where: { id: player2Id } }) : Promise.resolve(null)
   ]);
+
+  const [player1, player2] = players;
 
   // Only update stats for human players
   if (player1?.participantType === 'HUMAN' && player1.userId) {
@@ -136,6 +142,11 @@ async function updatePlayerStats(userId: string, result: 'win' | 'loss') {
 }
 
 async function eliminateParticipant(participantId: string) {
+  if (!participantId) {
+    console.log('[Eliminate] Skipping elimination for null participant ID (likely AI player).');
+    return;
+  }
+
   await prisma.tournamentParticipant.update({
     where: { id: participantId },
     data: {
@@ -349,16 +360,25 @@ async function setFinalPositions(tournamentId: string) {
 
     // Update user stats for top 3 finishers
     if (participant.participantType === 'HUMAN' && participant.userId) {
-      if (position === 2) { // This block is now redundant but safe
-        await prisma.userStats.update({
-          where: { userId: participant.userId },
-          data: { tournamentsSecond: { increment: 1 } }
-        });
-      } else if (position === 3) {
-        await prisma.userStats.update({
-          where: { userId: participant.userId },
-          data: { tournamentsThird: { increment: 1 } }
-        });
+      // Double-check that userStats record exists before updating
+      const userStats = await prisma.userStats.findUnique({
+        where: { userId: participant.userId }
+      });
+      
+      if (userStats) {
+        if (position === 2) { // This block is now redundant but safe
+          await prisma.userStats.update({
+            where: { userId: participant.userId },
+            data: { tournamentsSecond: { increment: 1 } }
+          });
+        } else if (position === 3) {
+          await prisma.userStats.update({
+            where: { userId: participant.userId },
+            data: { tournamentsThird: { increment: 1 } }
+          });
+        }
+      } else {
+        console.warn(`[Complete] UserStats not found for userId: ${participant.userId}, skipping stats update.`);
       }
     }
 

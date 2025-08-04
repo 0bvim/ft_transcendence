@@ -73,6 +73,12 @@ export async function submitMatchResult(request: FastifyRequest, reply: FastifyR
     }
     
     request.log.error('Error submitting match result:', error);
+    console.error('[Controller] Detailed error in submitMatchResult:', {
+      error: error.message,
+      stack: error.stack,
+      matchId: request.params?.id,
+      body: request.body
+    });
     return reply.status(500).send({
       success: false,
       error: 'Internal server error'

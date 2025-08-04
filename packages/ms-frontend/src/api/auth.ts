@@ -309,6 +309,11 @@ export const authApi = {
     const response = await api.post("/2fa/backup-codes/verify", data);
     return response.data;
   },
+
+  // User search for tournaments
+  searchUsers(username: string): Promise<{ success: boolean; user?: { id: string; username: string; displayName: string; avatarUrl?: string } }> {
+    return api.get(`/search-users?username=${encodeURIComponent(username)}`).then((res) => res.data);
+  },
 };
 
 export default api;

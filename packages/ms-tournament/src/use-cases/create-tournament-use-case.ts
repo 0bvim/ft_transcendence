@@ -8,7 +8,12 @@ interface CreateTournamentInput {
   description?: string;
   maxPlayers: number;
   userId: string;
-  displayName: string; // Added missing displayName parameter
+  displayName: string;
+  players?: Array<{
+    displayName: string;
+    userId: string | null;
+    participantType: 'HUMAN' | 'AI';
+  }>;
 }
 
 export async function createTournamentUseCase(input: CreateTournamentInput, logger?: any) {
@@ -17,7 +22,8 @@ export async function createTournamentUseCase(input: CreateTournamentInput, logg
     description,
     maxPlayers,
     userId,
-    displayName
+    displayName,
+    players
   } = input;
 
   // Validate input
@@ -67,8 +73,24 @@ export async function createTournamentUseCase(input: CreateTournamentInput, logg
     }
   });
 
+  // Add manual players if provided
+  if (players) {
+    for (const player of players) {
+      await prisma.tournamentParticipant.create({
+        data: {
+          tournamentId: tournament.id,
+          userId: player.userId,
+          displayName: player.displayName,
+          participantType: player.participantType,
+          status: 'ACTIVE'
+        }
+      });
+    }
+  }
+
   // Always add AI participants to fill remaining slots
-  await addAIParticipants(tournament.id, maxPlayers, 1, logger); // Pass 1 since creator is already added
+  const existingHumanCount = players ? players.filter(p => p.participantType === 'HUMAN').length + 1 : 1;
+  await addAIParticipants(tournament.id, maxPlayers, existingHumanCount, logger);
 
   // If autoStart is enabled, generate matches and start the tournament immediately
 

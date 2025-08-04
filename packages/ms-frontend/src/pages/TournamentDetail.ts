@@ -208,22 +208,64 @@ function updateCurrentMatch(container: HTMLElement, tournament: any) {
     const inProgressMatch = tournament.matches.find((m: any) => m.status === 'IN_PROGRESS');
 
     if (inProgressMatch) {
+        const player1Type = inProgressMatch.player1?.participantType || 'UNKNOWN';
+        const player2Type = inProgressMatch.player2?.participantType || 'UNKNOWN';
+        const isAIvsAI = player1Type === 'AI' && player2Type === 'AI';
+        const hasHuman = player1Type === 'HUMAN' || player2Type === 'HUMAN';
+        
         currentMatchInfo.innerHTML = `
-            <div class="flex justify-between items-center">
-                <span>Round ${inProgressMatch.round} - Match ${inProgressMatch.matchNumber}</span>
-                <span id="match-status-text" class="font-bold text-green-400">IN_PROGRESS</span>
-            </div>
-            <div class="text-center text-xl my-2">
-                <span id="match-player1-name">${inProgressMatch.player1?.displayName || 'TBD'}</span>
-                <span class="mx-2">vs</span>
-                <span id="match-player2-name">${inProgressMatch.player2?.displayName || 'TBD'}</span>
-            </div>
-            <div class="text-center text-3xl font-mono font-bold">
-                <span id="match-score-display">${inProgressMatch.player1Score || 0} - ${inProgressMatch.player2Score || 0}</span>
+            <div class="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-4 mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-neon-cyan font-mono">Round ${inProgressMatch.round} - Match ${inProgressMatch.matchNumber}</span>
+                    <span id="match-status-text" class="font-bold ${isAIvsAI ? 'text-yellow-400' : 'text-green-400'}">
+                        ${isAIvsAI ? 'AI SIMULATION' : 'IN PROGRESS'}
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-3 items-center gap-4 mb-3">
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-white">${inProgressMatch.player1?.displayName || 'TBD'}</div>
+                        <div class="text-sm ${player1Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono">
+                            ${player1Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        ${player1Type === 'HUMAN' && hasHuman ? '<div class="text-xs text-neon-pink/80 font-mono">W/S Keys</div>' : ''}
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-3xl font-mono font-bold text-white">
+                            <span id="match-score-display">${inProgressMatch.player1Score || 0} - ${inProgressMatch.player2Score || 0}</span>
+                        </div>
+                        <div class="text-sm text-gray-400">VS</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-white">${inProgressMatch.player2?.displayName || 'TBD'}</div>
+                        <div class="text-sm ${player2Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono">
+                            ${player2Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        ${player2Type === 'HUMAN' && hasHuman ? '<div class="text-xs text-neon-pink/80 font-mono">↑↓ Arrows</div>' : ''}
+                    </div>
+                </div>
+                
+                ${hasHuman && !isAIvsAI ? `
+                    <div class="text-center text-xs text-neon-cyan/60 font-mono border-t border-neon-cyan/20 pt-2">
+                        🎮 Local Multiplayer: Players use the same keyboard
+                    </div>
+                ` : ''}
+                
+                ${isAIvsAI ? `
+                    <div class="text-center text-xs text-yellow-400/80 font-mono border-t border-yellow-400/20 pt-2">
+                        ⚡ AI vs AI match - Auto-resolving...
+                    </div>
+                ` : ''}
             </div>
         `;
     } else {
-        currentMatchInfo.innerHTML = '<p class="text-sm text-gray-400">No active match.</p>';
+        currentMatchInfo.innerHTML = `
+            <div class="bg-gray-800/30 border border-gray-600/30 rounded-lg p-4 mb-4">
+                <p class="text-sm text-gray-400 text-center">No active match.</p>
+            </div>
+        `;
     }
 }
 
@@ -275,19 +317,64 @@ function updateGameView(container: HTMLElement, tournament: any) {
     const inProgressMatch = tournament.matches.find((m: any) => m.status === 'IN_PROGRESS');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+    // Handle tournament completion first
+    if (tournament.status === 'COMPLETED') {
+        console.log('[TournamentDetail] Tournament is COMPLETED.');
+        gamePlaceholder.classList.remove('hidden');
+        gameCanvasContainer.classList.add('hidden');
+        gameCanvasContainer.innerHTML = ''; // Ensure canvas is clean
+
+        const winner = tournament.participants.find((p: any) => p.status === 'WINNER');
+        gamePlaceholder.innerHTML = `
+            <h3 class="text-2xl font-bold text-green-400">Tournament Finished!</h3>
+            <p class="text-gray-400 mt-2">Winner: <span class="font-bold text-white">${winner?.displayName}</span></p>
+            <button id="create-new-tournament-btn" class="btn btn-primary mt-6">CREATE NEW TOURNAMENT</button>
+        `;
+        
+        const createNewBtn = gamePlaceholder.querySelector('#create-new-tournament-btn');
+        createNewBtn?.addEventListener('click', () => {
+            window.location.href = '/tournament/create';
+        });
+        return; // Stop further processing
+    }
+
     if (inProgressMatch) {
         // A match is live, show the game canvas and hide the placeholder
         gamePlaceholder.classList.add('hidden');
         gameCanvasContainer.classList.remove('hidden');
-
         // Check if the current user is part of this match and if the game isn't already running
         const isUserInMatch = (inProgressMatch.player1?.userId === user.id || inProgressMatch.player1?.id === user.id) ||
                              (inProgressMatch.player2?.userId === user.id || inProgressMatch.player2?.id === user.id);
         const isCanvasEmpty = gameCanvasContainer.innerHTML.trim() === '';
 
-        if (isUserInMatch && isCanvasEmpty) {
-            console.log('[TournamentDetail] Auto-starting game for IN_PROGRESS match.');
-            startTournamentMatch(container, tournament, inProgressMatch);
+        // Check if this is an AI vs AI match (regardless of user participation)
+        const isAIvsAI = inProgressMatch.player1?.participantType === 'AI' && 
+                         inProgressMatch.player2?.participantType === 'AI';
+
+        // Check if this match has at least one human player
+        const hasHumanPlayer = inProgressMatch.player1?.participantType === 'HUMAN' || 
+                              inProgressMatch.player2?.participantType === 'HUMAN';
+
+        console.log('[TournamentDetail] Match analysis:', {
+            matchId: inProgressMatch.id,
+            player1Type: inProgressMatch.player1?.participantType,
+            player2Type: inProgressMatch.player2?.participantType,
+            isUserInMatch,
+            isAIvsAI,
+            hasHumanPlayer,
+            isCanvasEmpty
+        });
+
+        if (hasHumanPlayer && isCanvasEmpty) {
+            console.log('[TournamentDetail] Human match detected - showing waiting screen.');
+            showHumanMatchWaitingScreen(container, tournament, inProgressMatch);
+        } else if (isAIvsAI) {
+            console.log('[TournamentDetail] Auto-starting AI vs AI match for resolution.');
+            simulateAIvsAIMatch(container, tournament, inProgressMatch);
+        } else {
+            console.log('[TournamentDetail] No action taken for IN_PROGRESS match:', {
+                reason: hasHumanPlayer ? 'Canvas not empty' : (isAIvsAI ? 'AI vs AI but canvas not empty' : 'Unknown state')
+            });
         }
     } else {
         // No live match, show placeholder
@@ -312,16 +399,13 @@ function updateGameView(container: HTMLElement, tournament: any) {
 // NEW: Helper to find the user's next playable match
 function findNextPlayableMatch(tournament: any): any | null {
     console.log('[TournamentDetail] Finding next playable match...');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user.id) {
-        console.error('[TournamentDetail] User not found in localStorage.');
-        return null;
-    }
-
-    const match = tournament.matches.find((m: any) => 
-        m.status === 'WAITING' && 
-        (m.player1?.userId === user.id || m.player1?.id === user.id || m.player2?.userId === user.id || m.player2?.id === user.id)
-    );
+    
+    // Find any WAITING match that has at least one human player
+    const match = tournament.matches.find((m: any) => {
+        const hasHumanPlayer = m.player1?.participantType === 'HUMAN' || m.player2?.participantType === 'HUMAN';
+        return m.status === 'WAITING' && hasHumanPlayer;
+    });
+    
     console.log('[TournamentDetail] Found next match:', match);
     return match;
 }
@@ -381,20 +465,18 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
             gameCanvasContainer.innerHTML = `
                 <div class="flex items-center justify-center h-full text-white">
                     <div class="text-center">
-                        <div class="text-xl mb-2">🤖 AI vs AI Match</div>
-                        <div class="text-sm opacity-75">This match will be resolved automatically by the system</div>
-                        <div class="mt-4">
-                            <div class="animate-pulse">Processing...</div>
+                        <div class="text-xl mb-4">🤖 AI vs AI Match</div>
+                        <div class="text-lg mb-2">${matchInfo.player1?.displayName} vs ${matchInfo.player2?.displayName}</div>
+                        <div class="text-sm opacity-75 mb-4">Simulating match...</div>
+                        <div class="animate-pulse">
+                            <div class="w-8 h-8 border-4 border-neon-pink border-t-transparent rounded-full animate-spin mx-auto"></div>
                         </div>
                     </div>
                 </div>
             `;
             
-            // Wait a moment and then refresh tournament data to check for updates
-            setTimeout(async () => {
-                console.log('[TournamentDetail] Checking for AI vs AI match resolution...');
-                await loadTournamentDetails(container, tournament.id);
-            }, 3000);
+            // Simulate AI vs AI match after a short delay
+            simulateAIvsAIMatch(container, tournament, matchInfo);
             
             return;
         }
@@ -406,39 +488,41 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
         let resultSubmitted = false;
 
         // Create the callback with the necessary data in its closure
-        const onGameEnd = async (winner: string, finalScore: { player1: number, player2: number }) => {
-            console.log(`[TournamentDetail] Game ended. Winner: ${winner}`);
-            
-            // Use the matchData captured from the outer scope
-            const finalMatchData = matchData; 
-
-            updateCurrentMatch(container, null); // Clear the current match display
-
-            // Find the winner's ID
-            const winnerIsPlayer1 = winner === player1Name;
-            const winnerId = winnerIsPlayer1 ? finalMatchData.player1.id : finalMatchData.player2.id;
-
+        const onGameEnd = async (finalState: GameState) => {
+            console.log('[TournamentDetail] Game ended. Final state:', finalState);
             try {
-                // Prevent double submission
-                if (resultSubmitted) {
-                    console.log('[TournamentDetail] Result already submitted, skipping.');
-                    return;
-                }
-                resultSubmitted = true;
+                // For human matches, the result object contains the score and winner string
+                const resultPayload = {
+                    winner: finalState.score.player1 > finalState.score.player2 ? 'PLAYER_1' : 'PLAYER_2',
+                    score: finalState.score
+                };
 
                 await tournamentApi.submitMatchResult(
-                    finalMatchData.matchId, 
-                    {
-                        winnerId: winnerId,
-                        player1Score: finalScore.player1,
-                        player2Score: finalScore.player2,
-                    },
-                    finalMatchData // Pass the full matchData object
+                    actualMatchId, 
+                    resultPayload, // The game result 
+                    matchInfo      // The original match data for context
                 );
+                showNotification('Match result submitted!', 'success');
 
-                showNotification('Match result submitted successfully!', 'success');
-                // Refresh data to show next match
-                await loadTournamentData(container, tournament.id);
+                // NEW: Immediately clear canvas and show loading message
+                gameCanvasContainer.innerHTML = `
+                    <div class="flex items-center justify-center h-full text-white">
+                        <div class="text-center">
+                            <div class="text-xl mb-4">🏆 Match Complete!</div>
+                            <div class="text-lg mb-2">Winner: ${resultPayload.winner}</div>
+                            <div class="text-lg mb-4">Score: ${resultPayload.score.player1} - ${resultPayload.score.player2}</div>
+                            <div class="text-sm opacity-75">Processing next round...</div>
+                            <div class="animate-pulse">
+                                <div class="w-8 h-8 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Add a longer delay to ensure backend processing completes
+                setTimeout(async () => {
+                    await loadTournamentData(container, tournament.id);
+                }, 1000);
 
             } catch (error) {
                 resultSubmitted = false; // Allow retry
@@ -452,6 +536,8 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
             type: GameType.Tournament,
             player1Name,
             player2Name,
+            player1IsAI, // Explicitly pass AI configuration
+            player2IsAI, // Explicitly pass AI configuration
             matchData: matchData, // Pass full match data
             targetScore: tournament.targetScore || 5,
             tournamentId: tournament.id,
@@ -504,6 +590,136 @@ function getStatusColor(status: string): string {
   }
 }
 
-// All old functions like displayTournamentData, renderMatches, etc., are now replaced by the new `update...` functions.
-// The old HTML structure is completely replaced.
-// The logic is now more centralized in `updateTournamentUI`.
+// NEW: Function to simulate an AI vs AI match
+async function simulateAIvsAIMatch(container: HTMLElement, tournament: any, matchInfo: any) {
+    console.log('[TournamentDetail] Simulating AI vs AI match:', matchInfo.id);
+    const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+
+    // Instantly simulate the match and get the result
+    const result = await simulateMatch(matchInfo);
+    console.log('[TournamentDetail] AI vs AI match result:', result);
+
+    // Show brief result message
+    gameCanvasContainer.innerHTML = `
+        <div class="flex items-center justify-center h-full text-white">
+            <div class="text-center">
+                <div class="text-xl mb-4">🤖 AI vs AI Match Complete</div>
+                <div class="text-lg mb-2">${matchInfo.player1?.displayName} vs ${matchInfo.player2?.displayName}</div>
+                <div class="text-lg mb-4">Winner: ${result.winner}</div>
+                <div class="text-lg mb-4">Score: ${result.scorePlayer1} - ${result.scorePlayer2}</div>
+                <div class="text-sm opacity-75">Processing next round...</div>
+            </div>
+        </div>
+    `;
+    
+    // Submit the result to the backend immediately
+    try {
+        await tournamentApi.submitMatchResult(
+            matchInfo.id, 
+            result
+        );
+
+        showNotification('AI vs AI match completed!', 'success');
+        
+        // Refresh tournament data immediately
+        await loadTournamentData(container, tournament.id);
+
+    } catch (error) {
+        console.error('[TournamentDetail] Failed to submit AI vs AI match result:', error);
+        showNotification(`Error submitting AI vs AI match result: ${error.message}`, 'error');
+    }
+}
+
+// NEW: Function to simulate a match between two AI players
+async function simulateMatch(matchInfo: any): Promise<{ winnerId: string; scorePlayer1: number; scorePlayer2: number }> {
+    console.log('[TournamentDetail] Simulating match:', matchInfo.id);
+    // Simulate the match here...
+    // For demonstration purposes, just return a random result
+    let scorePlayer1 = Math.floor(Math.random() * 6);
+    let scorePlayer2 = Math.floor(Math.random() * 6);
+
+    // Ensure one player wins and meets target score
+    if (scorePlayer1 === scorePlayer2) {
+        scorePlayer1 = 5; // Force a winner
+        scorePlayer2 = Math.floor(Math.random() * 5);
+    } else {
+        if (Math.max(scorePlayer1, scorePlayer2) < 5) {
+            if (scorePlayer1 > scorePlayer2) scorePlayer1 = 5;
+            else scorePlayer2 = 5;
+        }
+    }
+
+    const winnerIsPlayer1 = scorePlayer1 > scorePlayer2;
+    const winnerId = winnerIsPlayer1 ? (matchInfo.player1?.id || matchInfo.player1Id) : (matchInfo.player2?.id || matchInfo.player2Id);
+
+    const result = {
+        winnerId,
+        scorePlayer1,
+        scorePlayer2,
+    };
+
+    console.log('[TournamentDetail] AI vs AI match result:', result);
+    return result;
+}
+
+// NEW: Function to show a waiting screen for human matches
+function showHumanMatchWaitingScreen(container: HTMLElement, tournament: any, matchInfo: any) {
+    console.log('[TournamentDetail] Showing waiting screen for human match:', matchInfo.id);
+    const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+
+    const player1Type = matchInfo.player1?.participantType || 'UNKNOWN';
+    const player2Type = matchInfo.player2?.participantType || 'UNKNOWN';
+
+    gameCanvasContainer.innerHTML = `
+        <div class="flex items-center justify-center h-full text-white bg-gradient-to-br from-neon-cyan/5 to-neon-pink/5">
+            <div class="text-center max-w-md mx-auto p-8 bg-gray-900/80 rounded-lg border border-neon-cyan/30">
+                <div class="text-3xl mb-6">👥 Human Match Ready</div>
+                
+                <div class="mb-6">
+                    <div class="text-xl font-semibold mb-2">Round ${matchInfo.round} - Match ${matchInfo.matchNumber}</div>
+                    <div class="text-lg text-neon-cyan">Local Multiplayer Match</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="text-center p-4 bg-neon-pink/10 rounded-lg border border-neon-pink/30">
+                        <div class="text-lg font-semibold text-white mb-2">${matchInfo.player1?.displayName}</div>
+                        <div class="text-sm ${player1Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono mb-2">
+                            ${player1Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        <div class="text-xs text-neon-pink/80 font-mono">
+                            ${player1Type === 'HUMAN' ? 'W/S Keys' : 'Auto-controlled'}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">Left Side</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-neon-cyan/10 rounded-lg border border-neon-cyan/30">
+                        <div class="text-lg font-semibold text-white mb-2">${matchInfo.player2?.displayName}</div>
+                        <div class="text-sm ${player2Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono mb-2">
+                            ${player2Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        <div class="text-xs text-neon-cyan/80 font-mono">
+                            ${player2Type === 'HUMAN' ? '↑↓ Arrow Keys' : 'Auto-controlled'}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">Right Side</div>
+                    </div>
+                </div>
+                
+                <div class="text-sm text-gray-300 mb-6">
+                    ${player1Type === 'HUMAN' && player2Type === 'HUMAN' 
+                        ? '🎮 Both players should be at the host\'s keyboard' 
+                        : '🎮 Human player should be at the host\'s keyboard'
+                    }
+                </div>
+                
+                <button id="start-match-btn" class="btn btn-primary bg-neon-cyan text-black hover:bg-neon-cyan/80 px-8 py-3 rounded-lg font-semibold transition-all">
+                    START MATCH
+                </button>
+            </div>
+        </div>
+    `;
+
+    const startMatchBtn = gameCanvasContainer.querySelector('#start-match-btn');
+    startMatchBtn?.addEventListener('click', async () => {
+        await startTournamentMatch(container, tournament, matchInfo);
+    });
+}

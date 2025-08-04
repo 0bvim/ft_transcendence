@@ -23,7 +23,10 @@ export interface GameConfig {
 export interface GameCallbacks {
   onScoreUpdate: (player1Score: number, player2Score: number) => void;
   onGameStateChange: (state: GameState) => void;
-  onGameEnd: (winner: string, finalScore: { player1: number; player2: number }) => void;
+  onGameEnd: (finalState: { 
+    winner: string; 
+    score: { player1: number; player2: number; };
+  }) => void;
 }
 
 export class PongGame {
@@ -46,7 +49,7 @@ export class PongGame {
   constructor(config: GameConfig, callbacks: GameCallbacks) {
     this.config = config;
     this.callbacks = callbacks;
-    this.aiViewBoardInterval = 1000; // Set AI reaction time to 100ms
+    this.aiViewBoardInterval = 2000; // Set AI reaction time to 100ms
   }
 
   // Initialize the p5.js instance and attach to canvas container
@@ -169,23 +172,16 @@ export class PongGame {
   private handlePlayerInput(): void {
     if (!this.player1 || !this.player2) return;
 
-    const isLocalDuel = !this.config.player1IsAI && !this.config.player2IsAI;
-
-    if (isLocalDuel) {
-      // Player 1 controls: W/S
+    // Player 1 (left side) always uses W/S keys
+    if (!this.config.player1IsAI) {
       this.player1.goUp = !!this.keys['KeyW'];
       this.player1.goDown = !!this.keys['KeyS'];
+    }
 
-      // Player 2 controls: Arrow keys
+    // Player 2 (right side) always uses Arrow keys
+    if (!this.config.player2IsAI) {
       this.player2.goUp = !!this.keys['ArrowUp'];
       this.player2.goDown = !!this.keys['ArrowDown'];
-    } else {
-      // For AI games, the single human player can use either set of keys
-      if (!this.config.player1IsAI) {
-        this.player1.goUp = !!this.keys['KeyW'] || !!this.keys['ArrowUp'];
-        this.player1.goDown = !!this.keys['KeyS'] || !!this.keys['ArrowDown'];
-      }
-      // Player 2 is an AI, so no input is handled here
     }
   }
 
@@ -225,10 +221,14 @@ export class PongGame {
       this.callbacks.onGameStateChange(this.gameState);
 
       const winner = this.player1.getScore() >= this.config.targetScore ? this.config.player1Name : this.config.player2Name;
-      this.callbacks.onGameEnd(winner, {
-        player1: this.player1.getScore(),
-        player2: this.player2.getScore()
-      });
+      const finalState = {
+        winner: winner,
+        score: {
+          player1: this.player1.getScore(),
+          player2: this.player2.getScore()
+        }
+      };
+      this.callbacks.onGameEnd(finalState);
     }
   }
 

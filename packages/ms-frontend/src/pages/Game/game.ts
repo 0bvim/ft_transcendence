@@ -17,6 +17,8 @@ export interface GameConfig {
   player1Name?: string;
   player2Name?: string;
   matchData?: any; // Add match data property
+  player1IsAI?: boolean;
+  player2IsAI?: boolean;
   onScoreUpdate?: (player1Score: number, player2Score: number) => void;
   onGameStateChange?: (state: GameState) => void;
   onGameEnd?: (winner: string, finalScore: { player1: number; player2: number }) => Promise<void>;
@@ -77,8 +79,8 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
     const player2Name = config.player2Name || (config.type === GameType.AI ? 'COMPUTER' : 'PLAYER 2');
 
     // Determine if players are AI
-    const player1IsAI = config.matchData?.player1?.participantType === 'AI';
-    const player2IsAI = config.type === GameType.AI || config.matchData?.player2?.participantType === 'AI';
+    const player1IsAI = config.player1IsAI || config.matchData?.player1?.participantType === 'AI';
+    const player2IsAI = config.player2IsAI || config.type === GameType.AI || config.matchData?.player2?.participantType === 'AI';
 
     const targetScore = config.targetScore || config.matchData?.tournament?.targetScore || 5;
 
