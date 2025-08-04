@@ -2,6 +2,7 @@ import { tournamentApi, Tournament } from '../api/tournament.ts';
 import { authApi } from '../api/auth.ts';
 // Import the unified game system instead of direct PongGame
 import { showGame, GameType } from './Game/game.ts';
+import { GameState } from '../game/PongGame.ts';
 import { showNotification } from '../components/notification.ts';
 
 export default function TournamentDetail(): HTMLElement {
@@ -27,6 +28,7 @@ export default function TournamentDetail(): HTMLElement {
         </div>
         <div class="flex items-center space-x-4">
             <span id="player-count" class="text-sm text-gray-300 font-medium">Players: 0/0</span>
+            <button id="start-tournament-btn" class="btn btn-primary btn-sm hidden">START TOURNAMENT</button>
             <button id="exit-tournament-btn" class="btn btn-outline btn-sm border-red-500 text-red-500 hover:bg-red-500 hover:text-white">
                 EXIT TOURNAMENT
             </button>
@@ -105,6 +107,20 @@ function setupEventListeners(container: HTMLElement, tournamentId: string | unde
     window.location.href = '/tournament'; // Or a more graceful exit
   });
 
+  const startBtn = container.querySelector('#start-tournament-btn');
+  startBtn?.addEventListener('click', async () => {
+    if (!tournamentId) return;
+    try {
+      await tournamentApi.startTournament(tournamentId);
+      showNotification('Tournament started!', 'success');
+      // Reload data to reflect the new state
+      loadTournamentData(container, tournamentId);
+    } catch (error) {
+      console.error('Failed to start tournament:', error);
+      showNotification('Failed to start tournament.', 'error');
+    }
+  });
+
   const playNextMatchBtn = container.querySelector('#play-next-match-btn');
   playNextMatchBtn?.addEventListener('click', async () => {
       if (!tournamentId) return;
@@ -156,6 +172,7 @@ function updateHeader(container: HTMLElement, tournament: any) {
     const nameEl = container.querySelector('#tournament-name') as HTMLElement;
     const statusEl = container.querySelector('#tournament-status') as HTMLElement;
     const playersEl = container.querySelector('#player-count') as HTMLElement;
+    const startBtn = container.querySelector('#start-tournament-btn') as HTMLElement;
 
     if (nameEl) nameEl.textContent = tournament.name;
     if (statusEl) {
@@ -163,11 +180,30 @@ function updateHeader(container: HTMLElement, tournament: any) {
         statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(tournament.status)}`;
     }
     if (playersEl) playersEl.textContent = `Players: ${tournament.currentPlayers}/${tournament.maxPlayers}`;
+
+    // Logic to show/hide the start button
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isCreator = user.id === tournament.createdBy;
+    const isFull = tournament.currentPlayers === tournament.maxPlayers;
+    const isWaiting = tournament.status === 'WAITING';
+
+    if (startBtn && isCreator && isFull && isWaiting) {
+      startBtn.classList.remove('hidden');
+    } else if (startBtn) {
+      startBtn.classList.add('hidden');
+    }
 }
 
 // NEW: Function to update the 'Current Match' panel
 function updateCurrentMatch(container: HTMLElement, tournament: any) {
     console.log('[TournamentDetail] Updating current match...');
+    
+    // Add null check to prevent crashes
+    if (!tournament || !tournament.matches) {
+        console.log('[TournamentDetail] Tournament data not available, skipping current match update');
+        return;
+    }
+    
     const currentMatchInfo = container.querySelector('#current-match-info') as HTMLElement;
     const inProgressMatch = tournament.matches.find((m: any) => m.status === 'IN_PROGRESS');
 
@@ -237,11 +273,22 @@ function updateGameView(container: HTMLElement, tournament: any) {
     const playNextMatchBtn = container.querySelector('#play-next-match-btn') as HTMLElement;
 
     const inProgressMatch = tournament.matches.find((m: any) => m.status === 'IN_PROGRESS');
-    
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
     if (inProgressMatch) {
-        // A match is live, show the game canvas
+        // A match is live, show the game canvas and hide the placeholder
         gamePlaceholder.classList.add('hidden');
         gameCanvasContainer.classList.remove('hidden');
+
+        // Check if the current user is part of this match and if the game isn't already running
+        const isUserInMatch = (inProgressMatch.player1?.userId === user.id || inProgressMatch.player1?.id === user.id) ||
+                             (inProgressMatch.player2?.userId === user.id || inProgressMatch.player2?.id === user.id);
+        const isCanvasEmpty = gameCanvasContainer.innerHTML.trim() === '';
+
+        if (isUserInMatch && isCanvasEmpty) {
+            console.log('[TournamentDetail] Auto-starting game for IN_PROGRESS match.');
+            startTournamentMatch(container, tournament, inProgressMatch);
+        }
     } else {
         // No live match, show placeholder
         gamePlaceholder.classList.remove('hidden');
@@ -273,7 +320,7 @@ function findNextPlayableMatch(tournament: any): any | null {
 
     const match = tournament.matches.find((m: any) => 
         m.status === 'WAITING' && 
-        (m.player1?.userId === user.id || m.player2?.userId === user.id)
+        (m.player1?.userId === user.id || m.player1?.id === user.id || m.player2?.userId === user.id || m.player2?.id === user.id)
     );
     console.log('[TournamentDetail] Found next match:', match);
     return match;
@@ -315,8 +362,8 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
 
         // Get user info for player names
         const { user } = await authApi.getProfile();
-        const isPlayer1 = matchInfo.player1?.userId === user.id;
-        const isPlayer2 = matchInfo.player2?.userId === user.id;
+        const isPlayer1 = matchInfo.player1?.userId === user.id || matchInfo.player1?.id === user.id;
+        const isPlayer2 = matchInfo.player2?.userId === user.id || matchInfo.player2?.id === user.id;
 
         // Set up player names and AI configuration
         const player1Name = matchInfo.player1?.displayName || 'Player 1';
@@ -379,20 +426,24 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
                 }
                 resultSubmitted = true;
 
-                await tournamentApi.submitMatchResult(finalMatchData.matchId, {
-                    winnerId: winnerId,
-                    player1Score: finalScore.player1,
-                    player2Score: finalScore.player2,
-                });
+                await tournamentApi.submitMatchResult(
+                    finalMatchData.matchId, 
+                    {
+                        winnerId: winnerId,
+                        player1Score: finalScore.player1,
+                        player2Score: finalScore.player2,
+                    },
+                    finalMatchData // Pass the full matchData object
+                );
 
-                showNotification(container, 'Match result submitted successfully!', 'success');
+                showNotification('Match result submitted successfully!', 'success');
                 // Refresh data to show next match
                 await loadTournamentData(container, tournament.id);
 
             } catch (error) {
                 resultSubmitted = false; // Allow retry
                 console.error('[TournamentDetail] Failed to submit match result:', error);
-                showNotification(container, `Error submitting result: ${error.message}`, 'error');
+                showNotification(`Error submitting result: ${error.message}`, 'error');
             }
         };
 
@@ -413,13 +464,15 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
                     scoreEl.textContent = `${player1Score} - ${player2Score}`;
                 }
             },
-            onGameStateChange: (state: string) => {
+            onGameStateChange: (state: GameState) => {
                 const statusEl = container.querySelector('#match-status-text');
                 if (statusEl) {
-                    statusEl.textContent = state.toUpperCase();
+                    // Convert GameState enum to string
+                    const stateString = GameState[state] || 'UNKNOWN';
+                    statusEl.textContent = stateString.toUpperCase();
                 }
-                if (state === 'error') {
-                    showNotification(container, 'Failed to start the game.', 'error');
+                if (state === GameState.Error) {
+                    showNotification('Failed to start the game.', 'error');
                     gameCanvasContainer.innerHTML = `<div class="text-red-500">Error starting game.</div>`;
                 }
             },
@@ -431,7 +484,7 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
 
     } catch (error) {
         console.error('[TournamentDetail] Critical error in startTournamentMatch:', error);
-        showNotification(container, 'Could not start the match. Please refresh.', 'error');
+        showNotification('Could not start the match. Please refresh.', 'error');
         gamePlaceholder.classList.remove('hidden');
         gameCanvasContainer.classList.add('hidden');
     }

@@ -137,7 +137,6 @@ async function handleFormSubmit(container: HTMLElement) {
   const tournamentData = {
     name: name.trim(),
     maxPlayers: parseInt(playerCount, 10),
-    aiDifficulty: 'MEDIUM', // Default AI difficulty, can be made a user setting later.
     userId: user.id,
     displayName: user.username || 'Player 1', // Fallback for display name
   };

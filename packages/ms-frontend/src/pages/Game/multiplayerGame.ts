@@ -159,7 +159,6 @@ function startMultiplayerGame(container: HTMLElement, options: {
     player2Name: options.position === 'left' ? options.opponent : options.username,
     player1IsAI: false,
     player2IsAI: false,
-    aiDifficulty: 'MEDIUM', // Not used in multiplayer
     targetScore: 5
   };
 

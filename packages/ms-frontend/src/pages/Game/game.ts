@@ -1,6 +1,5 @@
-import { PongGame, GameConfig as PongGameConfig, GameCallbacks, GameState, AIDifficulty } from '../../game/PongGame';
+import { PongGame, GameConfig as PongGameConfig, GameCallbacks, GameState} from '../../game/PongGame';
 import { authApi } from '../../api/auth';
-import { tournamentApi } from '../../api/tournament';
 
 // Game types for embedded game functionality
 export enum GameType {
@@ -12,7 +11,6 @@ export enum GameType {
 
 export interface GameConfig {
   type: GameType;
-  difficulty?: 'easy' | 'medium' | 'hard';
   targetScore?: number;
   tournamentId?: string;
   matchId?: string;
@@ -25,11 +23,11 @@ export interface GameConfig {
 }
 
 // Store game instances globally to manage them
-let activeGame: PongGame | null = null;
 let activeRenderer: any = null;
+let activeGame: PongGame | null = null;
 
 // Show the embedded game canvas and initialize game
-export async function showMenuGame(container: HTMLElement, gameType: GameType, difficulty: 'easy' | 'medium' | 'hard' = 'medium'): Promise<void> {
+export async function showMenuGame(container: HTMLElement, gameType: GameType): Promise<void> {
   const gameSection = container.querySelector('#gameSection') as HTMLElement;
   const gameModeSelection = container.querySelector('#gameModeSelection') as HTMLElement;
   const tournamentSection = container.querySelector('#tournamentSection') as HTMLElement;
@@ -40,7 +38,7 @@ export async function showMenuGame(container: HTMLElement, gameType: GameType, d
 
   let config: GameConfig;
   if (gameType === GameType.AI) {
-    config = { type: GameType.AI, difficulty: difficulty, targetScore: 5 };
+    config = { type: GameType.AI,targetScore: 5 };
   } else {
     config = { type: GameType.Local, targetScore: 5 };
   }
@@ -67,8 +65,6 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
   const canvasContainer = container; // The passed container IS the canvas container
   if (!canvasContainer) {
     console.error('An invalid container was provided to showGame');
-    // Optionally, call a game state change callback to indicate an error
-    config.onGameStateChange?.(GameState.Error);
     return;
   }
 
@@ -84,10 +80,6 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
     const player1IsAI = config.matchData?.player1?.participantType === 'AI';
     const player2IsAI = config.type === GameType.AI || config.matchData?.player2?.participantType === 'AI';
 
-    // Get AI difficulty and target score from config, with fallbacks
-    const aiDifficulty = (config.difficulty?.toUpperCase() as AIDifficulty) || 
-                         (config.matchData?.tournament?.aiDifficulty?.toUpperCase() as AIDifficulty) || 
-                         'MEDIUM';
     const targetScore = config.targetScore || config.matchData?.tournament?.targetScore || 5;
 
     const gameConfig: PongGameConfig = {
@@ -95,7 +87,6 @@ export async function showGame(container: HTMLElement, config: GameConfig): Prom
       player2Name: player2Name,
       player1IsAI: player1IsAI,
       player2IsAI: player2IsAI,
-      aiDifficulty: aiDifficulty,
       targetScore: targetScore,
     };
 

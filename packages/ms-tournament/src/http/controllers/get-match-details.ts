@@ -19,9 +19,7 @@ export async function getMatchDetails(request: FastifyRequest, reply: FastifyRep
         tournament: {
           select: {
             id: true,
-            name: true,
-            aiDifficulty: true,
-            tournamentType: true
+            name: true
           }
         }
       }
@@ -69,14 +67,12 @@ export async function getMatchDetails(request: FastifyRequest, reply: FastifyRep
         id: player1.id,
         displayName: player1.displayName,
         isAI: player1.participantType === 'AI',
-        aiDifficulty: player1.participantType === 'AI' ? match.tournament.aiDifficulty : undefined,
         userId: player1.userId
       } : null,
       player2: player2 ? {
         id: player2.id,
         displayName: player2.displayName,
         isAI: player2.participantType === 'AI',
-        aiDifficulty: player2.participantType === 'AI' ? match.tournament.aiDifficulty : undefined,
         userId: player2.userId
       } : null
     };

@@ -6,8 +6,6 @@ const createTournamentSchema = z.object({
   name: z.string().min(1, 'Tournament name is required').max(100, 'Tournament name too long'),
   description: z.string().optional(),
   maxPlayers: z.number().int().min(4).max(8),
-  aiDifficulty: z.enum(['EASY', 'MEDIUM', 'HARD']), // Always required since we only support MIXED
-  autoStart: z.boolean().default(true),
   userId: z.string().min(1, 'User ID is required'), // TODO: Get from auth middleware
   displayName: z.string().min(1, 'Display name is required'), // For creating participants
 });

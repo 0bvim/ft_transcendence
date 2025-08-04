@@ -4,7 +4,7 @@ import {getCurrentUser} from "@/auth/auth.ts";
 let game: PongGame | null = null;
 const user = await getCurrentUser();
 const usernameP1 = user?.username || 'PLAYER 1';
-export function startLocalGame(container: HTMLElement, options: { isAI: boolean; difficulty?: AIDifficulty }) {
+export function startLocalGame(container: HTMLElement, options: { isAI: boolean;}) {
   cleanupLocalGame(); // Ensure any previous game is stopped
 
   const canvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
@@ -18,7 +18,6 @@ export function startLocalGame(container: HTMLElement, options: { isAI: boolean;
     player2Name,
     player1IsAI: false,
     player2IsAI: options.isAI,
-    aiDifficulty: (options.difficulty || 'MEDIUM').toUpperCase() as AIDifficulty,
     targetScore: 5,
   };
 

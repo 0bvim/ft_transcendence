@@ -2,8 +2,7 @@ import p5 from 'p5';
 import { Ball } from './Ball';
 import { Paddle } from './Paddle';
 import { Board, Side } from './Board';
-import { AI, AIDifficulty } from './AI';
-export type { AIDifficulty };
+import { AI} from './AI';
 
 export enum GameState {
   Loading,
@@ -18,7 +17,6 @@ export interface GameConfig {
   player2Name: string;
   player1IsAI: boolean;
   player2IsAI: boolean;
-  aiDifficulty: AIDifficulty;
   targetScore: number;
 }
 
@@ -48,12 +46,7 @@ export class PongGame {
   constructor(config: GameConfig, callbacks: GameCallbacks) {
     this.config = config;
     this.callbacks = callbacks;
-    const aiDifficultyMap: Record<string, number> = {
-      EASY: 3000,
-      MEDIUM: 1000,
-      HARD: 800,
-    };
-    this.aiViewBoardInterval = aiDifficultyMap[this.config.aiDifficulty] ?? 1000;
+    this.aiViewBoardInterval = 1000; // Set AI reaction time to 100ms
   }
 
   // Initialize the p5.js instance and attach to canvas container

@@ -2,8 +2,6 @@ import { Board, Side } from './Board';
 import { Ball } from './Ball';
 import { Paddle } from './Paddle';
 
-export type AIDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
-
 export class AI {
 	protected aiTargetY: number = Board.height / 2;
 	protected aiPlayer: Paddle;
@@ -13,7 +11,6 @@ export class AI {
 	protected opponentX: number;
 	protected rightPaddleX: number;
 	protected leftPaddleX: number;
-	//protected difficulty: AIDifficulty;
 
 
 	constructor(aiPlayer: Paddle, aiOpponent: Paddle) {

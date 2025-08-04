@@ -18,10 +18,7 @@ model Tournament {
   maxPlayers    Int      @default(8)
   currentPlayers Int     @default(0)
   status        String @default("WAITING")
-  tournamentType String @default("MIXED")
-  aiDifficulty  String @default("MEDIUM")
-  autoStart     Boolean  @default(true)
-  
+
   // Tournament metadata
   createdBy     String   // User ID from auth service
   startedAt     DateTime?
@@ -123,8 +120,6 @@ model UserStats {
 // Enums
 // Enum constants as strings for SQLite compatibility
 // TournamentStatus: "WAITING" | "ACTIVE" | "COMPLETED" | "CANCELLED"
-// TournamentType: "HUMANS_ONLY" | "MIXED"
-// AIDifficulty: "EASY" | "MEDIUM" | "HARD"
 // ParticipantType: "HUMAN" | "AI"
 // ParticipantStatus: "ACTIVE" | "ELIMINATED" | "WINNER"
 // MatchStatus: "WAITING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"

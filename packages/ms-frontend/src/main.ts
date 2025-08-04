@@ -60,14 +60,6 @@ router.addRoute({
   title: 'Google Sign-In'
 });
 
-// Tournament routes
-router.addRoute({
-  path: '/tournament',
-  component: () => import('./pages/Tournament'),
-  requiresAuth: true,
-  title: 'Tournament Hub'
-});
-
 router.addRoute({
   path: '/tournament/create',
   component: () => import('./pages/TournamentCreate'),

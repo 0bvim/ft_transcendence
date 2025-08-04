@@ -168,20 +168,63 @@ async function generateTournamentBracket(tournamentId: string) {
 
   console.log(`[StartUC] Creating ${matches.length} matches for round 1.`);
 
-  // Set the first match to IN_PROGRESS
-  const firstMatch = matches.find(m => m.status === 'WAITING');
-  if (firstMatch) {
-    firstMatch.status = 'IN_PROGRESS' as const;
-    (firstMatch as any).startedAt = new Date();
-    console.log(`[StartUC] Setting first match ${firstMatch.matchNumber} to IN_PROGRESS.`);
-  }
-
   // Create matches in the database
   await prisma.match.createMany({
     data: matches,
   });
 
   console.log('[StartUC] First round matches created successfully.');
+
+  // Refetch matches to get their generated IDs
+  const createdMatches = await prisma.match.findMany({
+    where: { tournamentId: tournament.id, round: 1 },
+  });
+
+  // Auto-resolve AI vs AI matches and set the first playable match
+  let firstPlayableMatchId: string | null = null;
+
+  for (const match of createdMatches) {
+    const player1 = participants.find(p => p.id === match.player1Id);
+    const player2 = participants.find(p => p.id === match.player2Id);
+
+    // Auto-resolve AI vs AI matches
+    if (player1?.participantType === 'AI' && player2?.participantType === 'AI') {
+      console.log(`[StartUC] Auto-resolving AI vs AI match: ${player1.displayName} vs ${player2.displayName}`);
+      const winner = Math.random() > 0.5 ? player1 : player2;
+
+      await prisma.match.update({
+        where: { id: match.id },
+        data: {
+          status: 'COMPLETED',
+          winnerId: winner.id,
+          player1Score: winner.id === player1.id ? 5 : 0,
+          player2Score: winner.id === player2.id ? 5 : 0,
+          startedAt: new Date(),
+          completedAt: new Date(),
+        },
+      });
+    } else {
+      // Check if this is the first playable match
+      const isPlayable = player1?.participantType === 'HUMAN' || player2?.participantType === 'HUMAN';
+      if (isPlayable && !firstPlayableMatchId) {
+        firstPlayableMatchId = match.id;
+      }
+    }
+  }
+
+  // Set the first playable match to IN_PROGRESS
+  if (firstPlayableMatchId) {
+    await prisma.match.update({
+      where: { id: firstPlayableMatchId },
+      data: {
+        status: 'IN_PROGRESS',
+        startedAt: new Date(),
+      },
+    });
+    console.log(`[StartUC] Setting first playable match ${firstPlayableMatchId} to IN_PROGRESS.`);
+  } else {
+    console.log('[StartUC] No playable human matches in the first round. All matches might be AI vs AI and auto-resolved.');
+  }
 
   // Return the updated tournament object with matches
   const updatedTournament = await prisma.tournament.findUnique({

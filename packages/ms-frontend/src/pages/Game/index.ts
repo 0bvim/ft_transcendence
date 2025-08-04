@@ -44,7 +44,6 @@ function handleUrlParameters(container: HTMLElement): void {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
   const mode = params.get('mode');
-  const difficulty = params.get('difficulty');
 
   if (window.location.pathname === '/tournament/create') {
     const tournamentCreatePage = TournamentCreate();
@@ -59,7 +58,7 @@ function handleUrlParameters(container: HTMLElement): void {
     switch (mode) {
       case 'ai':
         showGameSection(container, 'PLAYER VS AI');
-        startLocalGame(container, { isAI: true, difficulty: (difficulty?.toUpperCase() as any) || 'MEDIUM' });
+        startLocalGame(container, { isAI: true});
         break;
       case 'local':
         showGameSection(container, 'LOCAL DUEL');

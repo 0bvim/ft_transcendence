@@ -5,9 +5,6 @@ interface Tournament {
   maxPlayers: number;
   currentPlayers: number;
   status: 'WAITING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-  tournamentType: 'HUMANS_ONLY' | 'MIXED';
-  aiDifficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  autoStart: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -265,8 +262,9 @@ class TournamentApi {
 
     const scorePayload = {
       winnerId,
-      scorePlayer1: result.finalScore.player1,
-      scorePlayer2: result.finalScore.player2,
+      scorePlayer1: result.player1Score,
+      scorePlayer2: result.player2Score,
+      userId: winnerId, // Use winnerId as userId for now - this should be the authenticated user
     };
 
     console.log('Submitting corrected match result payload:', scorePayload);
