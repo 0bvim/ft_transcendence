@@ -1,7 +1,5 @@
 import { showTournamentSection, setupTournamentEventListeners } from './tournament';
-import { showMultiplayerGame, cleanupWebSocketGame, findMultiplayerMatch, cleanupMultiplayerGame } from './multiplayerGame';
 import { startLocalGame, cleanupLocalGame } from './localGame';
-import { getCurrentUser } from '../../auth/auth'; // Adjust the path as needed
 import TournamentCreate from '../TournamentCreate';
 
 function showGameSection(container: HTMLElement, title: string) {
@@ -25,7 +23,6 @@ function setupPageEventListeners(container: HTMLElement): void {
 
     if (gameSection && !gameSection.classList.contains('hidden')) {
       cleanupLocalGame();
-      cleanupMultiplayerGame();
       hideGameSection(container);
     }
 
@@ -73,35 +70,6 @@ function handleUrlParameters(container: HTMLElement): void {
   cleanupUrlParameters();
 }
 
-async function handleMultiplayer(container: HTMLElement) {
-  showGameSection(container, 'MULTIPLAYER MATCH');
-
-  const authToken = localStorage.getItem('jwt') || localStorage.getItem('token');
-  const user = getCurrentUser();
-
-  if (!authToken || !user) {
-    const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-    if (gameStatusElement) {
-      gameStatusElement.textContent = 'Please log in to play multiplayer';
-      gameStatusElement.classList.remove('hidden');
-      gameStatusElement.style.display = 'block';
-    }
-    return;
-  }
-
-  const username = user.username || 'Player';
-  try {
-    await findMultiplayerMatch(container, username);
-  } catch (error) {
-    console.error('Failed to start multiplayer match:', error);
-    const gameStatusElement = container.querySelector('#gameStatus') as HTMLElement;
-    if (gameStatusElement) {
-      gameStatusElement.textContent = 'Connection failed: ' + (error as Error).message;
-      gameStatusElement.classList.remove('hidden');
-      gameStatusElement.style.display = 'block';
-    }
-  }
-}
 
 function cleanupUrlParameters(): void {
   // const url = new URL(window.location.href);

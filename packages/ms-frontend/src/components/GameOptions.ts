@@ -12,11 +12,6 @@ export function renderGameOptions(): string {
         <button id="localGameButton" class="btn btn-primary w-full">START_LOCAL_GAME</button>
       </div>
       <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
-        <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">MULTIPLAYER</h3>
-        <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Play against other players online.</p>
-        <button id="multiplayerButton" class="btn btn-primary w-full">FIND_MATCH</button>
-      </div>
-      <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
         <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">TOURNAMENTS</h3>
         <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Compete and climb the leaderboard.</p>
         <button id="tournamentButton" class="btn btn-primary w-full">VIEW_TOURNAMENTS</button>
@@ -28,7 +23,6 @@ export function renderGameOptions(): string {
 export function setupGameOptionsEventListeners(container: HTMLElement): void {
   const playAiButton = container.querySelector('#playAiButton');
   const localGameButton = container.querySelector('#localGameButton');
-  const multiplayerButton = container.querySelector('#multiplayerButton');
   const tournamentButton = container.querySelector('#tournamentButton');
 
 
@@ -39,10 +33,6 @@ export function setupGameOptionsEventListeners(container: HTMLElement): void {
 
   localGameButton?.addEventListener('click', () => {
     window.location.href = '/game?mode=local';
-  });
-
-  multiplayerButton?.addEventListener('click', () => {
-    window.location.href = '/game?mode=multiplayer';
   });
 
   tournamentButton?.addEventListener('click', () => {

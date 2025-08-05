@@ -35,30 +35,6 @@ services:
     networks:
       - ${NETWORK_NAME:-ft-net}
 
-  ms-game:
-    container_name: game
-    build:
-      context: ./packages
-      dockerfile: ./ms-game/Dockerfile
-    env_file: ./packages/ms-game/.env
-    ports:
-      - "${GAME_PORT:-3002}:3002"
-    environment:
-      - PORT=3002
-      - NODE_ENV=development
-      - AUTH_SERVICE_URL=https://authentication:3001
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - JWT_SECRET=${JWT_SECRET}
-    volumes:
-      - ./packages/ms-game/src:/app/src
-      - ./packages/ms-game/package.json:/app/package.json
-      - ./packages/ms-game/tsconfig.json:/app/tsconfig.json
-      - ./packages/ms-game/certs:/app/certs:ro
-    depends_on:
-      - ms-auth
-    networks:
-      - ${NETWORK_NAME:-ft-net}
-
   ms-tournament:
     container_name: tournament
     build:
@@ -219,15 +195,6 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       - prometheus
-
-  game-server:
-    build:
-      context: ./packages/game-server
-      dockerfile: Dockerfile
-    ports:
-      - "3010:3010"
-    environment:
-      - PORT=3010
 
 volumes:
   esdata:

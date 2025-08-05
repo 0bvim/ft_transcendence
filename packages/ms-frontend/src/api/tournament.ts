@@ -91,6 +91,11 @@ interface CreateTournamentRequest {
   name: string;
   description?: string;
   maxPlayers: number;
+  players?: Array<{
+    displayName: string;
+    userId: string | null;
+    participantType: 'HUMAN' | 'AI';
+  }>;
 }
 
 interface SubmitMatchResultRequest {
@@ -115,25 +120,53 @@ class TournamentApi {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = localStorage.getItem('accessToken'); // Fixed token key
+    // Check for token in multiple possible keys for compatibility
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('jwt');
     
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }), // Only add if token exists
-        ...options.headers,
-      },
+    console.log('[TournamentApi] Making request:', {
+      endpoint,
+      baseUrl: this.baseUrl,
+      fullUrl: `${this.baseUrl}${endpoint}`,
+      hasToken: !!token,
+      tokenSource: token ? (localStorage.getItem('accessToken') ? 'accessToken' : localStorage.getItem('token') ? 'token' : 'jwt') : 'none',
+      method: options.method || 'GET'
     });
+    
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }), // Only add if token exists
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      console.log('[TournamentApi] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[TournamentApi] Request failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('[TournamentApi] Request successful:', result);
+      // Backend returns {success, data, message} - extract the data
+      return result.data || result;
+    } catch (error) {
+      console.error('[TournamentApi] Request error:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    // Backend returns {success, data, message} - extract the data
-    return result.data || result;
   }
 
   async getTournaments(params: {
@@ -160,17 +193,42 @@ class TournamentApi {
     const query = searchParams.toString();
     const endpoint = `/tournaments${query ? `?${query}` : ''}`;
     
-    const result = await this.request<any>(endpoint);
+    // Make the request but don't extract data yet - we need both data and pagination
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('jwt');
+    
+    console.log('[TournamentApi] Getting tournaments with params:', params);
+    
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
 
-    return {
-      tournaments: result.data || [],
-      pagination: result.pagination || {
-        page: 1,
-        limit: 10,
-        total: 0,
-        pages: 0
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-    };
+
+      const result = await response.json();
+      console.log('[TournamentApi] Tournaments response:', result);
+      
+      // Backend returns {success, data, pagination}
+      return {
+        tournaments: result.data || [],
+        pagination: result.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0
+        }
+      };
+    } catch (error) {
+      console.error('[TournamentApi] Failed to get tournaments:', error);
+      throw error;
+    }
   }
 
   async getTournament(id: string): Promise<Tournament> {
@@ -186,6 +244,12 @@ class TournamentApi {
       userId: user.id || 'anonymous', // Tournament service needs userId
       displayName: user.displayName || user.username || 'Anonymous' // Tournament service needs displayName
     };
+    
+    console.log('[TournamentApi] Creating tournament with data:', {
+      originalData: data,
+      user: user,
+      requestData: requestData
+    });
     
     const response = await this.request<Tournament>('/tournaments', {
       method: 'POST',

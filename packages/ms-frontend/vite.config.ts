@@ -20,16 +20,6 @@ export default defineConfig({
         target: 'http://tournament:3003',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/tournament/, '')
-      },
-      '/api/blockchain': {
-        target: 'http://blockchain:3004',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/blockchain/, '')
-      },
-      '/api/game': {
-        target: 'http://game:3002',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/game/, '')
       }
     }
   },

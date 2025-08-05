@@ -374,8 +374,11 @@ async function loadUserStats(container: HTMLElement) {
 
 async function loadRecentTournaments(container: HTMLElement, userId: string) {
   try {
+    console.log('[Dashboard] Loading recent tournaments for user:', userId);
     const response = await tournamentApi.getTournaments({ limit: 10 });
+    console.log('[Dashboard] Tournaments response:', response);
     const tournaments = response.tournaments || [];
+    console.log('[Dashboard] Tournaments array:', tournaments);
     const recentTournamentsEl = container.querySelector('#recentTournaments') as HTMLElement;
     
     if (!recentTournamentsEl) return;
@@ -385,35 +388,26 @@ async function loadRecentTournaments(container: HTMLElement, userId: string) {
     if (tournaments.length === 0) {
       recentTournamentsEl.innerHTML = `
         <div class="text-center py-8 text-neon-cyan/50">
-          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          <p class="text-sm font-mono uppercase">No tournaments found. Create one!</p>
+          <p class="text-sm font-mono uppercase">No tournaments found</p>
         </div>
       `;
     } else {
-      // Show recent tournaments (limit to 3)
-      tournaments.slice(0, 3).forEach((tournament: any) => {
-        const statusColor = tournament.status === 'ACTIVE' ? 'neon-green' : 
-                           tournament.status === 'WAITING' ? 'warning-500' : 'neon-cyan';
-        const statusDot = tournament.status === 'ACTIVE' ? 'bg-neon-green' : 
-                         tournament.status === 'WAITING' ? 'bg-warning-500' : 'bg-neon-cyan';
-        
-        recentTournamentsEl.innerHTML += `
-          <div class="flex items-center justify-between p-6 bg-secondary-900/20 backdrop-blur-lg border border-${statusColor}/30 clip-cyber-button hover:border-${statusColor}/50 transition-all duration-300">
-            <div class="flex items-center space-x-4">
-              <div class="w-3 h-3 ${statusDot} rounded-full animate-glow-pulse"></div>
-              <div>
-                <p class="font-medium text-neon-cyan font-retro">${tournament.name}</p>
-                <p class="text-sm text-neon-pink/70 font-mono">${new Date(tournament.createdAt).toLocaleDateString()}</p>
-              </div>
+      console.log('[Dashboard] Displaying', tournaments.length, 'tournaments');
+      tournaments.slice(0, 5).forEach(tournament => {
+        const tournamentCard = document.createElement('div');
+        tournamentCard.className = 'p-4 bg-gray-800/30 border border-neon-cyan/20 rounded hover:border-neon-cyan/40 transition-colors cursor-pointer';
+        tournamentCard.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-sm font-bold text-neon-cyan font-retro">${tournament.name}</h4>
+              <p class="text-xs text-neon-pink/70 font-mono uppercase">${tournament.status}</p>
             </div>
             <div class="text-right">
-              <div class="font-semibold text-${statusColor} font-mono uppercase">${tournament.status}</div>
               <div class="text-sm text-neon-cyan/70 font-mono">${tournament.currentPlayers}/${tournament.maxPlayers}</div>
             </div>
           </div>
         `;
+        recentTournamentsEl.appendChild(tournamentCard);
       });
     }
   } catch (error) {
@@ -423,6 +417,7 @@ async function loadRecentTournaments(container: HTMLElement, userId: string) {
       recentTournamentsEl.innerHTML = `
         <div class="text-center py-8 text-danger-500">
           <p class="text-sm font-mono uppercase">Failed to load tournaments</p>
+          <p class="text-xs text-danger-400 mt-1">${error.message}</p>
         </div>
       `;
     }
@@ -431,8 +426,11 @@ async function loadRecentTournaments(container: HTMLElement, userId: string) {
 
 async function loadActiveTournaments(container: HTMLElement, userId: string) {
   try {
+    console.log('[Dashboard] Loading active tournaments for user:', userId);
     const response = await tournamentApi.getTournaments({ status: 'ACTIVE', limit: 5 });
+    console.log('[Dashboard] Active tournaments response:', response);
     const tournaments = response.tournaments || [];
+    console.log('[Dashboard] Active tournaments array:', tournaments);
     const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
     
     if (!activeTournamentsEl) return;
@@ -442,24 +440,21 @@ async function loadActiveTournaments(container: HTMLElement, userId: string) {
     if (tournaments.length === 0) {
       activeTournamentsEl.innerHTML = `
         <div class="text-center py-8 text-neon-cyan/50">
-          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
           <p class="text-sm font-mono uppercase">No active tournaments</p>
         </div>
       `;
     } else {
-      // Show active tournaments
-      tournaments.slice(0, 2).forEach((tournament: any) => {
-        activeTournamentsEl.innerHTML += `
-          <div class="p-4 bg-secondary-900/20 backdrop-blur-lg border border-neon-green/30 clip-cyber-button hover:border-neon-green/50 transition-all duration-300">
-            <div class="flex items-center justify-between mb-3">
-              <p class="font-medium text-neon-cyan font-retro">${tournament.name}</p>
-              <span class="badge badge-success">ACTIVE</span>
-            </div>
+      console.log('[Dashboard] Displaying', tournaments.length, 'active tournaments');
+      tournaments.forEach(tournament => {
+        const tournamentCard = document.createElement('div');
+        tournamentCard.className = 'p-3 bg-gray-800/30 border border-neon-green/20 rounded hover:border-neon-green/40 transition-colors cursor-pointer';
+        tournamentCard.innerHTML = `
+          <div>
+            <h4 class="text-sm font-bold text-neon-green font-retro">${tournament.name}</h4>
             <p class="text-xs text-neon-pink/70 font-mono uppercase">Players: ${tournament.currentPlayers}/${tournament.maxPlayers}</p>
           </div>
         `;
+        activeTournamentsEl.appendChild(tournamentCard);
       });
     }
   } catch (error) {
@@ -469,6 +464,7 @@ async function loadActiveTournaments(container: HTMLElement, userId: string) {
       activeTournamentsEl.innerHTML = `
         <div class="text-center py-8 text-danger-500">
           <p class="text-sm font-mono uppercase">Failed to load active tournaments</p>
+          <p class="text-xs text-danger-400 mt-1">${error.message}</p>
         </div>
       `;
     }
