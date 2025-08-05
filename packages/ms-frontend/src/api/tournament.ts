@@ -331,8 +331,9 @@ class TournamentApi {
     return this.request<UserStats>(`/api/users/${userId}/stats`);
   }
 
-  async getMatchDetails(matchId: string): Promise<{ success: boolean; data: any }> {
-    return this.request<{ success: boolean; data: any }>(`/matches/${matchId}`);
+  async getMatchDetails(matchId: string): Promise<Match & { player1: TournamentParticipant; player2: TournamentParticipant }> {
+    const response = await this.request<Match & { player1: TournamentParticipant; player2: TournamentParticipant }>(`/matches/${matchId}`);
+    return response;
   }
 }
 
