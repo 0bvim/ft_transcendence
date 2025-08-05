@@ -123,15 +123,6 @@ class TournamentApi {
     // Check for token in multiple possible keys for compatibility
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('jwt');
     
-    console.log('[TournamentApi] Making request:', {
-      endpoint,
-      baseUrl: this.baseUrl,
-      fullUrl: `${this.baseUrl}${endpoint}`,
-      hasToken: !!token,
-      tokenSource: token ? (localStorage.getItem('accessToken') ? 'accessToken' : localStorage.getItem('token') ? 'token' : 'jwt') : 'none',
-      method: options.method || 'GET'
-    });
-    
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
@@ -140,13 +131,6 @@ class TournamentApi {
           ...(token && { 'Authorization': `Bearer ${token}` }), // Only add if token exists
           ...options.headers,
         },
-      });
-
-      console.log('[TournamentApi] Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
@@ -160,8 +144,6 @@ class TournamentApi {
       }
 
       const result = await response.json();
-      console.log('[TournamentApi] Request successful:', result);
-      // Backend returns {success, data, message} - extract the data
       return result.data || result;
     } catch (error) {
       console.error('[TournamentApi] Request error:', error);
@@ -193,17 +175,12 @@ class TournamentApi {
     const query = searchParams.toString();
     const endpoint = `/tournaments${query ? `?${query}` : ''}`;
     
-    // Make the request but don't extract data yet - we need both data and pagination
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('jwt');
-    
-    console.log('[TournamentApi] Getting tournaments with params:', params);
-    
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('jwt')}`,
         },
       });
 
@@ -213,7 +190,6 @@ class TournamentApi {
       }
 
       const result = await response.json();
-      console.log('[TournamentApi] Tournaments response:', result);
       
       // Backend returns {success, data, pagination}
       return {
@@ -244,12 +220,6 @@ class TournamentApi {
       userId: user.id || 'anonymous', // Tournament service needs userId
       displayName: user.displayName || user.username || 'Anonymous' // Tournament service needs displayName
     };
-    
-    console.log('[TournamentApi] Creating tournament with data:', {
-      originalData: data,
-      user: user,
-      requestData: requestData
-    });
     
     const response = await this.request<Tournament>('/tournaments', {
       method: 'POST',
@@ -324,6 +294,7 @@ class TournamentApi {
       method: 'POST',
       body: JSON.stringify(requestData),
     });
+    
     return response;
   }
 

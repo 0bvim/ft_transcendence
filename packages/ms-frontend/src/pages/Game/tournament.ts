@@ -462,8 +462,19 @@ async function startLocalTournamentMatch(container: HTMLElement, matchInfo: { ma
         if (gameSection) gameSection.classList.add('hidden');
         if (tournamentSection) tournamentSection.classList.remove('hidden');
         
-        // Refresh tournament data
-        await loadTournaments(container);
+        // Refresh tournament data with retry mechanism
+        const retryCount = 3;
+        let retry = 0;
+        while (retry < retryCount) {
+          try {
+            await loadTournaments(container);
+            break;
+          } catch (error) {
+            console.error('Failed to refresh tournament data:', error);
+            retry++;
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait 2 seconds before retrying
+          }
+        }
         
       } catch (error) {
         console.error('Failed to submit match result:', error);

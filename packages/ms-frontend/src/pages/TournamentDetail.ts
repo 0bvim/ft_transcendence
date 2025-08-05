@@ -5,6 +5,9 @@ import { showGame, GameType } from './Game/game.ts';
 import { GameState } from '../game/PongGame.ts';
 import { showNotification } from '../components/notification.ts';
 
+// Auto-refresh interval for tournament updates
+let tournamentRefreshInterval: NodeJS.Timeout | null = null;
+
 export default function TournamentDetail(): HTMLElement {
   const container = document.createElement('div');
   // Use a more specific class for the tournament detail page
@@ -94,6 +97,8 @@ export default function TournamentDetail(): HTMLElement {
   if (tournamentId) {
     console.log(`[TournamentDetail] Page loaded for tournamentId: ${tournamentId}`);
     loadTournamentData(container, tournamentId);
+    // Start auto-refresh for tournament updates
+    startTournamentAutoRefresh(container, tournamentId);
   } else {
     console.error('[TournamentDetail] No tournamentId found in URL.');
   }
@@ -134,31 +139,20 @@ function setupEventListeners(container: HTMLElement, tournamentId: string | unde
 
 // MODIFIED: Pass container to functions to scope DOM queries
 async function loadTournamentData(container: HTMLElement, tournamentId: string) {
-  if (!tournamentId) {
-    showNotification('Tournament ID not found', 'error');
-    return;
-  }
-
-  console.log('[TournamentDetail] Starting to load tournament data...');
   try {
+    console.log('[TournamentDetail] Loading tournament data for ID:', tournamentId);
     const tournament = await tournamentApi.getTournament(tournamentId);
-    console.log('[TournamentDetail] API response received:', tournament);
-
-    if (!tournament) throw new Error('Tournament not found in API response');
+    console.log('[TournamentDetail] Tournament status:', tournament.status, 'Matches:', tournament.matches?.length || 0);
     
-    // NEW: Centralized function to update the entire UI
-    console.log('[TournamentDetail] Updating UI with tournament data.');
     updateTournamentUI(container, tournament);
-
   } catch (error) {
-    console.error('[TournamentDetail] Failed to load or process tournament data:', error);
-    showNotification('Failed to load tournament data. Please try again.', 'error');
+    console.error('[TournamentDetail] Failed to load tournament data:', error);
+    showNotification('Failed to load tournament data', 'error');
   }
 }
 
 // NEW: A single function to update all parts of the UI from tournament data
 function updateTournamentUI(container: HTMLElement, tournament: any) {
-    console.log('[TournamentDetail] updateTournamentUI called with:', tournament);
     updateHeader(container, tournament);
     updateCurrentMatch(container, tournament);
     updateProgress(container, tournament);
@@ -168,7 +162,6 @@ function updateTournamentUI(container: HTMLElement, tournament: any) {
 
 // NEW: Function to update header elements
 function updateHeader(container: HTMLElement, tournament: any) {
-    console.log('[TournamentDetail] Updating header...');
     const nameEl = container.querySelector('#tournament-name') as HTMLElement;
     const statusEl = container.querySelector('#tournament-status') as HTMLElement;
     const playersEl = container.querySelector('#player-count') as HTMLElement;
@@ -196,7 +189,6 @@ function updateHeader(container: HTMLElement, tournament: any) {
 
 // NEW: Function to update the 'Current Match' panel
 function updateCurrentMatch(container: HTMLElement, tournament: any) {
-    console.log('[TournamentDetail] Updating current match...');
     
     // Add null check to prevent crashes
     if (!tournament || !tournament.matches) {
@@ -271,7 +263,6 @@ function updateCurrentMatch(container: HTMLElement, tournament: any) {
 
 // MODIFIED: `updateProgress` now targets the new sidebar elements
 function updateProgress(container: HTMLElement, tournament: any) {
-  console.log('[TournamentDetail] Updating progress...');
   const completedMatches = tournament.matches.filter((m: any) => m.status === 'COMPLETED').length;
   const totalMatches = tournament.matches.length;
   const remainingMatches = totalMatches - completedMatches;
@@ -288,7 +279,6 @@ function updateProgress(container: HTMLElement, tournament: any) {
 
 // NEW: Function to update the 'Upcoming' matches list
 function updateUpcomingMatches(container: HTMLElement, tournament: any) {
-    console.log('[TournamentDetail] Updating upcoming matches...');
     const upcomingList = container.querySelector('#upcoming-matches-list') as HTMLElement;
     const waitingMatches = tournament.matches.filter((m: any) => m.status === 'WAITING').slice(0, 5); // Show next 5
 
@@ -309,7 +299,6 @@ function updateUpcomingMatches(container: HTMLElement, tournament: any) {
 
 // NEW: Function to control the main game view area
 function updateGameView(container: HTMLElement, tournament: any) {
-    console.log('[TournamentDetail] Updating game view...');
     const gamePlaceholder = container.querySelector('#game-placeholder') as HTMLElement;
     const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
     const playNextMatchBtn = container.querySelector('#play-next-match-btn') as HTMLElement;
@@ -355,25 +344,35 @@ function updateGameView(container: HTMLElement, tournament: any) {
         const hasHumanPlayer = inProgressMatch.player1?.participantType === 'HUMAN' || 
                               inProgressMatch.player2?.participantType === 'HUMAN';
 
-        console.log('[TournamentDetail] Match analysis:', {
-            matchId: inProgressMatch.id,
-            player1Type: inProgressMatch.player1?.participantType,
-            player2Type: inProgressMatch.player2?.participantType,
-            isUserInMatch,
-            isAIvsAI,
-            hasHumanPlayer,
-            isCanvasEmpty
-        });
+        // Check if canvas contains a "Match Complete" message (indicating previous match finished)
+        const hasMatchCompleteMessage = gameCanvasContainer.innerHTML.includes('Match Complete') || 
+                                       gameCanvasContainer.innerHTML.includes('Processing next round');
 
-        if (hasHumanPlayer && isCanvasEmpty) {
+        // Check if we're already showing a waiting screen for this specific match
+        const isShowingWaitingScreen = gameCanvasContainer.innerHTML.includes(`match-${inProgressMatch.id}`);
+        
+        // Check if we're currently showing a game (has canvas elements)
+        const hasActiveGame = gameCanvasContainer.querySelector('canvas') !== null;
+
+        if (hasHumanPlayer && (isCanvasEmpty || hasMatchCompleteMessage) && !isShowingWaitingScreen && !hasActiveGame) {
             console.log('[TournamentDetail] Human match detected - showing waiting screen.');
             showHumanMatchWaitingScreen(container, tournament, inProgressMatch);
-        } else if (isAIvsAI) {
+        } else if (isAIvsAI && !isShowingWaitingScreen && !hasActiveGame) {
             console.log('[TournamentDetail] Auto-starting AI vs AI match for resolution.');
+            // Only clear if we're not showing an active game
+            if (!hasActiveGame) {
+                gameCanvasContainer.innerHTML = '';
+            }
             simulateAIvsAIMatch(container, tournament, inProgressMatch);
         } else {
             console.log('[TournamentDetail] No action taken for IN_PROGRESS match:', {
-                reason: hasHumanPlayer ? 'Canvas not empty' : (isAIvsAI ? 'AI vs AI but canvas not empty' : 'Unknown state')
+                reason: hasHumanPlayer ? 
+                    (isShowingWaitingScreen ? 'Already showing waiting screen' : 
+                     hasActiveGame ? 'Game is active' : 'Canvas not ready') : 
+                    (isAIvsAI ? 'AI vs AI but not ready' : 'Unknown state'),
+                hasActiveGame,
+                isShowingWaitingScreen,
+                canvasContent: gameCanvasContainer.innerHTML.substring(0, 50) + '...'
             });
         }
     } else {
@@ -398,7 +397,6 @@ function updateGameView(container: HTMLElement, tournament: any) {
 
 // NEW: Helper to find the user's next playable match
 function findNextPlayableMatch(tournament: any): any | null {
-    console.log('[TournamentDetail] Finding next playable match...');
     
     // Find any WAITING match that has at least one human player
     const match = tournament.matches.find((m: any) => {
@@ -406,7 +404,6 @@ function findNextPlayableMatch(tournament: any): any | null {
         return m.status === 'WAITING' && hasHumanPlayer;
     });
     
-    console.log('[TournamentDetail] Found next match:', match);
     return match;
 }
 
@@ -490,6 +487,9 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
         // Create the callback with the necessary data in its closure
         const onGameEnd = async (finalState: GameState) => {
             console.log('[TournamentDetail] Game ended. Final state:', finalState);
+            console.log('[TournamentDetail] Match ID:', actualMatchId);
+            console.log('[TournamentDetail] Tournament ID:', tournament.id);
+            
             try {
                 // For human matches, the result object contains the score and winner string
                 const resultPayload = {
@@ -497,19 +497,24 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
                     score: finalState.score
                 };
 
+                console.log('[TournamentDetail] Submitting match result:', resultPayload);
+                console.log('[TournamentDetail] Match info:', matchInfo);
+
                 await tournamentApi.submitMatchResult(
                     actualMatchId, 
                     resultPayload, // The game result 
                     matchInfo      // The original match data for context
                 );
+                
+                console.log('[TournamentDetail] Match result submitted successfully');
                 showNotification('Match result submitted!', 'success');
 
-                // NEW: Immediately clear canvas and show loading message
+                // NEW: Show completion message and immediately start refresh process
                 gameCanvasContainer.innerHTML = `
                     <div class="flex items-center justify-center h-full text-white">
                         <div class="text-center">
                             <div class="text-xl mb-4">🏆 Match Complete!</div>
-                            <div class="text-lg mb-2">Winner: ${resultPayload.winner}</div>
+                            <div class="text-lg mb-2">Winner: ${resultPayload.winner === 'PLAYER_1' ? player1Name : player2Name}</div>
                             <div class="text-lg mb-4">Score: ${resultPayload.score.player1} - ${resultPayload.score.player2}</div>
                             <div class="text-sm opacity-75">Processing next round...</div>
                             <div class="animate-pulse">
@@ -519,10 +524,19 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
                     </div>
                 `;
 
-                // Add a longer delay to ensure backend processing completes
-                setTimeout(async () => {
-                    await loadTournamentData(container, tournament.id);
-                }, 1000);
+                console.log('[TournamentDetail] Starting enhanced refresh with retry...');
+                
+                // Temporarily stop auto-refresh to prevent interference
+                stopTournamentAutoRefresh();
+                
+                // Enhanced refresh mechanism with retry logic
+                await refreshTournamentWithRetry(container, tournament.id, 3);
+
+                // Show completion message for 2 seconds, then restart auto-refresh
+                setTimeout(() => {
+                    console.log('[TournamentDetail] Restarting auto-refresh after match completion');
+                    startTournamentAutoRefresh(container, tournament.id);
+                }, 2000);
 
             } catch (error) {
                 resultSubmitted = false; // Allow retry
@@ -605,9 +619,12 @@ async function simulateAIvsAIMatch(container: HTMLElement, tournament: any, matc
             <div class="text-center">
                 <div class="text-xl mb-4">🤖 AI vs AI Match Complete</div>
                 <div class="text-lg mb-2">${matchInfo.player1?.displayName} vs ${matchInfo.player2?.displayName}</div>
-                <div class="text-lg mb-4">Winner: ${result.winner}</div>
+                <div class="text-lg mb-2">Winner: ${result.winnerId === matchInfo.player1?.id ? matchInfo.player1?.displayName : matchInfo.player2?.displayName}</div>
                 <div class="text-lg mb-4">Score: ${result.scorePlayer1} - ${result.scorePlayer2}</div>
                 <div class="text-sm opacity-75">Processing next round...</div>
+                <div class="animate-pulse">
+                    <div class="w-8 h-8 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
             </div>
         </div>
     `;
@@ -621,8 +638,17 @@ async function simulateAIvsAIMatch(container: HTMLElement, tournament: any, matc
 
         showNotification('AI vs AI match completed!', 'success');
         
-        // Refresh tournament data immediately
-        await loadTournamentData(container, tournament.id);
+        // Temporarily stop auto-refresh to prevent interference
+        stopTournamentAutoRefresh();
+        
+        // Use the enhanced refresh mechanism with retry logic
+        await refreshTournamentWithRetry(container, tournament.id, 3);
+
+        // Show completion message for 2 seconds, then restart auto-refresh
+        setTimeout(() => {
+            console.log('[TournamentDetail] Restarting auto-refresh after AI match completion');
+            startTournamentAutoRefresh(container, tournament.id);
+        }, 2000);
 
     } catch (error) {
         console.error('[TournamentDetail] Failed to submit AI vs AI match result:', error);
@@ -632,7 +658,6 @@ async function simulateAIvsAIMatch(container: HTMLElement, tournament: any, matc
 
 // NEW: Function to simulate a match between two AI players
 async function simulateMatch(matchInfo: any): Promise<{ winnerId: string; scorePlayer1: number; scorePlayer2: number }> {
-    console.log('[TournamentDetail] Simulating match:', matchInfo.id);
     // Simulate the match here...
     // For demonstration purposes, just return a random result
     let scorePlayer1 = Math.floor(Math.random() * 6);
@@ -667,11 +692,17 @@ function showHumanMatchWaitingScreen(container: HTMLElement, tournament: any, ma
     console.log('[TournamentDetail] Showing waiting screen for human match:', matchInfo.id);
     const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
 
+    // Check if we're already showing a waiting screen for this match to prevent duplicates
+    if (gameCanvasContainer.innerHTML.includes(`match-${matchInfo.id}`)) {
+        console.log('[TournamentDetail] Waiting screen already shown for this match, skipping...');
+        return;
+    }
+
     const player1Type = matchInfo.player1?.participantType || 'UNKNOWN';
     const player2Type = matchInfo.player2?.participantType || 'UNKNOWN';
 
     gameCanvasContainer.innerHTML = `
-        <div class="flex items-center justify-center h-full text-white bg-gradient-to-br from-neon-cyan/5 to-neon-pink/5">
+        <div class="flex items-center justify-center h-full text-white bg-gradient-to-br from-neon-cyan/5 to-neon-pink/5" data-match-id="match-${matchInfo.id}">
             <div class="text-center max-w-md mx-auto p-8 bg-gray-900/80 rounded-lg border border-neon-cyan/30">
                 <div class="text-3xl mb-6">👥 Human Match Ready</div>
                 
@@ -712,14 +743,94 @@ function showHumanMatchWaitingScreen(container: HTMLElement, tournament: any, ma
                 </div>
                 
                 <button id="start-match-btn" class="btn btn-primary bg-neon-cyan text-black hover:bg-neon-cyan/80 px-8 py-3 rounded-lg font-semibold transition-all">
-                    START MATCH
+                    <span class="start-text">START MATCH</span>
+                    <span class="loading-text hidden">
+                        <div class="flex items-center justify-center">
+                            <div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
+                            STARTING...
+                        </div>
+                    </span>
                 </button>
             </div>
         </div>
     `;
 
-    const startMatchBtn = gameCanvasContainer.querySelector('#start-match-btn');
+    const startMatchBtn = gameCanvasContainer.querySelector('#start-match-btn') as HTMLElement;
     startMatchBtn?.addEventListener('click', async () => {
-        await startTournamentMatch(container, tournament, matchInfo);
+        // Prevent multiple clicks
+        if (startMatchBtn.classList.contains('loading')) return;
+        
+        // Show loading state immediately
+        startMatchBtn.classList.add('loading', 'opacity-75', 'cursor-not-allowed');
+        startMatchBtn.disabled = true;
+        
+        const startText = startMatchBtn.querySelector('.start-text') as HTMLElement;
+        const loadingText = startMatchBtn.querySelector('.loading-text') as HTMLElement;
+        
+        if (startText) startText.classList.add('hidden');
+        if (loadingText) loadingText.classList.remove('hidden');
+        
+        // Add a small delay to ensure loading state is visible
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        try {
+            await startTournamentMatch(container, tournament, matchInfo);
+        } catch (error) {
+            // Reset button state on error
+            startMatchBtn.classList.remove('loading', 'opacity-75', 'cursor-not-allowed');
+            startMatchBtn.disabled = false;
+            if (startText) startText.classList.remove('hidden');
+            if (loadingText) loadingText.classList.add('hidden');
+            console.error('[TournamentDetail] Failed to start match:', error);
+        }
     });
 }
+
+// NEW: Function to refresh tournament data with retry logic
+async function refreshTournamentWithRetry(container: HTMLElement, tournamentId: string, retries: number = 3, delay: number = 1000) {
+    console.log(`[TournamentDetail] Starting refresh with retry. Retries left: ${retries}, Delay: ${delay}ms`);
+    try {
+        await loadTournamentData(container, tournamentId);
+        console.log('[TournamentDetail] Tournament data refreshed successfully');
+    } catch (error) {
+        console.error('[TournamentDetail] Failed to refresh tournament data:', error);
+        if (retries > 0) {
+            console.log(`[TournamentDetail] Failed to refresh tournament data. Retrying in ${delay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            await refreshTournamentWithRetry(container, tournamentId, retries - 1, delay * 1.5); // Exponential backoff
+        } else {
+            console.error('[TournamentDetail] Failed to refresh tournament data after all retries');
+            showNotification('Failed to refresh tournament data. Please try again.', 'error');
+        }
+    }
+}
+
+// Auto-refresh functionality for tournament details
+function startTournamentAutoRefresh(container: HTMLElement, tournamentId: string): void {
+  // Clear any existing interval
+  stopTournamentAutoRefresh();
+  
+  console.log('[TournamentDetail] Starting auto-refresh with 15-second interval');
+  
+  // Refresh tournament every 15 seconds (less aggressive now that canvas clearing is fixed)
+  tournamentRefreshInterval = setInterval(async () => {
+    try {
+      console.log('[TournamentDetail] Auto-refresh triggered - refreshing tournament data...');
+      await loadTournamentData(container, tournamentId);
+    } catch (error) {
+      console.error('[TournamentDetail] Auto-refresh failed:', error);
+    }
+  }, 15000);
+}
+
+function stopTournamentAutoRefresh(): void {
+  if (tournamentRefreshInterval) {
+    clearInterval(tournamentRefreshInterval);
+    tournamentRefreshInterval = null;
+  }
+}
+
+// Clean up auto-refresh when page is unloaded
+window.addEventListener('beforeunload', () => {
+  stopTournamentAutoRefresh();
+});
