@@ -337,10 +337,45 @@ export class PongGame {
 
   private handleResize(p: p5, container: HTMLElement): void {
     const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
     const aspectRatio = Board.width / Board.height;
-    const newHeight = containerWidth / aspectRatio;
+    
+    // Calculate optimal canvas size based on container
+    let canvasWidth = containerWidth;
+    let canvasHeight = containerWidth / aspectRatio;
+    
+    // If calculated height exceeds container height, scale down
+    if (canvasHeight > containerHeight) {
+      canvasHeight = containerHeight;
+      canvasWidth = containerHeight * aspectRatio;
+    }
+    
+    // Ensure minimum size for playability
+    const minWidth = 400;
+    const minHeight = minWidth / aspectRatio;
+    
+    if (canvasWidth < minWidth) {
+      canvasWidth = minWidth;
+      canvasHeight = minHeight;
+    }
 
-    p.resizeCanvas(containerWidth, newHeight);
-    this.scaleFactor = containerWidth / Board.width;
+    p.resizeCanvas(canvasWidth, canvasHeight);
+    this.scaleFactor = canvasWidth / Board.width;
+    
+    // Adjust viewport to fit canvas
+    this.adjustViewport(container, canvasWidth, canvasHeight);
+  }
+  
+  private adjustViewport(container: HTMLElement, canvasWidth: number, canvasHeight: number): void {
+    // Find the game viewport container
+    const viewport = container.closest('#game-viewport') || 
+                    document.querySelector('#game-viewport');
+    
+    if (viewport) {
+      // Set viewport height to accommodate canvas with some padding
+      const viewportHeight = canvasHeight + 48; // 48px for padding (24px top + 24px bottom)
+      (viewport as HTMLElement).style.height = `${viewportHeight}px`;
+      (viewport as HTMLElement).style.minHeight = `${viewportHeight}px`;
+    }
   }
 }

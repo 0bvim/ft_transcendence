@@ -30,7 +30,10 @@ export default function TournamentDetail(): HTMLElement {
           </span>
         </div>
         <div class="flex items-center space-x-4">
-            <span id="player-count" class="text-sm text-gray-300 font-medium">Players: 0/0</span>
+            <div class="text-right">
+                <div id="player-count" class="text-lg font-bold text-neon-cyan">0/0 Players</div>
+                <div id="tournament-type" class="text-xs text-gray-400">Tournament Type</div>
+            </div>
             <button id="start-tournament-btn" class="btn btn-primary btn-sm hidden">START TOURNAMENT</button>
             <button id="exit-tournament-btn" class="btn btn-outline btn-sm border-red-500 text-red-500 hover:bg-red-500 hover:text-white">
                 EXIT TOURNAMENT
@@ -38,59 +41,120 @@ export default function TournamentDetail(): HTMLElement {
         </div>
       </div>
 
+      <!-- Join Notification Area -->
+      <div id="join-notification" class="hidden mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span class="text-green-400 text-sm font-medium" id="join-message"></span>
+        </div>
+      </div>
+
       <!-- Main Content -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="space-y-8">
         
-        <!-- Left Sidebar -->
-        <div class="lg:col-span-1 space-y-6">
-          <!-- CURRENT MATCH -->
-          <div class="card bg-gray-800/50 border border-gray-700 p-4">
-            <h2 class="text-lg font-semibold text-purple-400 mb-3">CURRENT MATCH</h2>
-            <div id="current-match-info" class="space-y-2 text-sm">
-              <p>No active match.</p>
+        <!-- Tournament Info Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
+          
+          <!-- PARTICIPANTS Card -->
+          <div class="md:col-span-2">
+            <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
+              <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+                <span class="mr-2">👥</span>
+                PARTICIPANTS
+              </h2>
+              <div id="participants-list" class="space-y-2 overflow-y-auto max-h-80">
+                <p class="text-sm text-gray-400">Loading participants...</p>
+              </div>
             </div>
           </div>
 
-          <!-- PROGRESS -->
-          <div class="card bg-gray-800/50 border border-gray-700 p-4">
-            <h2 class="text-lg font-semibold text-purple-400 mb-3">PROGRESS</h2>
-            <div id="tournament-progress-info" class="space-y-2 text-sm">
+          <!-- CURRENT MATCH Card -->
+          <div class="md:col-span-1">
+            <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
+              <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+                <span class="mr-2">⚔️</span>
+                CURRENT MATCH
+              </h2>
+              <div id="current-match-info" class="space-y-2 text-sm">
+                <p>No active match.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Second Row - Progress and Tournament Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- PROGRESS Card -->
+          <div class="card bg-gray-800/50 border border-gray-700 p-6">
+            <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+              <span class="mr-2">📊</span>
+              PROGRESS
+            </h2>
+            <div id="tournament-progress-info" class="space-y-4 text-sm">
                 <div class="flex justify-between">
                     <span>Matches Completed:</span>
-                    <span id="completed-matches">0</span>
+                    <span id="completed-matches" class="font-bold text-green-400">0</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Matches Remaining:</span>
-                    <span id="remaining-matches">0</span>
+                    <span id="remaining-matches" class="font-bold text-yellow-400">0</span>
                 </div>
-                <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
-                    <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                <div class="w-full bg-gray-700 rounded-full h-3 mt-4">
+                    <div id="progress-bar" class="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
           </div>
 
-          <!-- UPCOMING -->
-          <div class="card bg-gray-800/50 border border-gray-700 p-4">
-            <h2 class="text-lg font-semibold text-purple-400 mb-3">UPCOMING</h2>
-            <div id="upcoming-matches-list" class="space-y-3">
-              <p class="text-sm text-gray-400">No upcoming matches.</p>
+          <!-- TOURNAMENT INFO Card -->
+          <div class="card bg-gray-800/50 border border-gray-700 p-6">
+            <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+              <span class="mr-2">ℹ️</span>
+              TOURNAMENT INFO
+            </h2>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Format:</span>
+                <span class="text-white" id="tournament-format">Single Elimination</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Max Players:</span>
+                <span class="text-white" id="max-players">4</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Created:</span>
+                <span class="text-white" id="created-date">Loading...</span>
+              </div>
             </div>
           </div>
+
         </div>
 
-        <!-- Game Area -->
-        <div class="lg:col-span-2 bg-black rounded-lg border-2 border-purple-500/50 flex items-center justify-center min-h-[60vh] p-4" id="game-viewport">
-            <div id="game-placeholder" class="text-center">
-                <h3 class="text-2xl font-bold text-gray-400">Waiting for match...</h3>
-                <p class="text-gray-500 mt-2">The game will appear here when a match starts.</p>
-                <button id="play-next-match-btn" class="btn btn-primary mt-6 hidden">PLAY MY MATCH</button>
+        <!-- Game Area - Full Width at Bottom -->
+        <div class="w-full">
+          <div class="card bg-black border-2 border-purple-500/50 overflow-hidden">
+            <div class="min-h-[60vh] max-h-[80vh] flex items-center justify-center p-6" id="game-viewport">
+                <div id="game-placeholder" class="text-center">
+                    <div class="mb-6">
+                      <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-3xl">
+                        🎮
+                      </div>
+                      <h3 class="text-3xl font-bold text-gray-300 mb-2">Waiting for match...</h3>
+                      <p class="text-gray-500 text-lg">The game will appear here when a match starts.</p>
+                    </div>
+                    <button id="play-next-match-btn" class="btn btn-primary btn-lg hidden px-8 py-4 text-lg">
+                      <span class="mr-2">🚀</span>
+                      PLAY MY MATCH
+                    </button>
+                </div>
+                <div id="canvasContainer" class="w-full h-full absolute inset-0 hidden"></div>
             </div>
-            <div id="canvasContainer" class="w-full h-full relative hidden"></div>
+          </div>
         </div>
 
       </div>
-    </div>
-  `;
+    `;
 
   // Re-wire event listeners to the new elements
   setupEventListeners(container, tournamentId);
@@ -154,9 +218,9 @@ async function loadTournamentData(container: HTMLElement, tournamentId: string) 
 // NEW: A single function to update all parts of the UI from tournament data
 function updateTournamentUI(container: HTMLElement, tournament: any) {
     updateHeader(container, tournament);
+    updateParticipants(container, tournament);
     updateCurrentMatch(container, tournament);
     updateProgress(container, tournament);
-    updateUpcomingMatches(container, tournament);
     updateGameView(container, tournament);
 }
 
@@ -165,25 +229,128 @@ function updateHeader(container: HTMLElement, tournament: any) {
     const nameEl = container.querySelector('#tournament-name') as HTMLElement;
     const statusEl = container.querySelector('#tournament-status') as HTMLElement;
     const playersEl = container.querySelector('#player-count') as HTMLElement;
+    const typeEl = container.querySelector('#tournament-type') as HTMLElement;
     const startBtn = container.querySelector('#start-tournament-btn') as HTMLElement;
+    
+    // Update tournament info section
+    const formatEl = container.querySelector('#tournament-format') as HTMLElement;
+    const maxPlayersEl = container.querySelector('#max-players') as HTMLElement;
+    const createdDateEl = container.querySelector('#created-date') as HTMLElement;
 
     if (nameEl) nameEl.textContent = tournament.name;
     if (statusEl) {
         statusEl.textContent = tournament.status;
         statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(tournament.status)}`;
     }
-    if (playersEl) playersEl.textContent = `Players: ${tournament.currentPlayers}/${tournament.maxPlayers}`;
+    if (playersEl) playersEl.textContent = `${tournament.currentPlayers}/${tournament.maxPlayers} Players`;
+    if (typeEl) typeEl.textContent = `${tournament.maxPlayers}-Player Tournament`;
+    
+    // Update tournament info section
+    if (formatEl) formatEl.textContent = 'Single Elimination';
+    if (maxPlayersEl) maxPlayersEl.textContent = tournament.maxPlayers.toString();
+    if (createdDateEl) {
+        const date = new Date(tournament.createdAt);
+        createdDateEl.textContent = date.toLocaleDateString();
+    }
 
     // Logic to show/hide the start button
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const isCreator = user.id === tournament.createdBy;
-    const isFull = tournament.currentPlayers === tournament.maxPlayers;
-    const isWaiting = tournament.status === 'WAITING';
+    const canStart = tournament.status === 'WAITING' && isCreator && 
+                    tournament.currentPlayers === tournament.maxPlayers;
 
-    if (startBtn && isCreator && isFull && isWaiting) {
-      startBtn.classList.remove('hidden');
-    } else if (startBtn) {
-      startBtn.classList.add('hidden');
+    if (startBtn) {
+        if (canStart) {
+            startBtn.classList.remove('hidden');
+        } else {
+            startBtn.classList.add('hidden');
+        }
+    }
+}
+
+// NEW: Function to update the PARTICIPANTS section
+function updateParticipants(container: HTMLElement, tournament: any) {
+    const participantsList = container.querySelector('#participants-list') as HTMLElement;
+    const participants = tournament.participants || [];
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isCreator = currentUser.id === tournament.createdBy;
+
+    if (participants.length > 0) {
+        participantsList.innerHTML = participants.map((p: any, index: number) => {
+            const isCurrentUser = p.userId === currentUser.id;
+            const isHost = p.userId === tournament.createdBy;
+            
+            return `
+                <div class="bg-gray-700/50 rounded-lg p-3 border border-gray-600 hover:border-purple-500/50 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+                                ${p.displayName ? p.displayName.charAt(0).toUpperCase() : (p.participantType === 'AI' ? '🤖' : '?')}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium text-white truncate">
+                                        ${p.displayName || (p.participantType === 'AI' ? `AI Player ${index + 1}` : 'Unknown')}
+                                    </span>
+                                    ${isCurrentUser ? '<span class="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">YOU</span>' : ''}
+                                    ${isHost ? '<span class="bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full font-semibold">HOST</span>' : ''}
+                                </div>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <span class="text-xs text-gray-400">${p.participantType === 'AI' ? 'AI Player' : 'Human'}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full ${getParticipantStatusColor(p.status)}">
+                                        ${p.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add empty slots if tournament is not full
+        const emptySlots = tournament.maxPlayers - participants.length;
+        if (emptySlots > 0) {
+            const emptySlotHTML = Array.from({length: emptySlots}, (_, i) => `
+                <div class="bg-gray-800/30 rounded-lg p-3 border border-gray-600 border-dashed">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center animate-pulse">
+                            <span class="text-gray-400 text-lg">👤</span>
+                        </div>
+                        <div class="flex-1">
+                            <span class="text-gray-400 text-sm">Waiting for player...</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            participantsList.innerHTML += emptySlotHTML;
+        }
+    } else {
+        participantsList.innerHTML = `
+            <div class="text-center py-6">
+                <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl mx-auto mb-3">
+                    👥
+                </div>
+                <p class="text-sm text-gray-400 mb-2">No participants yet</p>
+                <p class="text-xs text-gray-500">Tournament needs ${tournament.maxPlayers} players to start</p>
+            </div>
+        `;
+    }
+}
+
+// NEW: Function to show a notification when a player joins the tournament
+function showJoinNotification(container: HTMLElement, player: any) {
+    const joinNotification = container.querySelector('#join-notification') as HTMLElement;
+    const joinMessage = container.querySelector('#join-message') as HTMLElement;
+
+    if (joinNotification && joinMessage) {
+        joinNotification.classList.remove('hidden');
+        joinMessage.textContent = `${player.displayName} has joined the tournament!`;
+
+        setTimeout(() => {
+            joinNotification.classList.add('hidden');
+        }, 3000);
     }
 }
 
@@ -277,26 +444,6 @@ function updateProgress(container: HTMLElement, tournament: any) {
   if (progressBarEl) progressBarEl.style.width = `${progressPercent}%`;
 }
 
-// NEW: Function to update the 'Upcoming' matches list
-function updateUpcomingMatches(container: HTMLElement, tournament: any) {
-    const upcomingList = container.querySelector('#upcoming-matches-list') as HTMLElement;
-    const waitingMatches = tournament.matches.filter((m: any) => m.status === 'WAITING').slice(0, 5); // Show next 5
-
-    if (waitingMatches.length > 0) {
-        upcomingList.innerHTML = waitingMatches.map((match: any) => `
-            <div class="text-sm p-2 bg-gray-700/50 rounded-md">
-                <div class="flex justify-between">
-                    <span>${match.player1?.displayName || 'TBD'} vs ${match.player2?.displayName || 'TBD'}</span>
-                    <span class="text-yellow-400">WAITING</span>
-                </div>
-                <div class="text-xs text-gray-400">Round ${match.round} - Match ${match.matchNumber}</div>
-            </div>
-        `).join('');
-    } else {
-        upcomingList.innerHTML = '<p class="text-sm text-gray-400">No upcoming matches.</p>';
-    }
-}
-
 // NEW: Function to control the main game view area
 function updateGameView(container: HTMLElement, tournament: any) {
     const gamePlaceholder = container.querySelector('#game-placeholder') as HTMLElement;
@@ -336,7 +483,7 @@ function updateGameView(container: HTMLElement, tournament: any) {
                              (inProgressMatch.player2?.userId === user.id || inProgressMatch.player2?.id === user.id);
         const isCanvasEmpty = gameCanvasContainer.innerHTML.trim() === '';
 
-        // Check if this is an AI vs AI match (regardless of user participation)
+        // Check if this is an AI vs AI match - these should be auto-resolved by backend
         const isAIvsAI = inProgressMatch.player1?.participantType === 'AI' && 
                          inProgressMatch.player2?.participantType === 'AI';
 
@@ -414,11 +561,11 @@ async function startTournamentMatch(container: HTMLElement, tournament: any, sel
     const gamePlaceholder = container.querySelector('#game-placeholder') as HTMLElement;
 
     try {
-        // Show loading state in game viewport
+        // Clear and show game area properly
         gamePlaceholder.classList.add('hidden');
         gameCanvasContainer.classList.remove('hidden');
-        gameCanvasContainer.innerHTML = `<div class="text-white">LOADING MATCH...</div>`;
-
+        gameCanvasContainer.innerHTML = ''; // Clear any previous content
+        
         // The backend auto-sets the match to IN_PROGRESS on this call
         const matchDetails = await tournamentApi.getMatchDetails(selectedMatch.id);
         console.log('[TournamentDetail] getMatchDetails response:', matchDetails);
@@ -604,6 +751,15 @@ function getStatusColor(status: string): string {
   }
 }
 
+function getParticipantStatusColor(status: string): string {
+    switch (status) {
+        case 'ACTIVE': return 'bg-green-500/20 text-green-400';
+        case 'ELIMINATED': return 'bg-red-500/20 text-red-400';
+        case 'WINNER': return 'bg-yellow-500/20 text-yellow-400';
+        default: return 'bg-gray-500/20 text-gray-400';
+    }
+}
+
 // NEW: Function to simulate an AI vs AI match
 async function simulateAIvsAIMatch(container: HTMLElement, tournament: any, matchInfo: any) {
     console.log('[TournamentDetail] Simulating AI vs AI match:', matchInfo.id);
@@ -742,7 +898,7 @@ function showHumanMatchWaitingScreen(container: HTMLElement, tournament: any, ma
                     }
                 </div>
                 
-                <button id="start-match-btn" class="btn btn-primary bg-neon-cyan text-black hover:bg-neon-cyan/80 px-8 py-3 rounded-lg font-semibold transition-all">
+                <button id="start-match-btn" class="btn btn-primary bg-neon-cyan text-black hover:bg-neon-cyan/80 px-8 py-4 text-lg">
                     <span class="start-text">START MATCH</span>
                     <span class="loading-text hidden">
                         <div class="flex items-center justify-center">
@@ -810,9 +966,9 @@ function startTournamentAutoRefresh(container: HTMLElement, tournamentId: string
   // Clear any existing interval
   stopTournamentAutoRefresh();
   
-  console.log('[TournamentDetail] Starting auto-refresh with 15-second interval');
+  console.log('[TournamentDetail] Starting auto-refresh with 5-second interval for waiting room');
   
-  // Refresh tournament every 15 seconds (less aggressive now that canvas clearing is fixed)
+  // More frequent refresh during waiting phase (5 seconds) to catch new participants
   tournamentRefreshInterval = setInterval(async () => {
     try {
       console.log('[TournamentDetail] Auto-refresh triggered - refreshing tournament data...');
@@ -820,7 +976,7 @@ function startTournamentAutoRefresh(container: HTMLElement, tournamentId: string
     } catch (error) {
       console.error('[TournamentDetail] Auto-refresh failed:', error);
     }
-  }, 15000);
+  }, 5000); // Back to 5 seconds for better real-time updates
 }
 
 function stopTournamentAutoRefresh(): void {
