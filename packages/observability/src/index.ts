@@ -257,7 +257,7 @@ const setupRequestLogging = (
       }
 
       // Only log important requests (API calls, not static assets)
-      if (url.startsWith('/api/') || url.startsWith('/auth/') || url.startsWith('/tournament/')) {
+      if (url.startsWith('/api/') || url.startsWith('/auth/') || url.startsWith('/tournament/') || url.startsWith('/tournaments') || url.startsWith('/matches')) {
         fastify.log.info(
           {
             method: request.method,
@@ -295,7 +295,7 @@ const setupRequestLogging = (
           },
           `Error response: ${request.method} ${request.url} - ${reply.statusCode} (${reply.elapsedTime}ms)`,
         );
-      } else if (url.startsWith('/api/') || url.startsWith('/auth/') || url.startsWith('/tournament/')) {
+      } else if (url.startsWith('/api/') || url.startsWith('/auth/') || url.startsWith('/tournament/') || url.startsWith('/tournaments') || url.startsWith('/matches')) {
         // Only log successful API calls at debug level to reduce noise
         fastify.log.debug(
           {

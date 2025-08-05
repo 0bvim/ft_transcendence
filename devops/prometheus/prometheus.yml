@@ -6,25 +6,8 @@ rule_files:
   - "alerts.yml"
 
 scrape_configs:
-  # Prometheus self-monitoring (internal, no auth needed)
-  - job_name: "prometheus"
-    scheme: http
-    static_configs:
-      - targets: ["localhost:9090"]
 
   # Microservices 
-  - job_name: "ms-game"
-    scheme: https
-    tls_config:
-      ca_file: /etc/prometheus/certs/ca.crt
-      cert_file: /etc/prometheus/certs/prometheus.crt
-      key_file: /etc/prometheus/certs/prometheus.key
-      server_name: localhost
-      insecure_skip_verify: false
-    static_configs:
-      - targets: ["game:3002"]
-    metrics_path: "/metrics"
-    
   - job_name: "ms-auth"
     scheme: https
     tls_config:

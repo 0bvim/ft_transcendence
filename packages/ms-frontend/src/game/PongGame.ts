@@ -340,23 +340,30 @@ export class PongGame {
     const containerHeight = container.clientHeight;
     const aspectRatio = Board.width / Board.height;
     
-    // Calculate optimal canvas size based on container
-    let canvasWidth = containerWidth;
-    let canvasHeight = containerWidth / aspectRatio;
+    // Calculate optimal canvas size based on container with tournament-style constraints
+    let canvasWidth = Math.min(containerWidth * 0.95, containerWidth - 48); // Account for p-6 padding (24px each side)
+    let canvasHeight = canvasWidth / aspectRatio;
     
-    // If calculated height exceeds container height, scale down
-    if (canvasHeight > containerHeight) {
-      canvasHeight = containerHeight;
-      canvasWidth = containerHeight * aspectRatio;
+    // Tournament viewport uses min-h-[60vh] max-h-[80vh], so respect those bounds
+    const maxHeight = containerHeight * 0.9; // Leave some margin within the viewport
+    if (canvasHeight > maxHeight) {
+      canvasHeight = maxHeight;
+      canvasWidth = canvasHeight * aspectRatio;
     }
     
-    // Ensure minimum size for playability
-    const minWidth = 400;
+    // Set minimum size appropriate for tournament-style viewport
+    const minWidth = Math.max(600, containerWidth * 0.7); // Tournament needs good visibility
     const minHeight = minWidth / aspectRatio;
     
     if (canvasWidth < minWidth) {
       canvasWidth = minWidth;
       canvasHeight = minHeight;
+    }
+
+    // Ensure canvas doesn't exceed container bounds (important for tournament viewport)
+    if (canvasWidth > containerWidth - 48) { // Account for padding
+      canvasWidth = containerWidth - 48;
+      canvasHeight = canvasWidth / aspectRatio;
     }
 
     p.resizeCanvas(canvasWidth, canvasHeight);
@@ -367,15 +374,22 @@ export class PongGame {
   }
   
   private adjustViewport(container: HTMLElement, canvasWidth: number, canvasHeight: number): void {
-    // Find the game viewport container
+    // Find the game viewport container (tournament-style)
     const viewport = container.closest('#game-viewport') || 
                     document.querySelector('#game-viewport');
     
     if (viewport) {
-      // Set viewport height to accommodate canvas with some padding
-      const viewportHeight = canvasHeight + 48; // 48px for padding (24px top + 24px bottom)
-      (viewport as HTMLElement).style.height = `${viewportHeight}px`;
-      (viewport as HTMLElement).style.minHeight = `${viewportHeight}px`;
+      // Tournament-style viewport already has proper min-h-[60vh] max-h-[80vh] constraints
+      // Just ensure the canvas container is properly positioned
+      const canvasContainer = container as HTMLElement;
+      canvasContainer.style.position = 'absolute';
+      canvasContainer.style.top = '0';
+      canvasContainer.style.left = '0';
+      canvasContainer.style.width = '100%';
+      canvasContainer.style.height = '100%';
+      canvasContainer.style.display = 'flex';
+      canvasContainer.style.justifyContent = 'center';
+      canvasContainer.style.alignItems = 'center';
     }
   }
 }

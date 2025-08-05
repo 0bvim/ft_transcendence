@@ -29,6 +29,10 @@ services:
       - "3001:3001"
     environment:
       - JWT_SECRET=${JWT_SECRET}
+      # Logstash configuration for ELK stack
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5001
+      - LOGSTASH_PROTOCOL=https
     volumes:
       - ./packages/ms-auth/prisma:/app/prisma
       - ./packages/ms-auth/src:/app/src
@@ -49,6 +53,10 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - AUTH_SERVICE_URL=https://authentication:3001
       - GAME_SERVICE_URL=https://game:3003
+      # Logstash configuration for ELK stack
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5001
+      - LOGSTASH_PROTOCOL=https
     volumes:
       - ./packages/ms-tournament/src:/app/src
       - ./packages/ms-tournament/prisma:/app/prisma

@@ -111,34 +111,38 @@ export default function GamePage(): HTMLElement {
       <!-- Game Section (hidden by default) -->
       <div id="gameSection" class="hidden animate-fade-in flex flex-col items-center justify-center">
         <h2 id="gameTitle" class="text-3xl font-bold text-neon-green font-retro tracking-wider mb-8"></h2>
-        <div class="relative bg-black border-2 border-neon-cyan rounded-lg overflow-hidden mx-auto w-full max-w-4xl">
-            <div id="canvasContainer" class="w-full h-full"></div>
-            <div id="gameOverlay" class="absolute inset-0 flex flex-col items-center p-4 pointer-events-none">
+        <div class="w-full">
+          <div class="card bg-black border-2 border-neon-cyan overflow-hidden">
+            <div class="min-h-[60vh] max-h-[80vh] flex items-center justify-center p-6" id="game-viewport">
+              <div id="canvasContainer" class="w-full h-full absolute inset-0"></div>
+              <div id="gameOverlay" class="absolute inset-0 flex flex-col items-center p-4 pointer-events-none">
                 <!-- Scoreboard -->
                 <div class="flex items-center justify-center space-x-24 w-full">
-                    <!-- Player 1 -->
-                    <div class="text-center">
-                        <div id="player1Name" class="text-xl font-bold text-white font-retro tracking-wider">PLAYER 1</div>
-                        <div id="player1Score" class="text-4xl font-bold text-white font-mono tracking-widest mt-2">0</div>
-                    </div>
-                    <!-- Player 2 -->
-                    <div class="text-center">
-                        <div id="player2Name" class="text-xl font-bold text-white font-retro tracking-wider">PLAYER 2</div>
-                        <div id="player2Score" class="text-4xl font-bold text-white font-mono tracking-widest mt-2">0</div>
-                    </div>
+                  <!-- Player 1 -->
+                  <div class="text-center">
+                    <div id="player1Name" class="text-xl font-bold text-white font-retro tracking-wider">PLAYER 1</div>
+                    <div id="player1Score" class="text-4xl font-bold text-white font-mono tracking-widest mt-2">0</div>
+                  </div>
+                  <!-- Player 2 -->
+                  <div class="text-center">
+                    <div id="player2Name" class="text-xl font-bold text-white font-retro tracking-wider">PLAYER 2</div>
+                    <div id="player2Score" class="text-4xl font-bold text-white font-mono tracking-widest mt-2">0</div>
+                  </div>
                 </div>
 
                 <!-- Game Status Message -->
                 <div id="gameStatus" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold text-neon-pink font-retro hidden"></div>
+              </div>
             </div>
+          </div>
         </div>
       </div>
 
       <!-- Tournament Section (hidden by default) -->
       <div id="tournamentSection" class="hidden animate-fade-in">
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold text-neon-green font-retro tracking-wider">TOURNAMENTS</h2>
-            <button id="createTournamentButton" class="btn btn-primary">CREATE_TOURNAMENT</button>
+          <h2 class="text-3xl font-bold text-neon-green font-retro tracking-wider">TOURNAMENTS</h2>
+          <button id="createTournamentButton" class="btn btn-primary">CREATE_TOURNAMENT</button>
         </div>
         <div id="tournamentList" class="space-y-4"></div>
       </div>
