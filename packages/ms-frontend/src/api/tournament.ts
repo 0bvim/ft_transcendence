@@ -91,9 +91,6 @@ interface CreateTournamentRequest {
   name: string;
   description?: string;
   maxPlayers: number;
-  tournamentType: 'HUMANS_ONLY' | 'MIXED';
-  aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
-  autoStart: boolean;
 }
 
 interface SubmitMatchResultRequest {
@@ -163,26 +160,10 @@ class TournamentApi {
     const query = searchParams.toString();
     const endpoint = `/tournaments${query ? `?${query}` : ''}`;
     
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(localStorage.getItem('accessToken') && { 
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
-        }),
-      },
-    });
+    const result = await this.request<any>(endpoint);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    // Backend returns: { success: true, data: tournaments[], pagination: {...} }
-    // So result.data IS the tournaments array, not result.data.tournaments
     return {
-      tournaments: result.data || [], // Ensure we always return an array
+      tournaments: result.data || [],
       pagination: result.pagination || {
         page: 1,
         limit: 10,
@@ -274,8 +255,6 @@ class TournamentApi {
       scorePlayer2,
       userId: user.id, // The user submitting the result
     };
-
-    console.log('Submitting match result payload:', requestData);
 
     const response = await this.request<{ match: Match; tournament: Tournament }>(`/matches/${matchId}/result`, {
       method: 'POST',

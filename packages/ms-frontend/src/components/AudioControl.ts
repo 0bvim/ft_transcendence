@@ -17,65 +17,51 @@ export class AudioControl {
   public async testAudioFile(): Promise<void> {
     const audioSrc = '/assets/audio/synthwave-background.mp3';
     
-    console.log('🎵 TEST: Testing audio file step by step...');
-    
     // Step 1: Test if file exists via fetch
-    console.log('🎵 TEST: Step 1 - Testing file existence with fetch...');
     try {
       const response = await fetch(audioSrc);
-      console.log(`🎵 TEST: Fetch response - Status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`);
       
       if (response.ok) {
-        console.log('🎵 TEST: ✅ File exists and is accessible');
       } else {
-        console.log('🎵 TEST: ❌ File not accessible via fetch');
         return;
       }
     } catch (error) {
-      console.log('🎵 TEST: ❌ Fetch failed:', error);
       return;
     }
     
     // Step 2: Test direct audio element creation
-    console.log('🎵 TEST: Step 2 - Testing direct audio element...');
     const testAudio = new Audio();
     testAudio.src = audioSrc;
     
-    testAudio.addEventListener('loadstart', () => console.log('🎵 TEST: loadstart event'));
-    testAudio.addEventListener('loadedmetadata', () => console.log('🎵 TEST: loadedmetadata event'));
-    testAudio.addEventListener('loadeddata', () => console.log('🎵 TEST: loadeddata event'));
-    testAudio.addEventListener('canplay', () => console.log('🎵 TEST: canplay event'));
-    testAudio.addEventListener('canplaythrough', () => console.log('🎵 TEST: ✅ canplaythrough event - Audio is ready!'));
-    testAudio.addEventListener('error', (e) => console.log('🎵 TEST: ❌ Audio error:', e));
+    testAudio.addEventListener('loadstart', () => {});
+    testAudio.addEventListener('loadedmetadata', () => {});
+    testAudio.addEventListener('loadeddata', () => {});
+    testAudio.addEventListener('canplay', () => {});
+    testAudio.addEventListener('canplaythrough', () => {});
+    testAudio.addEventListener('error', (e) => console.error('🎵 TEST: ❌ Audio error:', e));
     
     try {
       testAudio.load();
-      console.log('🎵 TEST: Audio load() called successfully');
     } catch (error) {
-      console.log('🎵 TEST: ❌ Audio load() failed:', error);
+      console.error('🎵 TEST: ❌ Audio load() failed:', error);
     }
     
     // Step 3: Test play (requires user interaction)
-    console.log('🎵 TEST: Step 3 - To test play, manually call: window.audioControl.testPlay()');
   }
   
   public async testPlay(): Promise<void> {
     const audioSrc = '/assets/audio/synthwave-background.mp3';
     const testAudio = new Audio(audioSrc);
     
-    console.log('🎵 TEST: Attempting to play audio...');
-    
     try {
       await testAudio.play();
-      console.log('🎵 TEST: ✅ Audio playing successfully!');
       
       setTimeout(() => {
         testAudio.pause();
-        console.log('🎵 TEST: Audio stopped');
       }, 2000);
       
     } catch (error) {
-      console.log('🎵 TEST: ❌ Play failed:', error);
+      console.error('🎵 TEST: ❌ Play failed:', error);
       
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
@@ -141,7 +127,6 @@ export class AudioControl {
 
   private async initializeAudio(): Promise<void> {
     try {
-      console.log('🎵 AudioControl: Initializing audio...');
       
       // Create audio element
       this.audioElement = new Audio();
@@ -153,19 +138,14 @@ export class AudioControl {
       // So public/assets/audio/file.mp3 becomes /assets/audio/file.mp3
       const audioSrc = '/assets/audio/synthwave-background.mp3';
       
-      console.log('🎵 AudioControl: Loading audio from:', audioSrc);
-      
       try {
         // Test if the file exists by making a HEAD request
         const response = await fetch(audioSrc, { method: 'HEAD' });
         if (!response.ok) {
-          console.log(`🎵 AudioControl: File not found at ${audioSrc} (${response.status})`);
           this.updateStatus('Not Found');
           this.hasAudioFile = false;
           return;
         }
-        
-        console.log(`🎵 AudioControl: File found at ${audioSrc}, loading...`);
         
         // Set the audio source
         this.audioElement.src = audioSrc;
@@ -191,10 +171,9 @@ export class AudioControl {
         });
         
         this.hasAudioFile = true;
-        console.log(`🎵 AudioControl: Successfully loaded audio from ${audioSrc}`);
         
       } catch (error) {
-        console.log(`🎵 AudioControl: Failed to load ${audioSrc}:`, error);
+        console.error(`🎵 AudioControl: Failed to load ${audioSrc}:`, error);
         this.updateStatus('Not Found');
         this.hasAudioFile = false;
         return;
@@ -202,7 +181,6 @@ export class AudioControl {
       
       // Handle audio events
       this.audioElement.addEventListener('canplaythrough', () => {
-        console.log('🎵 AudioControl: Audio ready to play');
         this.updateStatus('Ready');
         this.hasAudioFile = true;
       });
@@ -214,13 +192,11 @@ export class AudioControl {
       });
       
       this.audioElement.addEventListener('play', () => {
-        console.log('🎵 AudioControl: Audio started playing');
         this.isPlaying = true;
         this.updateUI();
       });
       
       this.audioElement.addEventListener('pause', () => {
-        console.log('🎵 AudioControl: Audio paused');
         this.isPlaying = false;
         this.updateUI();
       });
@@ -235,20 +211,16 @@ export class AudioControl {
   }
 
   private toggleAudio(): void {
-    console.log('🎵 AudioControl: Toggle clicked, hasAudioFile:', this.hasAudioFile, 'isPlaying:', this.isPlaying, 'isMuted:', this.isMuted);
     
     if (!this.hasAudioFile) {
-      console.log('🎵 AudioControl: No audio file available');
       this.updateStatus('No Audio');
       
       // Try to reinitialize audio
-      console.log('🎵 AudioControl: Attempting to reinitialize audio...');
       this.initializeAudio();
       return;
     }
     
     if (!this.audioElement) {
-      console.log('🎵 AudioControl: No audio element');
       return;
     }
 
@@ -261,12 +233,10 @@ export class AudioControl {
 
   private async playAudio(): Promise<void> {
     if (!this.audioElement || !this.hasAudioFile) {
-      console.log('🎵 AudioControl: Cannot play - no audio element or file');
       return;
     }
 
     try {
-      console.log('🎵 AudioControl: Attempting to play audio...');
       
       // Modern browsers require user interaction to play audio
       const playPromise = this.audioElement.play();
@@ -279,14 +249,12 @@ export class AudioControl {
       this.isPlaying = true;
       this.updateUI();
       this.updateStatus('Playing');
-      console.log('🎵 AudioControl: Audio playing successfully');
       
     } catch (error: any) {
       console.error('🎵 AudioControl: Play failed:', error);
       
       if (error.name === 'NotAllowedError') {
         this.updateStatus('Click Again');
-        console.log('🎵 AudioControl: Browser requires user interaction, user needs to click again');
       } else {
         this.updateStatus('Error');
       }
@@ -296,7 +264,6 @@ export class AudioControl {
   private muteAudio(): void {
     if (!this.audioElement) return;
 
-    console.log('🎵 AudioControl: Muting audio');
     this.audioElement.pause();
     this.isMuted = true;
     this.isPlaying = false;
@@ -377,7 +344,6 @@ export class AudioControl {
   }
 
   public setAudioSource(src: string): void {
-    console.log('🎵 AudioControl: Setting new audio source:', src);
     if (this.audioElement) {
       this.audioElement.src = src;
       this.hasAudioFile = true;
@@ -389,13 +355,10 @@ export class AudioControl {
   public async checkAudioFile(): Promise<void> {
     const audioSrc = '/assets/audio/synthwave-background.mp3';
     
-    console.log('🎵 AudioControl: Checking audio file availability...');
-    
     try {
       const response = await fetch(audioSrc, { method: 'HEAD' });
-      console.log(`🎵 AudioControl: ${audioSrc} - Status: ${response.status} ${response.statusText}`);
     } catch (error) {
-      console.log(`🎵 AudioControl: ${audioSrc} - Error:`, error);
+      console.error(`🎵 AudioControl: ${audioSrc} - Error:`, error);
     }
   }
 } 
