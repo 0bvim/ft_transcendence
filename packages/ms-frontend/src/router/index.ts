@@ -103,7 +103,9 @@ export class Router {
   }
 
   private isAuthenticated(): boolean {
-    return !!localStorage.getItem("accessToken");
+    // Check for the presence of a token in localStorage.
+    // The API interceptor will handle token validity and refresh.
+    return !!localStorage.getItem('accessToken');
   }
 
   async start() {

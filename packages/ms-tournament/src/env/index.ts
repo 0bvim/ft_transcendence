@@ -6,6 +6,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   AUTH_SERVICE_URL: z.string().default('https://localhost:3001'),
   GAME_SERVICE_URL: z.string().default('https://localhost:3002'),
+  JWT_SECRET: z.string(),
 });
 
 export const env = envSchema.parse(process.env);

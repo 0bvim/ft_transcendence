@@ -20,7 +20,9 @@ COPY ./ms-tournament/tsconfig.json ./tsconfig.json
 COPY ./ms-tournament/Makefile Makefile
 COPY ./ms-tournament/.env ./.env
 
+# First install the local dependency, then run a general install for the rest
 RUN npm install ./ft-transcendence-observability-1.0.0.tgz
+RUN npm install
 
 FROM build AS development
 
