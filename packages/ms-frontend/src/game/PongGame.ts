@@ -82,8 +82,10 @@ export class PongGame {
   }
 
   private initializeGameObjects(): void {
-    this.player1 = new Paddle(Board.backBorder, Board.height / 2);
-    this.player2 = new Paddle(Board.width - Board.backBorder - Paddle.width, Board.height / 2);
+    // Player 1 (left) - Synthwave magenta/purple color to match control instructions
+    this.player1 = new Paddle(Board.backBorder, Board.height / 2, '#ff00ff');
+    // Player 2 (right) - Cyan color to match control instructions  
+    this.player2 = new Paddle(Board.width - Board.backBorder - Paddle.width, Board.height / 2, '#00FFFF');
 
     this.ball = new Ball();
 
@@ -178,10 +180,10 @@ export class PongGame {
       this.player1.goDown = !!this.keys['KeyS'];
     }
 
-    // Player 2 (right side) always uses Arrow keys
+    // Player 2 (right side) uses I/K keys
     if (!this.config.player2IsAI) {
-      this.player2.goUp = !!this.keys['ArrowUp'];
-      this.player2.goDown = !!this.keys['ArrowDown'];
+      this.player2.goUp = !!this.keys['KeyI'];
+      this.player2.goDown = !!this.keys['KeyK'];
     }
   }
 

@@ -55,6 +55,30 @@ export default function TournamentDetail(): HTMLElement {
         <!-- Tournament Info Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
           
+          <!-- TOURNAMENT INFO Card -->
+          <div class="md:col-span-1">
+            <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
+              <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+                <span class="mr-2">ℹ️</span>
+                TOURNAMENT INFO
+              </h2>
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Format:</span>
+                  <span class="text-white" id="tournament-format">Single Elimination</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Max Players:</span>
+                  <span class="text-white" id="max-players">4</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Created:</span>
+                  <span class="text-white" id="created-date">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- PARTICIPANTS Card -->
           <div class="md:col-span-2">
             <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
@@ -68,22 +92,9 @@ export default function TournamentDetail(): HTMLElement {
             </div>
           </div>
 
-          <!-- CURRENT MATCH Card -->
-          <div class="md:col-span-1">
-            <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
-              <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
-                <span class="mr-2">⚔️</span>
-                CURRENT MATCH
-              </h2>
-              <div id="current-match-info" class="space-y-2 text-sm">
-                <p>No active match.</p>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        <!-- Second Row - Progress and Tournament Info -->
+        <!-- Second Row - Progress and Current Match -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           <!-- PROGRESS Card -->
@@ -107,25 +118,14 @@ export default function TournamentDetail(): HTMLElement {
             </div>
           </div>
 
-          <!-- TOURNAMENT INFO Card -->
+          <!-- CURRENT MATCH Card -->
           <div class="card bg-gray-800/50 border border-gray-700 p-6">
             <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
-              <span class="mr-2">ℹ️</span>
-              TOURNAMENT INFO
+              <span class="mr-2">⚔️</span>
+              CURRENT MATCH
             </h2>
-            <div class="space-y-3 text-sm">
-              <div class="flex justify-between">
-                <span class="text-gray-400">Format:</span>
-                <span class="text-white" id="tournament-format">Single Elimination</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-400">Max Players:</span>
-                <span class="text-white" id="max-players">4</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-400">Created:</span>
-                <span class="text-white" id="created-date">Loading...</span>
-              </div>
+            <div id="current-match-info" class="space-y-2 text-sm">
+              <p>No active match.</p>
             </div>
           </div>
 
@@ -151,6 +151,18 @@ export default function TournamentDetail(): HTMLElement {
                 <div id="canvasContainer" class="w-full h-full absolute inset-0 hidden"></div>
             </div>
           </div>
+          
+          <!-- Control Instructions (Outside Canvas) -->
+          <div id="tournamentGameControls" class="mt-6 flex items-center justify-center space-x-16 hidden">
+            <div class="text-center">
+              <div class="text-sm text-neon-pink font-mono mb-1">PLAYER 1</div>
+              <div class="text-xs text-neon-pink/80 font-mono">W/S Keys</div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm text-neon-cyan font-mono mb-1">PLAYER 2</div>
+              <div id="tournamentPlayer2Controls" class="text-xs text-neon-cyan/80 font-mono">I/K Keys</div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -173,7 +185,10 @@ export default function TournamentDetail(): HTMLElement {
 function setupEventListeners(container: HTMLElement, tournamentId: string | undefined) {
   const exitBtn = container.querySelector('#exit-tournament-btn');
   exitBtn?.addEventListener('click', () => {
-    window.location.href = '/tournament'; // Or a more graceful exit
+    // Stop auto-refresh when exiting
+    stopTournamentAutoRefresh();
+    // Navigate to tournament list
+    window.location.href = '/game?view=tournaments';
   });
 
   const startBtn = container.querySelector('#start-tournament-btn');
@@ -402,7 +417,7 @@ function updateCurrentMatch(container: HTMLElement, tournament: any) {
                         <div class="text-sm ${player2Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono">
                             ${player2Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
                         </div>
-                        ${player2Type === 'HUMAN' && hasHuman ? '<div class="text-xs text-neon-pink/80 font-mono">↑↓ Arrows</div>' : ''}
+                        ${player2Type === 'HUMAN' && hasHuman ? '<div class="text-xs text-neon-pink/80 font-mono">I/K Keys</div>' : ''}
                     </div>
                 </div>
                 
@@ -456,21 +471,44 @@ function updateGameView(container: HTMLElement, tournament: any) {
     // Handle tournament completion first
     if (tournament.status === 'COMPLETED') {
         console.log('[TournamentDetail] Tournament is COMPLETED.');
+        
+        // Stop auto-refresh since tournament is finished
+        stopTournamentAutoRefresh();
+        
         gamePlaceholder.classList.remove('hidden');
         gameCanvasContainer.classList.add('hidden');
         gameCanvasContainer.innerHTML = ''; // Ensure canvas is clean
 
         const winner = tournament.participants.find((p: any) => p.status === 'WINNER');
         gamePlaceholder.innerHTML = `
-            <h3 class="text-2xl font-bold text-green-400">Tournament Finished!</h3>
-            <p class="text-gray-400 mt-2">Winner: <span class="font-bold text-white">${winner?.displayName}</span></p>
-            <button id="create-new-tournament-btn" class="btn btn-primary mt-6">CREATE NEW TOURNAMENT</button>
+            <div class="text-center py-8">
+                <h3 class="text-3xl font-bold text-neon-green mb-4 font-retro">🏆 TOURNAMENT COMPLETE! 🏆</h3>
+                <p class="text-neon-cyan/80 mb-2 text-lg">Congratulations to the winner!</p>
+                <p class="text-white font-bold text-xl mb-8">${winner?.displayName || 'Unknown Player'}</p>
+                <button id="create-new-tournament-btn" class="btn btn-primary btn-lg px-8 py-3 text-lg font-retro hover:scale-105 transition-transform cursor-pointer" 
+                        onclick="console.log('Button clicked via onclick'); window.location.href='/tournament/create';"
+                        style="pointer-events: auto; z-index: 1000;">
+                    CREATE NEW TOURNAMENT
+                </button>
+                <p class="text-neon-cyan/60 mt-4 text-sm">Ready for another challenge?</p>
+            </div>
         `;
         
-        const createNewBtn = gamePlaceholder.querySelector('#create-new-tournament-btn');
-        createNewBtn?.addEventListener('click', () => {
-            window.location.href = '/tournament/create';
-        });
+        // Also add event listener as backup
+        setTimeout(() => {
+            const createNewBtn = gamePlaceholder.querySelector('#create-new-tournament-btn') as HTMLButtonElement;
+            if (createNewBtn) {
+                console.log('[TournamentDetail] Adding backup event listener to button');
+                createNewBtn.addEventListener('click', (e) => {
+                    console.log('[TournamentDetail] Button clicked via event listener');
+                    e.preventDefault();
+                    window.location.href = '/tournament/create';
+                });
+            }
+        }, 50);
+
+        // No need for additional event listeners here
+        
         return; // Stop further processing
     }
 
@@ -478,6 +516,21 @@ function updateGameView(container: HTMLElement, tournament: any) {
         // A match is live, show the game canvas and hide the placeholder
         gamePlaceholder.classList.add('hidden');
         gameCanvasContainer.classList.remove('hidden');
+        
+        // Show control instructions for tournament matches
+        const tournamentGameControls = container.querySelector('#tournamentGameControls') as HTMLElement;
+        const tournamentPlayer2Controls = container.querySelector('#tournamentPlayer2Controls') as HTMLElement;
+        
+        if (tournamentGameControls) {
+            tournamentGameControls.classList.remove('hidden');
+            
+            // Update Player 2 controls based on participant type
+            if (tournamentPlayer2Controls) {
+                const player2Type = inProgressMatch.player2?.participantType;
+                tournamentPlayer2Controls.textContent = player2Type === 'HUMAN' ? 'I/K Keys' : 'Auto-controlled';
+            }
+        }
+        
         // Check if the current user is part of this match and if the game isn't already running
         const isUserInMatch = (inProgressMatch.player1?.userId === user.id || inProgressMatch.player1?.id === user.id) ||
                              (inProgressMatch.player2?.userId === user.id || inProgressMatch.player2?.id === user.id);
@@ -527,6 +580,12 @@ function updateGameView(container: HTMLElement, tournament: any) {
         gamePlaceholder.classList.remove('hidden');
         gameCanvasContainer.classList.add('hidden');
         gameCanvasContainer.innerHTML = ''; // Clear canvas when not in use
+
+        // Hide control instructions when no match is active
+        const tournamentGameControls = container.querySelector('#tournamentGameControls') as HTMLElement;
+        if (tournamentGameControls) {
+            tournamentGameControls.classList.add('hidden');
+        }
 
         const nextPlayableMatch = findNextPlayableMatch(tournament);
         if (nextPlayableMatch) {
@@ -885,7 +944,7 @@ function showHumanMatchWaitingScreen(container: HTMLElement, tournament: any, ma
                             ${player2Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
                         </div>
                         <div class="text-xs text-neon-cyan/80 font-mono">
-                            ${player2Type === 'HUMAN' ? '↑↓ Arrow Keys' : 'Auto-controlled'}
+                            ${player2Type === 'HUMAN' ? 'I/K Keys' : 'Auto-controlled'}
                         </div>
                         <div class="text-xs text-gray-400 mt-1">Right Side</div>
                     </div>

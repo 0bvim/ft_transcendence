@@ -11,10 +11,12 @@ export class Paddle {
 	goUp = false;
 	private speed: number = 0;
 	private score: number = 0;
+	private color: string;
 
-	constructor(x: number, y: number) {
+	constructor(x: number, y: number, color: string = '#FFFFFF') {
 		this.x = x;
 		this.y = y - Paddle.height / 2;
+		this.color = color;
 	}
 
 	up() {
@@ -54,7 +56,7 @@ export class Paddle {
 	}
 
 	draw(p: p5) {
-		p.fill(255);
+		p.fill(this.color);
 		p.noStroke();
 		p.rect(this.x, this.y, Paddle.width, Paddle.height);
 	}

@@ -88,7 +88,8 @@ export default function TournamentCreate(): HTMLElement {
 function setupEventListeners(container: HTMLElement) {
   const backButton = container.querySelector('#backButton');
   backButton?.addEventListener('click', () => {
-    window.history.back();
+    // Navigate to tournament list instead of using history.back()
+    window.location.href = '/game?view=tournaments';
   });
 
   const playerCountButtons = container.querySelectorAll('.player-count-btn');

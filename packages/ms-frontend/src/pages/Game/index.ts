@@ -135,6 +135,18 @@ export default function GamePage(): HTMLElement {
               </div>
             </div>
           </div>
+          
+          <!-- Control Instructions (Outside Canvas) -->
+          <div id="gameControls" class="mt-6 flex items-center justify-center space-x-16">
+            <div class="text-center">
+              <div class="text-sm text-neon-pink font-mono mb-1">PLAYER 1</div>
+              <div class="text-xs text-neon-pink/80 font-mono">W/S Keys</div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm text-neon-cyan font-mono mb-1">PLAYER 2</div>
+              <div id="player2Controls" class="text-xs text-neon-cyan/80 font-mono">I/K Keys</div>
+            </div>
+          </div>
         </div>
       </div>
 

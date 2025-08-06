@@ -361,7 +361,8 @@ async function showTournamentDetails(container: HTMLElement, tournamentId: strin
         const tourneyId = (e.currentTarget as HTMLElement).dataset.tournamentId;
         if (matchId && tourneyId) {
           closeModal();
-          startLocalTournamentMatch(container, { matchId, tournamentId: tourneyId });
+          // Navigate to tournament detail page where the match can be played
+          window.location.href = `/tournament/${tourneyId}`;
         }
       });
     });
@@ -376,7 +377,9 @@ async function startTournament(container: HTMLElement, tournamentId: string): Pr
   try {
     await tournamentApi.startTournament(tournamentId);
     showNotification('Tournament started successfully!', 'success');
-    await loadTournaments(container);
+    
+    // Navigate to the tournament detail page to show the started tournament
+    window.location.href = `/tournament/${tournamentId}`;
   } catch (error) {
     console.error('Failed to start tournament:', error);
     showNotification('Failed to start tournament.', 'error');
