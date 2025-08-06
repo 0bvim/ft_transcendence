@@ -13,10 +13,10 @@ export class AI {
 	protected leftPaddleX: number;
 	
 	// Difficulty settings to make AI easier
-	private accuracy: number = 0.7; // 70% accuracy (reduced from perfect)
+	private accuracy: number = 0.5; // 50% accuracy (reduced from 70%)
 	private reactionDelay: number = 0; // Simulated reaction delay
 	private lastPredictionTime: number = 0;
-	private maxReactionTime: number = 200; // Max 200ms additional delay
+	private maxReactionTime: number = 400; // Increased from 200ms to 400ms (slower reactions)
 
 	constructor(aiPlayer: Paddle, aiOpponent: Paddle) {
 		this.aiPlayer = aiPlayer;
@@ -36,7 +36,7 @@ export class AI {
 		}
 		
 		// Add some randomness to make each AI instance slightly different
-		this.accuracy = 0.6 + Math.random() * 0.2; // 60-80% accuracy
+		this.accuracy = 0.4 + Math.random() * 0.2; // 40-60% accuracy (reduced from 60-80%)
 		this.reactionDelay = Math.random() * this.maxReactionTime;
 	}
 
@@ -85,8 +85,8 @@ export class AI {
 		const error = (Math.random() - 0.5) * errorRange;
 		predictedY += error;
 		
-		// Sometimes make completely wrong predictions (5% chance)
-		if (Math.random() < 0.05) {
+		// Sometimes make completely wrong predictions (15% chance)
+		if (Math.random() < 0.15) { // Increased from 5% to 15%
 			predictedY = Math.random() * Board.height;
 		}
 		
@@ -147,10 +147,10 @@ export class AI {
 		const current_y: number = this.aiPlayer.y + (Paddle.height / 2);
 		
 		// Increased tolerance to make AI less precise
-		const tolerance = Board.height / 25; // Increased from /50 to make AI less precise
+		const tolerance = Board.height / 15; // Increased from /25 to /15 (even less precise)
 		
-		// Add some random hesitation (10% chance to not move)
-		if (Math.random() < 0.1) {
+		// Add some random hesitation (25% chance to not move)
+		if (Math.random() < 0.25) { // Increased from 10% to 25%
 			this.aiPlayer.goDown = false;
 			this.aiPlayer.goUp = false;
 			return;

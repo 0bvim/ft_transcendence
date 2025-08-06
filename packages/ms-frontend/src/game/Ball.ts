@@ -4,9 +4,9 @@ import { Side } from "./Board";
 
 export class Ball {
 static readonly radius: number = Math.min(Board.width, Board.height) / 50;
-	static readonly startSpeed: number = Board.diag / 350;
-	static readonly accelerationAmort: number = 100;
-	static readonly acceleration: number = 1.2;
+	static readonly startSpeed: number = Board.diag / 250;
+	static readonly accelerationAmort: number = 80;
+	static readonly acceleration: number = 1.4;
 	static readonly drag: number = 1.0;
 	protected		x: number = Board.width / 2 - Ball.radius;
 	protected		y: number = Board.height / 2 - Ball.radius;
