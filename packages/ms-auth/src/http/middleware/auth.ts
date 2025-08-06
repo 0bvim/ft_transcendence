@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { verify } from 'jsonwebtoken';
 import { env } from '../../env';
 import { prisma } from '../../lib/prisma';
+import { userStatusStore } from '../../lib/user-status';
 
 interface JwtPayload {
   username: string;
@@ -69,6 +70,9 @@ export async function authMiddleware(
       bio: user.bio || undefined,
       twoFactorEnabled: user.twoFactorEnabled
     };
+    
+    // Update user's last seen timestamp for online status
+    userStatusStore.updateLastSeen(user.id);
     
   } catch (error) {
     console.error('JWT verification error:', error);

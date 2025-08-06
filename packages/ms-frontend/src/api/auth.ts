@@ -250,7 +250,24 @@ export const authApi = {
     user: User;
     message: string;
   }> => {
+    console.log("🔍 Frontend API call details:", {
+      url: "/2fa/complete-setup",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("accessToken")?.substring(0, 20)}...`,
+      },
+      body: { userId, code },
+      timestamp: new Date().toISOString(),
+    });
+
     const response = await api.post("/2fa/complete-setup", { userId, code });
+
+    console.log("🔍 Frontend API response:", {
+      status: response.status,
+      data: response.data,
+      timestamp: new Date().toISOString(),
+    });
 
     return response.data;
   },
@@ -297,6 +314,22 @@ export const authApi = {
   searchUsers(username: string): Promise<{ success: boolean; user?: { id: string; username: string; displayName: string; avatarUrl?: string } }> {
     return api.get(`/search-users?username=${encodeURIComponent(username)}`).then((res) => res.data);
   },
+
+  // Friends system
+  addFriend: async (username: string): Promise<{ success: boolean; friend?: any; message?: string; error?: string }> => {
+    const response = await api.post("/friends", { username });
+    return response.data;
+  },
+
+  getFriends: async (): Promise<{ success: boolean; friends: Array<{ id: string; username: string; displayName: string; avatarUrl?: string; isOnline: boolean; lastSeen?: string }> }> => {
+    const response = await api.get("/friends");
+    return response.data;
+  },
+
+  removeFriend: async (friendId: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    const response = await api.delete(`/friends/${friendId}`);
+    return response.data;
+  }
 };
 
 export default api;

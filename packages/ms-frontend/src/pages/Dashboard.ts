@@ -1,6 +1,7 @@
 import { authApi, User } from '../api/auth';
 import { tournamentApi } from '../api/tournament';
 import { renderGameOptions, setupGameOptionsEventListeners } from '../components/GameOptions';
+import { FriendsList } from '../components/FriendsList';
 
 // Utility function to construct avatar URL
 function getAvatarUrl(avatarUrl: string | null | undefined): string {
@@ -60,7 +61,6 @@ async function loadRealData(container: HTMLElement, user: User) {
     await Promise.all([
       loadUserStats(container),
       loadRecentTournaments(container, user.id),
-      loadActiveTournaments(container, user.id),
       refreshUserData(container)
     ]);
   } catch (error) {
@@ -153,14 +153,14 @@ function renderDashboardContent(container: HTMLElement, user: User) {
     </nav>
 
     <!-- Main Content -->
-    <main class="relative z-10 container-fluid py-12 space-y-12">
+    <main class="relative z-10 container-fluid py-6 space-y-6">
       <!-- Welcome Section -->
       <div class="text-center animate-fade-in">
-        <h1 class="text-5xl font-bold text-gradient mb-4 font-retro tracking-wider">
+        <h1 class="text-3xl font-bold text-gradient mb-2 font-retro tracking-wider">
           <span class="text-neon-cyan">Welcome back,</span> 
           <span class="text-neon-pink">${user.displayName || user.username}</span>
         </h1>
-        <p class="text-neon-cyan/80 font-mono text-lg">
+        <p class="text-neon-cyan/80 font-mono text-base">
           <span class="text-neon-pink">$</span> Ready to play some pong?
           <span class="animate-pulse">_</span>
         </p>
@@ -174,9 +174,9 @@ function renderDashboardContent(container: HTMLElement, user: User) {
         <!-- Main Stats -->
         <div class="lg:col-span-2 space-y-8">
           <!-- Performance Overview -->
-          <div class="card p-8">
-            <div class="flex items-center justify-between mb-8">
-              <h2 class="text-2xl font-bold text-gradient font-retro">Performance Overview</h2>
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold text-gradient font-retro">Performance Overview</h2>
               <div class="text-xs text-neon-cyan/60 font-mono border border-neon-cyan/30 px-3 py-1 clip-cyber-button" id="statsLastUpdated">Loading...</div>
             </div>
 
@@ -203,9 +203,9 @@ function renderDashboardContent(container: HTMLElement, user: User) {
           </div>
 
           <!-- Recent Tournaments -->
-          <div class="card p-8">
-            <div class="flex items-center justify-between mb-8">
-              <h2 class="text-2xl font-bold text-gradient font-retro">Recent Tournaments</h2>
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold text-gradient font-retro">Recent Tournaments</h2>
               <a href="/game?view=tournaments" data-link class="text-sm text-neon-pink hover:text-neon-cyan transition-colors font-mono uppercase tracking-wider">
                 View all >>
               </a>
@@ -213,7 +213,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
 
             <div class="space-y-4" id="recentTournaments">
               <!-- Loading state -->
-              <div class="flex items-center justify-between p-6 bg-secondary-900/20 backdrop-blur-lg border border-neon-cyan/20 clip-cyber-button animate-pulse">
+              <div class="flex items-center justify-between p-4 bg-secondary-900/20 backdrop-blur-lg border border-neon-cyan/20 clip-cyber-button animate-pulse">
                 <div class="flex items-center space-x-4">
                   <div class="w-3 h-3 bg-neon-cyan rounded-full animate-glow-pulse"></div>
                   <div>
@@ -232,40 +232,8 @@ function renderDashboardContent(container: HTMLElement, user: User) {
 
         <!-- Sidebar -->
         <div class="space-y-8">
-          <!-- Profile Card -->
-          <div class="card p-8 text-center">
-            <div class="relative mx-auto mb-6">
-              <div class="w-24 h-24 clip-cyberpunk bg-gradient-to-br from-neon-pink/20 to-neon-cyan/20 p-1 mx-auto">
-                <img id="profileAvatar" src="${getAvatarUrl(user.avatarUrl)}" alt="Avatar" 
-                     class="w-full h-full object-cover clip-cyberpunk" />
-              </div>
-              <div class="absolute inset-0 w-24 h-24 clip-cyberpunk border-2 border-neon-pink animate-glow-pulse mx-auto"></div>
-            </div>
-            <h3 class="text-xl font-bold text-neon-cyan mb-2 font-retro">${user.displayName || user.username}</h3>
-            <p class="text-neon-pink/70 mb-4 font-mono">@${user.username}</p>
-            <div class="flex items-center justify-center space-x-2 mb-6">
-              <span class="w-2 h-2 bg-neon-green rounded-full animate-glow-pulse"></span>
-              <span class="text-sm text-neon-green font-mono uppercase">Online</span>
-            </div>
-            <a href="/profile" data-link class="btn btn-primary w-full">
-              EDIT_PROFILE.EXE
-            </a>
-          </div>
-
-          <!-- Active Tournaments -->
-          <div class="card p-8">
-            <h3 class="text-xl font-bold text-gradient mb-6 font-retro">Active Tournaments</h3>
-            <div class="space-y-4" id="activeTournaments">
-              <!-- Loading state -->
-              <div class="animate-pulse space-y-3">
-                <div class="bg-neon-pink/10 h-16 rounded-lg clip-cyber-button border border-neon-pink/20"></div>
-                <div class="bg-neon-cyan/10 h-12 rounded-lg clip-cyber-button border border-neon-cyan/20"></div>
-              </div>
-            </div>
-          </div>
-
           <!-- Security Status -->
-          <div class="card p-8">
+          <div class="card p-6">
             <h3 class="text-xl font-bold text-gradient mb-6 font-retro">Security Status</h3>
             <div class="space-y-4">
               <div class="flex items-center justify-between p-4 bg-secondary-900/20 backdrop-blur-lg border border-${user.twoFactorEnabled ? 'neon-green' : 'warning-500'}/30 clip-cyber-button">
@@ -300,25 +268,23 @@ function renderDashboardContent(container: HTMLElement, user: User) {
               ` : ''}
             </div>
           </div>
+
+          <!-- Friends List -->
+          <div id="friendsListContainer">
+            <!-- FriendsList component will be mounted here -->
+          </div>
+        </div>
       </div>
     </main>
   `;
 
   // Add error handlers for avatar images after HTML is rendered
   const navAvatar = container.querySelector('#navAvatar') as HTMLImageElement;
-  const profileAvatar = container.querySelector('#profileAvatar') as HTMLImageElement;
   
   if (navAvatar) {
     navAvatar.onerror = () => {
       console.warn('Failed to load navigation avatar image, falling back to default');
       navAvatar.src = '/assets/wishes.png';
-    };
-  }
-  
-  if (profileAvatar) {
-    profileAvatar.onerror = () => {
-      console.warn('Failed to load profile card avatar image, falling back to default');
-      profileAvatar.src = '/assets/wishes.png';
     };
   }
 }
@@ -335,6 +301,21 @@ async function setupEventListeners(container: HTMLElement) {
 
   // Setup game options event listeners
   setupGameOptionsEventListeners(container);
+
+  // Initialize and mount FriendsList component
+  const friendsListContainer = container.querySelector('#friendsListContainer') as HTMLElement;
+  if (friendsListContainer) {
+    const friendsList = new FriendsList(friendsListContainer);
+    friendsList.mount();
+    
+    // Store instance globally for remove friend functionality
+    (window as any).friendsListInstance = friendsList;
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      friendsList.unmount();
+    });
+  }
 }
 
 async function loadUserStats(container: HTMLElement) {
@@ -393,7 +374,7 @@ async function loadRecentTournaments(container: HTMLElement, userId: string) {
       `;
     } else {
       console.log('[Dashboard] Displaying', tournaments.length, 'tournaments');
-      tournaments.slice(0, 5).forEach(tournament => {
+      tournaments.slice(0, 3).forEach(tournament => {
         const tournamentCard = document.createElement('div');
         tournamentCard.className = 'p-4 bg-gray-800/30 border border-neon-cyan/20 rounded hover:border-neon-cyan/40 transition-colors cursor-pointer';
         tournamentCard.innerHTML = `
@@ -423,50 +404,3 @@ async function loadRecentTournaments(container: HTMLElement, userId: string) {
     }
   }
 }
-
-async function loadActiveTournaments(container: HTMLElement, userId: string) {
-  try {
-    console.log('[Dashboard] Loading active tournaments for user:', userId);
-    const response = await tournamentApi.getTournaments({ status: 'ACTIVE', limit: 5 });
-    console.log('[Dashboard] Active tournaments response:', response);
-    const tournaments = response.tournaments || [];
-    console.log('[Dashboard] Active tournaments array:', tournaments);
-    const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
-    
-    if (!activeTournamentsEl) return;
-    
-    activeTournamentsEl.innerHTML = ''; // Clear loading state
-
-    if (tournaments.length === 0) {
-      activeTournamentsEl.innerHTML = `
-        <div class="text-center py-8 text-neon-cyan/50">
-          <p class="text-sm font-mono uppercase">No active tournaments</p>
-        </div>
-      `;
-    } else {
-      console.log('[Dashboard] Displaying', tournaments.length, 'active tournaments');
-      tournaments.forEach(tournament => {
-        const tournamentCard = document.createElement('div');
-        tournamentCard.className = 'p-3 bg-gray-800/30 border border-neon-green/20 rounded hover:border-neon-green/40 transition-colors cursor-pointer';
-        tournamentCard.innerHTML = `
-          <div>
-            <h4 class="text-sm font-bold text-neon-green font-retro">${tournament.name}</h4>
-            <p class="text-xs text-neon-pink/70 font-mono uppercase">Players: ${tournament.currentPlayers}/${tournament.maxPlayers}</p>
-          </div>
-        `;
-        activeTournamentsEl.appendChild(tournamentCard);
-      });
-    }
-  } catch (error) {
-    console.error('Failed to load active tournaments:', error);
-    const activeTournamentsEl = container.querySelector('#activeTournaments') as HTMLElement;
-    if (activeTournamentsEl) {
-      activeTournamentsEl.innerHTML = `
-        <div class="text-center py-8 text-danger-500">
-          <p class="text-sm font-mono uppercase">Failed to load active tournaments</p>
-          <p class="text-xs text-danger-400 mt-1">${error.message}</p>
-        </div>
-      `;
-    }
-  }
-} 

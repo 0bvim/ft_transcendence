@@ -27,10 +27,16 @@ up: generate-certs
 	@echo "🔐 Setting up Prometheus authentication automatically..."
 	@$(call setup_prometheus_auth)
 
-upnc: generate-certs
+upnc: fclean generate-certs
 	@echo "🚀 Starting services in detached mode..."
 	docker compose build --no-cache
 	docker compose up -d
+	@echo "⏳ Waiting for Elasticsearch to be ready..."
+	@$(call wait_for_elasticsearch)
+	@echo "🔐 Setting up ELK users automatically..."
+	@$(call setup_elk_users)
+	@echo "🔐 Setting up Prometheus authentication automatically..."
+	@$(call setup_prometheus_auth)
 
 dev:
 	@echo "Starting development services (without monitoring stack)..."

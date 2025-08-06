@@ -28,6 +28,7 @@ import { updateProfile } from "./controllers/update-profile";
 import { uploadAvatar } from "./controllers/upload-avatar";
 import { removeAvatar } from "./controllers/remove-avatar";
 import { searchUsers } from "./controllers/search-users";
+import { addFriend, getFriends, removeFriend } from "./controllers/friends";
 import { authMiddleware } from "./middleware/auth";
 import path from "path";
 
@@ -100,5 +101,10 @@ export async function appRoutes(app: FastifyInstance) {
 
     // Search users route
     protectedRoutes.get("/search-users", searchUsers);
+
+    // Friends routes
+    protectedRoutes.post("/friends", addFriend);
+    protectedRoutes.get("/friends", getFriends);
+    protectedRoutes.delete("/friends/:friendId", removeFriend);
   });
 }

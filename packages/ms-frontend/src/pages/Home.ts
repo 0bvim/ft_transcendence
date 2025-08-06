@@ -21,11 +21,11 @@ export default function Home(): HTMLElement {
     </div>
 
     <!-- Navigation -->
-    <nav class="relative z-20 p-6">
+    <nav class="relative z-20 p-4">
       <div class="container-fluid">
         <div class="flex items-center justify-between">
           <div class="flex items-center">
-            <h1 class="text-3xl font-bold text-gradient font-retro tracking-wider">
+            <h1 class="text-2xl font-bold text-gradient font-retro tracking-wider">
               FT_TRANSCENDENCE
             </h1>
           </div>
@@ -43,13 +43,13 @@ export default function Home(): HTMLElement {
     </nav>
 
     <!-- Hero Section -->
-    <main class="relative z-10 flex items-center justify-center min-h-screen pt-0 pb-24">
+    <main class="relative z-10 flex items-center justify-center min-h-screen pt-0 pb-8">
       <div class="container text-center animate-fade-in">
         <!-- Hero Content -->
         <div class="max-w-6xl mx-auto">
           <!-- Main Title -->
-          <div class="mb-12">
-            <h1 class="text-8xl md:text-9xl font-bold text-gradient mb-8 animate-slide-up font-retro tracking-wider relative leading-tight">
+          <div class="mb-8">
+            <h1 class="text-6xl md:text-7xl font-bold text-gradient mb-8 animate-slide-up font-retro tracking-wider relative leading-tight">
               <div class="text-neon text-neon-glow">THE</div>
               <div class="text-gradient animate-neon-flicker">ULTIMATE</div>
               <div class="text-gradient animate-neon-flicker">PONG</div>
@@ -58,8 +58,8 @@ export default function Home(): HTMLElement {
           </div>
           
           <!-- Subtitle -->
-          <div class="mb-16">
-            <p class="text-2xl text-neon-cyan/80 mb-4 max-w-4xl mx-auto leading-relaxed animate-slide-up font-mono" style="animation-delay: 0.2s;">
+          <div class="mb-8">
+            <p class="text-xl text-neon-cyan/80 mb-4 max-w-4xl mx-auto leading-relaxed animate-slide-up font-mono" style="animation-delay: 0.2s;">
               <span class="text-neon-pink">&gt;</span> Experience the classic game like never before with 
               <span class="text-neon-green">modern authentication</span>, 
               <span class="text-neon-cyan">real-time multiplayer</span>, 
@@ -73,7 +73,7 @@ export default function Home(): HTMLElement {
           <div class="flex justify-center animate-slide-up" style="animation-delay: 0.4s;">
             <!-- Primary CTA Button -->
             <div class="relative group">
-              <a href="/login" data-link class="btn btn-primary relative overflow-hidden text-lg px-12 py-6 block">
+              <a href="/login" data-link class="btn btn-primary relative overflow-hidden text-base px-8 py-4 block">
                 <span class="relative z-10 flex items-center justify-center font-retro tracking-wider pointer-events-none">
                   START_PLAYING.EXE
                   <svg class="w-6 h-6 ml-4 transition-transform group-hover:translate-x-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@ export default function Home(): HTMLElement {
           </div>
 
           <!-- Terminal Command Line -->
-          <div class="mt-20 animate-slide-up" style="animation-delay: 0.6s;">
+          <div class="mt-12 animate-slide-up" style="animation-delay: 0.6s;">
             <div class="inline-block bg-secondary-900/50 backdrop-blur-lg border border-neon-cyan/30 px-6 py-3 clip-cyber-button">
               <p class="text-neon-cyan/60 font-mono text-sm">
                 <span class="text-neon-pink">root@ft_transcendence:~$</span> 
