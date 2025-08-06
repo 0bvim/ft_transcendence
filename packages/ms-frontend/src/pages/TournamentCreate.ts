@@ -44,7 +44,7 @@ export default function TournamentCreate(): HTMLElement {
         <form id="createTournamentForm">
           <div class="mb-8">
             <label for="tournamentName" class="block text-neon-cyan/80 mb-3 font-mono text-lg">Tournament Name</label>
-            <input type="text" id="tournamentName" name="name" class="input w-full text-lg" required placeholder="Enter tournament name...">
+            <input type="text" id="tournamentName" name="name" class="input w-full text-lg text-black" required placeholder="Enter tournament name...">
           </div>
 
           <div class="mb-8">

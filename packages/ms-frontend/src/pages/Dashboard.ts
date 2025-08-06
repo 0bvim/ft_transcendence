@@ -153,17 +153,13 @@ function renderDashboardContent(container: HTMLElement, user: User) {
     </nav>
 
     <!-- Main Content -->
-    <main class="relative z-10 container-fluid py-6 space-y-6">
+    <main class="relative z-10 container-fluid py-4 space-y-4">
       <!-- Welcome Section -->
       <div class="text-center animate-fade-in">
         <h1 class="text-3xl font-bold text-gradient mb-2 font-retro tracking-wider">
           <span class="text-neon-cyan">Welcome back,</span> 
           <span class="text-neon-pink">${user.displayName || user.username}</span>
         </h1>
-        <p class="text-neon-cyan/80 font-mono text-base">
-          <span class="text-neon-pink">$</span> Ready to play some pong?
-          <span class="animate-pulse">_</span>
-        </p>
       </div>
 
       <!-- Game Options Section -->
@@ -172,7 +168,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
       <!-- Dashboard Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up" style="animation-delay: 0.2s;">
         <!-- Main Stats -->
-        <div class="lg:col-span-2 space-y-8">
+        <div class="lg:col-span-2 space-y-4">
           <!-- Performance Overview -->
           <div class="card p-6">
             <div class="flex items-center justify-between mb-6">
@@ -231,12 +227,12 @@ function renderDashboardContent(container: HTMLElement, user: User) {
         </div>
 
         <!-- Sidebar -->
-        <div class="space-y-8">
+        <div class="space-y-4">
           <!-- Security Status -->
           <div class="card p-6">
             <h3 class="text-xl font-bold text-gradient mb-6 font-retro">Security Status</h3>
             <div class="space-y-4">
-              <div class="flex items-center justify-between p-4 bg-secondary-900/20 backdrop-blur-lg border border-${user.twoFactorEnabled ? 'neon-green' : 'warning-500'}/30 clip-cyber-button">
+              <div class="flex items-center justify-between p-2 bg-secondary-900/20 backdrop-blur-lg border border-${user.twoFactorEnabled ? 'neon-green' : 'warning-500'}/30 clip-cyber-button">
                 <div class="flex items-center space-x-3">
                   <svg class="w-5 h-5 text-${user.twoFactorEnabled ? 'neon-green' : 'warning-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -248,7 +244,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
                 </span>
               </div>
               
-              <div class="flex items-center justify-between p-4 bg-secondary-900/20 backdrop-blur-lg border border-neon-green/30 clip-cyber-button">
+              <div class="flex items-center justify-between p-2 bg-secondary-900/20 backdrop-blur-lg border border-neon-green/30 clip-cyber-button">
                 <div class="flex items-center space-x-3">
                   <svg class="w-5 h-5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -259,7 +255,7 @@ function renderDashboardContent(container: HTMLElement, user: User) {
               </div>
 
               ${!user.twoFactorEnabled ? `
-              <div class="p-4 bg-warning-500/10 border border-warning-500/30 clip-cyber-button">
+              <div class="p-2 bg-warning-500/10 border border-warning-500/30 clip-cyber-button">
                 <p class="text-xs text-warning-500 mb-2 font-mono uppercase">⚠ ENHANCE SECURITY</p>
                 <a href="/profile" data-link class="text-xs text-neon-cyan hover:text-neon-pink transition-colors font-mono uppercase underline">
                   Enable 2FA >>
