@@ -299,7 +299,7 @@ class TournamentApi {
   }
 
   async getUserStats(userId: string): Promise<UserStats> {
-    return this.request<UserStats>(`/api/users/${userId}/stats`);
+    return this.request<UserStats>(`/users/${userId}/stats`);
   }
 
   async getMatchDetails(matchId: string): Promise<Match & { player1: TournamentParticipant; player2: TournamentParticipant }> {

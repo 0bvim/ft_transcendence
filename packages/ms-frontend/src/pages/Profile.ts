@@ -1,4 +1,5 @@
 import { authApi, User, UpdateProfileRequest } from '../api/auth';
+import { tournamentApi } from '../api/tournament';
 import { TwoFactorSetupModal } from '../components/TwoFactorSetup';
 import { TwoFactorManageModal } from '../components/TwoFactorManageModal';
 
@@ -369,9 +370,37 @@ async function loadProfileData(container: HTMLElement) {
   try {
     const { user } = await authApi.getProfile();
     updateProfileDisplay(container, user);
+    
+    // Also load user stats
+    await loadUserStats(container, user.id);
   } catch (error) {
     console.error('Failed to load profile:', error);
     showError(container, 'Failed to load profile data');
+  }
+}
+
+async function loadUserStats(container: HTMLElement, userId: string) {
+  try {
+    // Use the proper stats API
+    const stats = await tournamentApi.getUserStats(userId);
+    
+    console.log('📊 Loaded user stats for profile:', stats);
+
+    // Update UI with real stats
+    const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
+    const winRateEl = container.querySelector('#winRate') as HTMLElement;
+
+    if (totalGamesEl) totalGamesEl.textContent = (stats.wins + stats.losses).toString();
+    if (winRateEl) winRateEl.textContent = `${Math.round(stats.winRate || 0)}%`;
+
+  } catch (error) {
+    console.error('Failed to load user stats:', error);
+    // Set fallback values
+    const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
+    const winRateEl = container.querySelector('#winRate') as HTMLElement;
+    
+    if (totalGamesEl) totalGamesEl.textContent = '0';
+    if (winRateEl) winRateEl.textContent = '0%';
   }
 }
 

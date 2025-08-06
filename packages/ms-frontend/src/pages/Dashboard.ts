@@ -320,24 +320,27 @@ async function setupEventListeners(container: HTMLElement) {
 
 async function loadUserStats(container: HTMLElement) {
   try {
-    // Use existing user data and tournament API to get some stats
+    // Get user from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const response = await tournamentApi.getTournaments({ limit: 50 });
-    const tournaments = response.tournaments || [];
     
-    // Calculate basic stats from available data
-    const userTournaments = tournaments.filter(t => t.createdBy === user.id);
-    const totalTournaments = userTournaments.length;
+    if (!user.id) {
+      throw new Error('User ID not found');
+    }
+
+    // Use the proper stats API
+    const stats = await tournamentApi.getUserStats(user.id);
     
-    // Update UI with calculated stats
+    console.log('📊 Loaded user stats:', stats);
+
+    // Update UI with real stats
     const totalGamesEl = container.querySelector('#totalGames') as HTMLElement;
     const winRateEl = container.querySelector('#winRate') as HTMLElement;
     const totalTournamentsEl = container.querySelector('#totalTournaments') as HTMLElement;
     const statsLastUpdatedEl = container.querySelector('#statsLastUpdated') as HTMLElement;
 
-    if (totalGamesEl) totalGamesEl.textContent = totalTournaments.toString();
-    if (winRateEl) winRateEl.textContent = '0%'; // Will be calculated when match system is implemented
-    if (totalTournamentsEl) totalTournamentsEl.textContent = totalTournaments.toString();
+    if (totalGamesEl) totalGamesEl.textContent = (stats.wins + stats.losses).toString();
+    if (winRateEl) winRateEl.textContent = `${Math.round(stats.winRate || 0)}%`;
+    if (totalTournamentsEl) totalTournamentsEl.textContent = stats.totalTournaments.toString();
     if (statsLastUpdatedEl) statsLastUpdatedEl.textContent = 'UPDATED: ' + new Date().toLocaleTimeString();
 
   } catch (error) {
