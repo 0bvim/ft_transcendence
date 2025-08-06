@@ -49,7 +49,7 @@ export class PongGame {
   constructor(config: GameConfig, callbacks: GameCallbacks) {
     this.config = config;
     this.callbacks = callbacks;
-    this.aiViewBoardInterval = 2000; // Set AI reaction time to 100ms
+    this.aiViewBoardInterval = 1000; // AI refreshes view exactly once per second as required
   }
 
   // Initialize the p5.js instance and attach to canvas container
