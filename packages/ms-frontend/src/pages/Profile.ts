@@ -253,12 +253,12 @@ export default function Profile(): HTMLElement {
           </div>
 
           <!-- Security Settings -->
-          <div class="card p-8">
+          <div class="card p-6">
             <h3 class="text-2xl font-bold text-gradient mb-8 font-retro tracking-wider">SECURITY SETTINGS</h3>
             
-            <div class="space-y-6">
+            <div class="space-y-4">
               <!-- 2FA Status -->
-              <div class="p-6 bg-secondary-900/30 backdrop-blur-lg border border-neon-cyan/30 clip-cyber-button hover:border-neon-cyan/50 transition-all duration-300">
+              <div class="p-4 bg-secondary-900/30 backdrop-blur-lg border border-neon-cyan/30 clip-cyber-button hover:border-neon-cyan/50 transition-all duration-300">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 clip-cyberpunk bg-gradient-to-br from-warning-500/20 to-neon-pink/20 flex items-center justify-center">
@@ -281,7 +281,7 @@ export default function Profile(): HTMLElement {
               </div>
 
               <!-- Account Created -->
-              <div class="p-6 bg-secondary-900/30 backdrop-blur-lg border border-neon-green/30 clip-cyber-button">
+              <div class="p-4 bg-secondary-900/30 backdrop-blur-lg border border-neon-green/30 clip-cyber-button">
                 <div class="flex items-center space-x-4">
                   <div class="w-12 h-12 clip-cyberpunk bg-gradient-to-br from-neon-green/20 to-neon-cyan/20 flex items-center justify-center">
                     <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,10 +298,10 @@ export default function Profile(): HTMLElement {
           </div>
 
           <!-- Danger Zone -->
-          <div class="card p-8 border border-danger-500/50">
+          <div class="card p-6 border border-danger-500/50">
             <h3 class="text-2xl font-bold text-danger-500 mb-8 font-retro tracking-wider">DANGER ZONE</h3>
             
-            <div class="p-6 bg-danger-500/10 backdrop-blur-lg border border-danger-500/30 clip-cyber-button">
+            <div class="p-4 bg-danger-500/10 backdrop-blur-lg border border-danger-500/30 clip-cyber-button">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <div class="w-12 h-12 clip-cyberpunk bg-gradient-to-br from-danger-500/20 to-danger-500/30 flex items-center justify-center">

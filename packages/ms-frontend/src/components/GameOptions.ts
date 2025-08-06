@@ -1,10 +1,10 @@
 export function renderGameOptions(): string {
   return `
     <div id="gameModeSelection" class="flex justify-center mb-8 animate-slide-up">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl w-full">
         <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
           <h3 class="text-xl font-bold text-neon-green mb-3 font-retro">PLAY VS AI</h3>
-          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Challenge our AI opponent.<br>&nbsp;</p>
+          <p class="text-neon-cyan/80 mb-6 font-mono text-sm">Challenge our AI opponent.</p>
           <button id="playAiButton" class="btn btn-primary w-full">START_AI_GAME</button>
         </div>
         <div class="card p-6 text-center group hover:scale-105 transition-all duration-500">
