@@ -131,16 +131,16 @@ define generate_observability_certificates
 				echo "✅ Valid certificates already exist for $$service"; \
 			else \
 				echo "🔧 Regenerating expired certificates for $$service"; \
-				if command -v mkcert > /dev/null; then \
-					mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key *.localhost localhost 127.0.0.1; \
+				if command -v ./mkcert > /dev/null; then \
+					./mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key *.localhost localhost 127.0.0.1; \
 				else \
 					echo "⚠️ mkcert not found, skipping $$service certificates"; \
 				fi; \
 			fi; \
 		else \
 			echo "🔧 Creating new certificates for $$service"; \
-			if command -v mkcert > /dev/null; then \
-				mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key *.localhost localhost 127.0.0.1; \
+			if command -v ./mkcert > /dev/null; then \
+				./mkcert -cert-file devops/certs/$$service.crt -key-file devops/certs/$$service.key *.localhost localhost 127.0.0.1; \
 			else \
 				echo "⚠️ mkcert not found, skipping $$service certificates"; \
 			fi; \
@@ -149,10 +149,10 @@ define generate_observability_certificates
 	# Generate CA certificate for ELK internal communication \
 	if [ ! -f devops/certs/ca.crt ]; then \
 		echo "🔧 Creating CA certificate for ELK internal communication"; \
-		if command -v mkcert > /dev/null; then \
-			mkcert -install > /dev/null 2>&1 || true; \
-			if [ -f "$$(mkcert -CAROOT)/rootCA.pem" ]; then \
-				cp "$$(mkcert -CAROOT)/rootCA.pem" devops/certs/ca.crt; \
+		if command -v ./mkcert > /dev/null; then \
+			./mkcert -install > /dev/null 2>&1 || true; \
+			if [ -f "$$(./mkcert -CAROOT)/rootCA.pem" ]; then \
+				cp "$$(./mkcert -CAROOT)/rootCA.pem" devops/certs/ca.crt; \
 				echo "✅ CA certificate copied from mkcert"; \
 			else \
 				echo "⚠️ mkcert CA not found, creating self-signed CA"; \
@@ -178,8 +178,8 @@ define generate_microservice_certificates
 				echo "✅ Certificates already exist for $$service"; \
 		else \
 			echo "🔧 Creating new certificates for $$service"; \
-			if command -v mkcert > /dev/null; then \
-				mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
+			if command -v ./mkcert > /dev/null; then \
+				./mkcert -cert-file $$service/certs/cert.pem -key-file $$service/certs/key.pem 127.0.0.1 localhost; \
 			else \
 				echo "⚠️ mkcert not found, skipping microservice certificates"; \
 			fi; \
@@ -187,24 +187,39 @@ define generate_microservice_certificates
 	done
 endef
 
-define install_mkcert
-	if command -v mkcert > /dev/null; then \
-		echo "✅ mkcert already installed"; \
-	else \
-		echo "⚙️ Installing mkcert..."; \
-		if [ "$(OS)" = "Linux" ]; then \
-			sudo apt-get install mkcert; \
-		elif [ "$(OS)" = "macOS" ]; then \
-			brew install mkcert; \
-		else \
-			echo "🅧 Could not detect package manager. Please install mkcert manually."; \
-		fi \
+ 
+install-mkcert:
+	if [ ! -f "mkcert" ]; then \
+		echo "\033[;32mmkcert not detected... Downloading and installing\033[0m";\
+		ARCH=$$(uname -m); \
+        OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+        case "$$OS" in \
+            darwin) \
+                case "$$ARCH" in \
+                    arm64) URL="https://dl.filippo.io/mkcert/latest?for=darwin/arm64";; \
+                    x86_64) URL="https://dl.filippo.io/mkcert/latest?for=darwin/amd64";; \
+                esac ;; \
+            linux) \
+                case "$$ARCH" in \
+                    x86_64) URL="https://dl.filippo.io/mkcert/latest?for=linux/amd64";; \
+                    aarch64) URL="https://dl.filippo.io/mkcert/latest?for=linux/arm64";; \
+                esac ;; \
+        esac; \
+		curl -JLO "$$URL" &&\
+		chmod +x mkcert-v* &&\
+		mv mkcert-v* mkcert;\
 	fi
-endef
 
-generate-certs:
+setup-docker-repo:
+	@sudo apt update -qq
+	@sudo apt install -y -qq ca-certificates curl gnupg lsb-release 
+	@sudo mkdir -m 0755 -p /etc/apt/keyrings  2>&1
+	@curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg  2>&1
+	@echo "deb [arch=$$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+generate-certs: setup-docker-repo
 	@echo "⏲️ Generating SSL certificates..."
-	@$(call install_mkcert)
+	@$(MAKE) install-mkcert
 	@$(call generate_observability_certificates)
 	@$(call generate_microservice_certificates)
 	@$(call ensure_ca_certificate)
@@ -213,10 +228,10 @@ define ensure_ca_certificate
 	# Ensure CA certificate exists for ELK internal communication
 	if [ ! -f devops/certs/ca.crt ]; then \
 		echo "🔧 Creating CA certificate for ELK internal communication"; \
-		if command -v mkcert > /dev/null; then \
-			mkcert -install > /dev/null 2>&1 || true; \
-			if [ -f "$$(mkcert -CAROOT)/rootCA.pem" ]; then \
-				cp "$$(mkcert -CAROOT)/rootCA.pem" devops/certs/ca.crt; \
+		if command -v ./mkcert > /dev/null; then \
+			./mkcert -install > /dev/null 2>&1 || true; \
+			if [ -f "$$(./mkcert -CAROOT)/rootCA.pem" ]; then \
+				cp "$$(./mkcert -CAROOT)/rootCA.pem" devops/certs/ca.crt; \
 				echo "✅ CA certificate copied from mkcert"; \
 			else \
 				echo "⚠️ mkcert CA not found, creating self-signed CA"; \
