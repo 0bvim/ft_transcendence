@@ -1,0 +1,127 @@
+groups:
+  - name: application_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "{{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m])) > 500
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on {{ $labels.instance }}"
+          description: "95th percentile response time is above 500ms for more than 2 minutes."
+
+      - alert: ErrorRateHigh
+        expr: rate(http_requests_total{status_code=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.instance }}"
+          description: "Error rate is above 5% for more than 2 minutes."
+
+  - name: frontend_alerts
+    rules:
+      - alert: FrontendDown
+        expr: up{job="ms-frontend:3000"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frontend service is down"
+          description: "Frontend service has been down for more than 1 minute."
+
+      - alert: FrontendHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="frontend:3000"}[5m])) > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frontend high response time detected"
+          description: "Frontend response time is above 1000ms for more than 2 minutes."
+
+  - name: game_service_alerts
+    rules:
+      - alert: GameServiceDown
+        expr: up{job="game-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Game service is down"
+          description: "Game service has been down for more than 1 minute."
+
+      - alert: GameServiceHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="game-service"}[5m])) > 200
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Game service high response time detected"
+          description: "Game service response time is above 200ms for more than 2 minutes."
+
+      - alert: GameServiceErrorRate
+        expr: rate(http_requests_total{job="game-service",status_code=~"5.."}[5m]) / rate(http_requests_total{job="game-service"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Game service high error rate"
+          description: "Game service error rate is above 5% for more than 2 minutes."
+
+  - name: auth_service_alerts
+    rules:
+      - alert: AuthServiceDown
+        expr: up{job="ms-auth"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Auth service is down"
+          description: "Auth service has been down for more than 1 minute."
+
+      - alert: AuthServiceHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket{job="ms-auth"}[5m])) > 300
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth service high response time detected"
+          description: "Auth service response time is above 300ms for more than 2 minutes."
+
+      - alert: AuthServiceErrorRate
+        expr: rate(http_requests_total{job="ms-auth",status_code=~"5.."}[5m]) / rate(http_requests_total{job="ms-auth"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth service high error rate"
+          description: "Auth service error rate is above 5% for more than 2 minutes."
+
+      - alert: AuthServiceHighClientErrors
+        expr: rate(http_requests_total{job="ms-auth",status_code=~"4.."}[5m]) / rate(http_requests_total{job="ms-auth"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth service high client error rate"
+          description: "Auth service client error rate is above 10% for more than 5 minutes."
+
+  - name: prometheus_alerts
+    rules:
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus has been down for more than 1 minute."

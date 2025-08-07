@@ -1,0 +1,45 @@
+{
+  "name": "@ft-transcendence/tournament",
+  "version": "1.0.0",
+  "description": "Tournament management microservice for ft_transcendence",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx --watch src/server.ts",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": ["tournament", "pong", "competition", "microservice"],
+  "author": "ft_transcendence",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.4",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "prisma": "^5.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "@ft-transcendence/observability": "workspace:*",
+    "@prisma/client": "^5.0.0",
+    "fastify": "^5.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "node-fetch": "^3.3.0",
+    "zod": "^3.22.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

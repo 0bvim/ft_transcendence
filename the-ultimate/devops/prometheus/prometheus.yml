@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+
+  # Microservices 
+  - job_name: "ms-auth"
+    scheme: https
+    tls_config:
+      ca_file: /etc/prometheus/certs/ca.crt
+      cert_file: /etc/prometheus/certs/prometheus.crt
+      key_file: /etc/prometheus/certs/prometheus.key
+      server_name: localhost
+      insecure_skip_verify: false
+    static_configs:
+      - targets: ["authentication:3001"]
+    metrics_path: "/metrics"
+    
+  - job_name: "ms-tournament"
+    scheme: https
+    tls_config:
+      ca_file: /etc/prometheus/certs/ca.crt
+      cert_file: /etc/prometheus/certs/prometheus.crt
+      key_file: /etc/prometheus/certs/prometheus.key
+      server_name: localhost
+      insecure_skip_verify: false
+    static_configs:
+      - targets: ["tournament:3003"]
+    metrics_path: "/metrics"

@@ -1,0 +1,125 @@
+// Tournament service database schema
+// Uses SQLite as specified in the ft_transcendence documentation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Tournament model
+model Tournament {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  maxPlayers    Int      @default(8)
+  currentPlayers Int     @default(0)
+  status        String @default("WAITING")
+
+  // Tournament metadata
+  createdBy     String   // User ID from auth service
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  participants  TournamentParticipant[]
+  matches       Match[]
+  
+  @@index([status])
+  @@index([createdBy])
+}
+
+// Tournament participant model (links tournaments to users)
+model TournamentParticipant {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  userId        String?  // Null for AI participants
+  displayName   String   // Persistent display name as specified
+  participantType String @default("HUMAN")
+  status        String @default("ACTIVE")
+  
+  // Tournament placement
+  eliminated    Boolean  @default(false)
+  eliminatedAt  DateTime?
+  finalPosition Int?     // 1st, 2nd, 3rd, etc.
+  
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerMatches Match[] @relation("MatchParticipants")
+  
+  @@unique([tournamentId, userId]) // Prevent duplicate human participants
+  @@index([tournamentId])
+  @@index([userId])
+}
+
+// Match model for tournament games
+model Match {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  round         Int      // 1 = first round, 2 = second round, etc.
+  matchNumber   Int      // Match number within the round
+  status        String @default("WAITING")
+  // Local-versus mode (two humans same keyboard)
+  localVersus   Boolean @default(false)
+  player1Keys   String?
+  player2Keys   String?
+  
+  // Match participants
+  player1Id     String?
+  player2Id     String?
+  winnerId      String?
+  
+  // Match details
+  player1Score  Int?
+  player2Score  Int?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participants  TournamentParticipant[] @relation("MatchParticipants")
+  
+  @@index([tournamentId])
+  @@index([status])
+  @@index([round])
+}
+
+// User stats model for tracking wins/losses across tournaments
+model UserStats {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  displayName   String   // Current display name
+  
+  // Basic stats as specified
+  totalTournaments Int   @default(0)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  
+  // Tournament performance
+  tournamentsWon Int     @default(0)
+  tournamentsSecond Int  @default(0)
+  tournamentsThird Int   @default(0)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// Enums
+// Enum constants as strings for SQLite compatibility
+// TournamentStatus: "WAITING" | "ACTIVE" | "COMPLETED" | "CANCELLED"
+// ParticipantType: "HUMAN" | "AI"
+// ParticipantStatus: "ACTIVE" | "ELIMINATED" | "WINNER"
+// MatchStatus: "WAITING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"

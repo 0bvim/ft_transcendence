@@ -1,0 +1,1051 @@
+import { tournamentApi, Tournament } from '../api/tournament.ts';
+import { authApi } from '../api/auth.ts';
+// Import the unified game system instead of direct PongGame
+import { showGame, GameType } from './Game/game.ts';
+import { GameState } from '../game/PongGame.ts';
+import { showNotification } from '../components/notification.ts';
+
+// Auto-refresh interval for tournament updates
+let tournamentRefreshInterval: NodeJS.Timeout | null = null;
+
+export default function TournamentDetail(): HTMLElement {
+  const container = document.createElement('div');
+  // Use a more specific class for the tournament detail page
+  container.className = 'tournament-detail-page min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8';
+
+  // Get tournament ID from URL
+  const tournamentId = window.location.pathname.split('/').pop();
+
+  // NEW: Modern, sidebar-based layout inspired by the screenshot
+  container.innerHTML = `
+    <div id="tournament-container" class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-4">
+          <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="tournament-name">
+            Loading...
+          </h1>
+          <span class="px-3 py-1 rounded-full text-sm font-semibold" id="tournament-status">
+            <!-- Status badge -->
+          </span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="text-right">
+                <div id="player-count" class="text-lg font-bold text-neon-cyan">0/0 Players</div>
+                <div id="tournament-type" class="text-xs text-gray-400">Tournament Type</div>
+            </div>
+            <button id="start-tournament-btn" class="btn btn-primary btn-sm hidden">START TOURNAMENT</button>
+            <button id="exit-tournament-btn" class="btn btn-outline btn-sm border-red-500 text-red-500 hover:bg-red-500 hover:text-white">
+                EXIT TOURNAMENT
+            </button>
+        </div>
+      </div>
+
+      <!-- Join Notification Area -->
+      <div id="join-notification" class="hidden mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span class="text-green-400 text-sm font-medium" id="join-message"></span>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="space-y-8">
+        
+        <!-- Tournament Info Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
+          
+          <!-- TOURNAMENT INFO Card -->
+          <div class="md:col-span-1">
+            <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
+              <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+                <span class="mr-2">ℹ️</span>
+                TOURNAMENT INFO
+              </h2>
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Format:</span>
+                  <span class="text-white" id="tournament-format">Single Elimination</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Max Players:</span>
+                  <span class="text-white" id="max-players">4</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Created:</span>
+                  <span class="text-white" id="created-date">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARTICIPANTS Card -->
+          <div class="md:col-span-2">
+            <div class="card bg-gray-800/50 border border-gray-700 p-6 h-full">
+              <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+                <span class="mr-2">👥</span>
+                PARTICIPANTS
+              </h2>
+              <div id="participants-list" class="space-y-2 overflow-y-auto max-h-80">
+                <p class="text-sm text-gray-400">Loading participants...</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Second Row - Progress and Current Match -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- PROGRESS Card -->
+          <div class="card bg-gray-800/50 border border-gray-700 p-6">
+            <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+              <span class="mr-2">📊</span>
+              PROGRESS
+            </h2>
+            <div id="tournament-progress-info" class="space-y-4 text-sm">
+                <div class="flex justify-between">
+                    <span>Matches Completed:</span>
+                    <span id="completed-matches" class="font-bold text-green-400">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Matches Remaining:</span>
+                    <span id="remaining-matches" class="font-bold text-yellow-400">0</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-3 mt-4">
+                    <div id="progress-bar" class="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+          </div>
+
+          <!-- CURRENT MATCH Card -->
+          <div class="card bg-gray-800/50 border border-gray-700 p-6">
+            <h2 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+              <span class="mr-2">⚔️</span>
+              CURRENT MATCH
+            </h2>
+            <div id="current-match-info" class="space-y-2 text-sm">
+              <p>No active match.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Game Area - Full Width at Bottom -->
+        <div class="w-full">
+          <div class="card bg-black border-2 border-purple-500/50 overflow-hidden">
+            <div class="min-h-[60vh] max-h-[80vh] flex items-center justify-center p-6" id="game-viewport">
+                <div id="game-placeholder" class="text-center">
+                    <div class="mb-6">
+                      <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-3xl">
+                        🎮
+                      </div>
+                      <h3 class="text-3xl font-bold text-gray-300 mb-2">Waiting for match...</h3>
+                      <p class="text-gray-500 text-lg">The game will appear here when a match starts.</p>
+                    </div>
+                    <button id="play-next-match-btn" class="btn btn-primary btn-lg hidden px-8 py-4 text-lg">
+                      <span class="mr-2">🚀</span>
+                      PLAY MY MATCH
+                    </button>
+                </div>
+                <div id="canvasContainer" class="w-full h-full absolute inset-0 hidden"></div>
+            </div>
+          </div>
+          
+          <!-- Control Instructions (Outside Canvas) -->
+          <div id="tournamentGameControls" class="mt-6 flex items-center justify-center space-x-16 hidden">
+            <div class="text-center">
+              <div class="text-sm text-neon-pink font-mono mb-1">PLAYER 1</div>
+              <div class="text-xs text-neon-pink/80 font-mono">W/S Keys</div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm text-neon-cyan font-mono mb-1">PLAYER 2</div>
+              <div id="tournamentPlayer2Controls" class="text-xs text-neon-cyan/80 font-mono">I/K Keys</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+  // Re-wire event listeners to the new elements
+  setupEventListeners(container, tournamentId);
+  if (tournamentId) {
+    console.log(`[TournamentDetail] Page loaded for tournamentId: ${tournamentId}`);
+    loadTournamentData(container, tournamentId);
+    // Start auto-refresh for tournament updates
+    startTournamentAutoRefresh(container, tournamentId);
+  } else {
+    console.error('[TournamentDetail] No tournamentId found in URL.');
+  }
+
+  return container;
+}
+
+function setupEventListeners(container: HTMLElement, tournamentId: string | undefined) {
+  const exitBtn = container.querySelector('#exit-tournament-btn');
+  exitBtn?.addEventListener('click', () => {
+    // Stop auto-refresh when exiting
+    stopTournamentAutoRefresh();
+    // Navigate to tournament list
+    window.location.href = '/game?view=tournaments';
+  });
+
+  const startBtn = container.querySelector('#start-tournament-btn');
+  startBtn?.addEventListener('click', async () => {
+    if (!tournamentId) return;
+    try {
+      await tournamentApi.startTournament(tournamentId);
+      showNotification('Tournament started!', 'success');
+      // Reload data to reflect the new state
+      loadTournamentData(container, tournamentId);
+    } catch (error) {
+      console.error('Failed to start tournament:', error);
+      showNotification('Failed to start tournament.', 'error');
+    }
+  });
+
+  const playNextMatchBtn = container.querySelector('#play-next-match-btn');
+  playNextMatchBtn?.addEventListener('click', async () => {
+      if (!tournamentId) return;
+      const tournament = await tournamentApi.getTournament(tournamentId);
+      const nextMatch = findNextPlayableMatch(tournament);
+      if (nextMatch) {
+          startTournamentMatch(container, tournament, nextMatch);
+      }
+  });
+}
+
+// MODIFIED: Pass container to functions to scope DOM queries
+async function loadTournamentData(container: HTMLElement, tournamentId: string) {
+  try {
+    console.log('[TournamentDetail] Loading tournament data for ID:', tournamentId);
+    const tournament = await tournamentApi.getTournament(tournamentId);
+    console.log('[TournamentDetail] Tournament status:', tournament.status, 'Matches:', tournament.matches?.length || 0);
+    
+    updateTournamentUI(container, tournament);
+  } catch (error) {
+    console.error('[TournamentDetail] Failed to load tournament data:', error);
+    showNotification('Failed to load tournament data', 'error');
+  }
+}
+
+// NEW: A single function to update all parts of the UI from tournament data
+function updateTournamentUI(container: HTMLElement, tournament: any) {
+    updateHeader(container, tournament);
+    updateParticipants(container, tournament);
+    updateCurrentMatch(container, tournament);
+    updateProgress(container, tournament);
+    updateGameView(container, tournament);
+}
+
+// NEW: Function to update header elements
+function updateHeader(container: HTMLElement, tournament: any) {
+    const nameEl = container.querySelector('#tournament-name') as HTMLElement;
+    const statusEl = container.querySelector('#tournament-status') as HTMLElement;
+    const playersEl = container.querySelector('#player-count') as HTMLElement;
+    const typeEl = container.querySelector('#tournament-type') as HTMLElement;
+    const startBtn = container.querySelector('#start-tournament-btn') as HTMLElement;
+    
+    // Update tournament info section
+    const formatEl = container.querySelector('#tournament-format') as HTMLElement;
+    const maxPlayersEl = container.querySelector('#max-players') as HTMLElement;
+    const createdDateEl = container.querySelector('#created-date') as HTMLElement;
+
+    if (nameEl) nameEl.textContent = tournament.name;
+    if (statusEl) {
+        statusEl.textContent = tournament.status;
+        statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(tournament.status)}`;
+    }
+    if (playersEl) playersEl.textContent = `${tournament.currentPlayers}/${tournament.maxPlayers} Players`;
+    if (typeEl) typeEl.textContent = `${tournament.maxPlayers}-Player Tournament`;
+    
+    // Update tournament info section
+    if (formatEl) formatEl.textContent = 'Single Elimination';
+    if (maxPlayersEl) maxPlayersEl.textContent = tournament.maxPlayers.toString();
+    if (createdDateEl) {
+        const date = new Date(tournament.createdAt);
+        createdDateEl.textContent = date.toLocaleDateString();
+    }
+
+    // Logic to show/hide the start button
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isCreator = user.id === tournament.createdBy;
+    const canStart = tournament.status === 'WAITING' && isCreator && 
+                    tournament.currentPlayers === tournament.maxPlayers;
+
+    if (startBtn) {
+        if (canStart) {
+            startBtn.classList.remove('hidden');
+        } else {
+            startBtn.classList.add('hidden');
+        }
+    }
+}
+
+// NEW: Function to update the PARTICIPANTS section
+function updateParticipants(container: HTMLElement, tournament: any) {
+    const participantsList = container.querySelector('#participants-list') as HTMLElement;
+    const participants = tournament.participants || [];
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isCreator = currentUser.id === tournament.createdBy;
+
+    if (participants.length > 0) {
+        participantsList.innerHTML = participants.map((p: any, index: number) => {
+            const isCurrentUser = p.userId === currentUser.id;
+            const isHost = p.userId === tournament.createdBy;
+            
+            return `
+                <div class="bg-gray-700/50 rounded-lg p-3 border border-gray-600 hover:border-purple-500/50 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+                                ${p.displayName ? p.displayName.charAt(0).toUpperCase() : (p.participantType === 'AI' ? '🤖' : '?')}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium text-white truncate">
+                                        ${p.displayName || (p.participantType === 'AI' ? `AI Player ${index + 1}` : 'Unknown')}
+                                    </span>
+                                    ${isCurrentUser ? '<span class="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">YOU</span>' : ''}
+                                    ${isHost ? '<span class="bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full font-semibold">HOST</span>' : ''}
+                                </div>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <span class="text-xs text-gray-400">${p.participantType === 'AI' ? 'AI Player' : 'Human'}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full ${getParticipantStatusColor(p.status)}">
+                                        ${p.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add empty slots if tournament is not full
+        const emptySlots = tournament.maxPlayers - participants.length;
+        if (emptySlots > 0) {
+            const emptySlotHTML = Array.from({length: emptySlots}, (_, i) => `
+                <div class="bg-gray-800/30 rounded-lg p-3 border border-gray-600 border-dashed">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center animate-pulse">
+                            <span class="text-gray-400 text-lg">👤</span>
+                        </div>
+                        <div class="flex-1">
+                            <span class="text-gray-400 text-sm">Waiting for player...</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            participantsList.innerHTML += emptySlotHTML;
+        }
+    } else {
+        participantsList.innerHTML = `
+            <div class="text-center py-6">
+                <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl mx-auto mb-3">
+                    👥
+                </div>
+                <p class="text-sm text-gray-400 mb-2">No participants yet</p>
+                <p class="text-xs text-gray-500">Tournament needs ${tournament.maxPlayers} players to start</p>
+            </div>
+        `;
+    }
+}
+
+// NEW: Function to show a notification when a player joins the tournament
+function showJoinNotification(container: HTMLElement, player: any) {
+    const joinNotification = container.querySelector('#join-notification') as HTMLElement;
+    const joinMessage = container.querySelector('#join-message') as HTMLElement;
+
+    if (joinNotification && joinMessage) {
+        joinNotification.classList.remove('hidden');
+        joinMessage.textContent = `${player.displayName} has joined the tournament!`;
+
+        setTimeout(() => {
+            joinNotification.classList.add('hidden');
+        }, 3000);
+    }
+}
+
+// NEW: Function to update the 'Current Match' panel
+function updateCurrentMatch(container: HTMLElement, tournament: any) {
+    
+    // Add null check to prevent crashes
+    if (!tournament || !tournament.matches) {
+        console.log('[TournamentDetail] Tournament data not available, skipping current match update');
+        return;
+    }
+    
+    const currentMatchInfo = container.querySelector('#current-match-info') as HTMLElement;
+    const inProgressMatch = tournament.matches.find((m: any) => m.status === 'IN_PROGRESS');
+
+    if (inProgressMatch) {
+        const player1Type = inProgressMatch.player1?.participantType || 'UNKNOWN';
+        const player2Type = inProgressMatch.player2?.participantType || 'UNKNOWN';
+        const isAIvsAI = player1Type === 'AI' && player2Type === 'AI';
+        const hasHuman = player1Type === 'HUMAN' || player2Type === 'HUMAN';
+        
+        currentMatchInfo.innerHTML = `
+            <div class="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-4 mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-neon-cyan font-mono">Round ${inProgressMatch.round} - Match ${inProgressMatch.matchNumber}</span>
+                    <span id="match-status-text" class="font-bold ${isAIvsAI ? 'text-yellow-400' : 'text-green-400'}">
+                        ${isAIvsAI ? 'AI SIMULATION' : 'IN PROGRESS'}
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-3 items-center gap-4 mb-3">
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-white">${inProgressMatch.player1?.displayName || 'TBD'}</div>
+                        <div class="text-sm ${player1Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono">
+                            ${player1Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        ${player1Type === 'HUMAN' && hasHuman ? '<div class="text-xs text-neon-pink/80 font-mono">W/S Keys</div>' : ''}
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-3xl font-mono font-bold text-white">
+                            <span id="match-score-display">${inProgressMatch.player1Score || 0} - ${inProgressMatch.player2Score || 0}</span>
+                        </div>
+                        <div class="text-sm text-gray-400">VS</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-white">${inProgressMatch.player2?.displayName || 'TBD'}</div>
+                        <div class="text-sm ${player2Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono">
+                            ${player2Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        ${player2Type === 'HUMAN' && hasHuman ? '<div class="text-xs text-neon-pink/80 font-mono">I/K Keys</div>' : ''}
+                    </div>
+                </div>
+                
+                ${hasHuman && !isAIvsAI ? `
+                    <div class="text-center text-xs text-neon-cyan/60 font-mono border-t border-neon-cyan/20 pt-2">
+                        🎮 Local Multiplayer: Players use the same keyboard
+                    </div>
+                ` : ''}
+                
+                ${isAIvsAI ? `
+                    <div class="text-center text-xs text-yellow-400/80 font-mono border-t border-yellow-400/20 pt-2">
+                        ⚡ AI vs AI match - Auto-resolving...
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    } else {
+        currentMatchInfo.innerHTML = `
+            <div class="bg-gray-800/30 border border-gray-600/30 rounded-lg p-4 mb-4">
+                <p class="text-sm text-gray-400 text-center">No active match.</p>
+            </div>
+        `;
+    }
+}
+
+// MODIFIED: `updateProgress` now targets the new sidebar elements
+function updateProgress(container: HTMLElement, tournament: any) {
+  const completedMatches = tournament.matches.filter((m: any) => m.status === 'COMPLETED').length;
+  const totalMatches = tournament.matches.length;
+  const remainingMatches = totalMatches - completedMatches;
+  const progressPercent = totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
+  
+  const completedEl = container.querySelector('#completed-matches') as HTMLElement;
+  const remainingEl = container.querySelector('#remaining-matches') as HTMLElement;
+  const progressBarEl = container.querySelector('#progress-bar') as HTMLElement;
+
+  if (completedEl) completedEl.textContent = completedMatches.toString();
+  if (remainingEl) remainingEl.textContent = remainingMatches.toString();
+  if (progressBarEl) progressBarEl.style.width = `${progressPercent}%`;
+}
+
+// NEW: Function to control the main game view area
+function updateGameView(container: HTMLElement, tournament: any) {
+    const gamePlaceholder = container.querySelector('#game-placeholder') as HTMLElement;
+    const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+    const playNextMatchBtn = container.querySelector('#play-next-match-btn') as HTMLElement;
+
+    const inProgressMatch = tournament.matches.find((m: any) => m.status === 'IN_PROGRESS');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Handle tournament completion first
+    if (tournament.status === 'COMPLETED') {
+        console.log('[TournamentDetail] Tournament is COMPLETED.');
+        
+        // Stop auto-refresh since tournament is finished
+        stopTournamentAutoRefresh();
+        
+        gamePlaceholder.classList.remove('hidden');
+        gameCanvasContainer.classList.add('hidden');
+        gameCanvasContainer.innerHTML = ''; // Ensure canvas is clean
+
+        const winner = tournament.participants.find((p: any) => p.status === 'WINNER');
+        gamePlaceholder.innerHTML = `
+            <div class="text-center py-8">
+                <h3 class="text-3xl font-bold text-neon-green mb-4 font-retro">🏆 TOURNAMENT COMPLETE! 🏆</h3>
+                <p class="text-neon-cyan/80 mb-2 text-lg">Congratulations to the winner!</p>
+                <p class="text-white font-bold text-xl mb-8">${winner?.displayName || 'Unknown Player'}</p>
+                <button id="create-new-tournament-btn" class="btn btn-primary btn-lg px-8 py-3 text-lg font-retro hover:scale-105 transition-transform cursor-pointer" 
+                        onclick="console.log('Button clicked via onclick'); window.location.href='/tournament/create';"
+                        style="pointer-events: auto; z-index: 1000;">
+                    CREATE NEW TOURNAMENT
+                </button>
+                <p class="text-neon-cyan/60 mt-4 text-sm">Ready for another challenge?</p>
+            </div>
+        `;
+        
+        // Also add event listener as backup
+        setTimeout(() => {
+            const createNewBtn = gamePlaceholder.querySelector('#create-new-tournament-btn') as HTMLButtonElement;
+            if (createNewBtn) {
+                console.log('[TournamentDetail] Adding backup event listener to button');
+                createNewBtn.addEventListener('click', (e) => {
+                    console.log('[TournamentDetail] Button clicked via event listener');
+                    e.preventDefault();
+                    window.location.href = '/tournament/create';
+                });
+            }
+        }, 50);
+
+        // No need for additional event listeners here
+        
+        return; // Stop further processing
+    }
+
+    if (inProgressMatch) {
+        // A match is live, show the game canvas and hide the placeholder
+        gamePlaceholder.classList.add('hidden');
+        gameCanvasContainer.classList.remove('hidden');
+        
+        // Show control instructions for tournament matches
+        const tournamentGameControls = container.querySelector('#tournamentGameControls') as HTMLElement;
+        const tournamentPlayer2Controls = container.querySelector('#tournamentPlayer2Controls') as HTMLElement;
+        
+        if (tournamentGameControls) {
+            tournamentGameControls.classList.remove('hidden');
+            
+            // Update Player 2 controls based on participant type
+            if (tournamentPlayer2Controls) {
+                const player2Type = inProgressMatch.player2?.participantType;
+                tournamentPlayer2Controls.textContent = player2Type === 'HUMAN' ? 'I/K Keys' : 'Auto-controlled';
+            }
+        }
+        
+        // Check if the current user is part of this match and if the game isn't already running
+        const isUserInMatch = (inProgressMatch.player1?.userId === user.id || inProgressMatch.player1?.id === user.id) ||
+                             (inProgressMatch.player2?.userId === user.id || inProgressMatch.player2?.id === user.id);
+        const isCanvasEmpty = gameCanvasContainer.innerHTML.trim() === '';
+
+        // Check if this is an AI vs AI match - these should be auto-resolved by backend
+        const isAIvsAI = inProgressMatch.player1?.participantType === 'AI' && 
+                         inProgressMatch.player2?.participantType === 'AI';
+
+        // Check if this match has at least one human player
+        const hasHumanPlayer = inProgressMatch.player1?.participantType === 'HUMAN' || 
+                              inProgressMatch.player2?.participantType === 'HUMAN';
+
+        // Check if canvas contains a "Match Complete" message (indicating previous match finished)
+        const hasMatchCompleteMessage = gameCanvasContainer.innerHTML.includes('Match Complete') || 
+                                       gameCanvasContainer.innerHTML.includes('Processing next round');
+
+        // Check if we're already showing a waiting screen for this specific match
+        const isShowingWaitingScreen = gameCanvasContainer.innerHTML.includes(`match-${inProgressMatch.id}`);
+        
+        // Check if we're currently showing a game (has canvas elements)
+        const hasActiveGame = gameCanvasContainer.querySelector('canvas') !== null;
+
+        if (hasHumanPlayer && (isCanvasEmpty || hasMatchCompleteMessage) && !isShowingWaitingScreen && !hasActiveGame) {
+            console.log('[TournamentDetail] Human match detected - showing waiting screen.');
+            showHumanMatchWaitingScreen(container, tournament, inProgressMatch);
+        } else if (isAIvsAI && !isShowingWaitingScreen && !hasActiveGame) {
+            console.log('[TournamentDetail] Auto-starting AI vs AI match for resolution.');
+            // Only clear if we're not showing an active game
+            if (!hasActiveGame) {
+                gameCanvasContainer.innerHTML = '';
+            }
+            simulateAIvsAIMatch(container, tournament, inProgressMatch);
+        } else {
+            console.log('[TournamentDetail] No action taken for IN_PROGRESS match:', {
+                reason: hasHumanPlayer ? 
+                    (isShowingWaitingScreen ? 'Already showing waiting screen' : 
+                     hasActiveGame ? 'Game is active' : 'Canvas not ready') : 
+                    (isAIvsAI ? 'AI vs AI but not ready' : 'Unknown state'),
+                hasActiveGame,
+                isShowingWaitingScreen,
+                canvasContent: gameCanvasContainer.innerHTML.substring(0, 50) + '...'
+            });
+        }
+    } else {
+        // No live match, show placeholder
+        gamePlaceholder.classList.remove('hidden');
+        gameCanvasContainer.classList.add('hidden');
+        gameCanvasContainer.innerHTML = ''; // Clear canvas when not in use
+
+        // Hide control instructions when no match is active
+        const tournamentGameControls = container.querySelector('#tournamentGameControls') as HTMLElement;
+        if (tournamentGameControls) {
+            tournamentGameControls.classList.add('hidden');
+        }
+
+        const nextPlayableMatch = findNextPlayableMatch(tournament);
+        if (nextPlayableMatch) {
+            playNextMatchBtn.classList.remove('hidden');
+        } else {
+            playNextMatchBtn.classList.add('hidden');
+            // You could add logic here to show if the tournament is over
+            if (tournament.status === 'COMPLETED') {
+                (gamePlaceholder.querySelector('h3') as HTMLElement).textContent = 'Tournament Finished!';
+                (gamePlaceholder.querySelector('p') as HTMLElement).textContent = `Winner: ${tournament.participants.find((p:any) => p.status === 'WINNER')?.displayName}`;
+            }
+        }
+    }
+}
+
+// NEW: Helper to find the user's next playable match
+function findNextPlayableMatch(tournament: any): any | null {
+    
+    // Find any WAITING match that has at least one human player
+    const match = tournament.matches.find((m: any) => {
+        const hasHumanPlayer = m.player1?.participantType === 'HUMAN' || m.player2?.participantType === 'HUMAN';
+        return m.status === 'WAITING' && hasHumanPlayer;
+    });
+    
+    return match;
+}
+
+// NEW: Function to handle starting a match
+async function startTournamentMatch(container: HTMLElement, tournament: any, selectedMatch: any) {
+    console.log('[TournamentDetail] Starting match:', selectedMatch.id);
+    const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+    const gamePlaceholder = container.querySelector('#game-placeholder') as HTMLElement;
+
+    try {
+        // Clear and show game area properly
+        gamePlaceholder.classList.add('hidden');
+        gameCanvasContainer.classList.remove('hidden');
+        gameCanvasContainer.innerHTML = ''; // Clear any previous content
+        
+        // The backend auto-sets the match to IN_PROGRESS on this call
+        const matchDetails = await tournamentApi.getMatchDetails(selectedMatch.id);
+        console.log('[TournamentDetail] getMatchDetails response:', matchDetails);
+
+        // Handle different response formats - the API might return data directly or wrapped
+        const matchData = matchDetails.data || matchDetails;
+        console.log('[TournamentDetail] Using matchData:', matchData);
+
+        if (!matchData || (!matchData.id && !matchData.matchId)) {
+            throw new Error('Invalid match details response - no match ID found');
+        }
+
+        // Use matchId from API response or fallback to id
+        const actualMatchId = matchData.matchId || matchData.id;
+        console.log('[TournamentDetail] Using match ID:', actualMatchId);
+
+        // Get match participant details to set up the game
+        const matchInfo = tournament.matches.find((m: any) => m.id === actualMatchId);
+        if (!matchInfo) {
+            throw new Error('Match not found in tournament data');
+        }
+
+        // Get user info for player names
+        const { user } = await authApi.getProfile();
+        const isPlayer1 = matchInfo.player1?.userId === user.id || matchInfo.player1?.id === user.id;
+        const isPlayer2 = matchInfo.player2?.userId === user.id || matchInfo.player2?.id === user.id;
+
+        // Set up player names and AI configuration
+        const player1Name = matchInfo.player1?.displayName || 'Player 1';
+        const player2Name = matchInfo.player2?.displayName || 'Player 2';
+        const player1IsAI = matchInfo.player1?.participantType === 'AI';
+        const player2IsAI = matchInfo.player2?.participantType === 'AI';
+
+        console.log('[TournamentDetail] Setting up match:', {
+            player1Name, player2Name, player1IsAI, player2IsAI, isPlayer1, isPlayer2
+        });
+
+        // Check if this is an AI vs AI match - these should be auto-resolved by backend
+        if (player1IsAI && player2IsAI) {
+            console.log('[TournamentDetail] AI vs AI match detected - should be auto-resolved by backend');
+            gameCanvasContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full text-white">
+                    <div class="text-center">
+                        <div class="text-xl mb-4">🤖 AI vs AI Match</div>
+                        <div class="text-lg mb-2">${matchInfo.player1?.displayName} vs ${matchInfo.player2?.displayName}</div>
+                        <div class="text-sm opacity-75 mb-4">Simulating match...</div>
+                        <div class="animate-pulse">
+                            <div class="w-8 h-8 border-4 border-neon-pink border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Simulate AI vs AI match after a short delay
+            simulateAIvsAIMatch(container, tournament, matchInfo);
+            
+            return;
+        }
+
+        // For human vs AI or human vs human matches, use the unified showGame function
+        console.log('[TournamentDetail] Starting playable match (involves human players)');
+        
+        // A flag to prevent multiple submissions
+        let resultSubmitted = false;
+
+        // Create the callback with the necessary data in its closure
+        const onGameEnd = async (finalState: GameState) => {
+            console.log('[TournamentDetail] Game ended. Final state:', finalState);
+            console.log('[TournamentDetail] Match ID:', actualMatchId);
+            console.log('[TournamentDetail] Tournament ID:', tournament.id);
+            
+            try {
+                // For human matches, the result object contains the score and winner string
+                const resultPayload = {
+                    winner: finalState.score.player1 > finalState.score.player2 ? 'PLAYER_1' : 'PLAYER_2',
+                    score: finalState.score
+                };
+
+                console.log('[TournamentDetail] Submitting match result:', resultPayload);
+                console.log('[TournamentDetail] Match info:', matchInfo);
+
+                await tournamentApi.submitMatchResult(
+                    actualMatchId, 
+                    resultPayload, // The game result 
+                    matchInfo      // The original match data for context
+                );
+                
+                console.log('[TournamentDetail] Match result submitted successfully');
+                showNotification('Match result submitted!', 'success');
+
+                // NEW: Show completion message and immediately start refresh process
+                gameCanvasContainer.innerHTML = `
+                    <div class="flex items-center justify-center h-full text-white">
+                        <div class="text-center">
+                            <div class="text-xl mb-4">🏆 Match Complete!</div>
+                            <div class="text-lg mb-2">Winner: ${resultPayload.winner === 'PLAYER_1' ? player1Name : player2Name}</div>
+                            <div class="text-lg mb-4">Score: ${resultPayload.score.player1} - ${resultPayload.score.player2}</div>
+                            <div class="text-sm opacity-75">Processing next round...</div>
+                            <div class="animate-pulse">
+                                <div class="w-8 h-8 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                console.log('[TournamentDetail] Starting enhanced refresh with retry...');
+                
+                // Temporarily stop auto-refresh to prevent interference
+                stopTournamentAutoRefresh();
+                
+                // Enhanced refresh mechanism with retry logic
+                await refreshTournamentWithRetry(container, tournament.id, 3);
+
+                // Show completion message for 2 seconds, then restart auto-refresh
+                setTimeout(() => {
+                    console.log('[TournamentDetail] Restarting auto-refresh after match completion');
+                    startTournamentAutoRefresh(container, tournament.id);
+                }, 2000);
+
+            } catch (error) {
+                resultSubmitted = false; // Allow retry
+                console.error('[TournamentDetail] Failed to submit match result:', error);
+                showNotification(`Error submitting result: ${error.message}`, 'error');
+            }
+        };
+
+        // Define the game configuration
+        const gameConfig: GameConfig = {
+            type: GameType.Tournament,
+            player1Name,
+            player2Name,
+            player1IsAI, // Explicitly pass AI configuration
+            player2IsAI, // Explicitly pass AI configuration
+            matchData: matchData, // Pass full match data
+            targetScore: tournament.targetScore || 5,
+            tournamentId: tournament.id,
+            matchId: actualMatchId,
+
+            // Implement callbacks to control the TournamentDetail UI
+            onScoreUpdate: (player1Score: number, player2Score: number) => {
+                const scoreEl = container.querySelector('#match-score-display');
+                if (scoreEl) {
+                    scoreEl.textContent = `${player1Score} - ${player2Score}`;
+                }
+            },
+            onGameStateChange: (state: GameState) => {
+                const statusEl = container.querySelector('#match-status-text');
+                if (statusEl) {
+                    // Convert GameState enum to string
+                    const stateString = GameState[state] || 'UNKNOWN';
+                    statusEl.textContent = stateString.toUpperCase();
+                }
+                if (state === GameState.Error) {
+                    showNotification('Failed to start the game.', 'error');
+                    gameCanvasContainer.innerHTML = `<div class="text-red-500">Error starting game.</div>`;
+                }
+            },
+            onGameEnd: onGameEnd,
+        };
+
+        // Finally, call the unified showGame function
+        await showGame(gameCanvasContainer, gameConfig);
+
+    } catch (error) {
+        console.error('[TournamentDetail] Critical error in startTournamentMatch:', error);
+        showNotification('Could not start the match. Please refresh.', 'error');
+        gamePlaceholder.classList.remove('hidden');
+        gameCanvasContainer.classList.add('hidden');
+    }
+}
+
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'ACTIVE':
+    case 'IN_PROGRESS':
+      return 'bg-green-500/20 text-green-300 border border-green-500';
+    case 'WAITING':
+      return 'bg-yellow-500/20 text-yellow-300 border border-yellow-500';
+    case 'COMPLETED':
+      return 'bg-blue-500/20 text-blue-300 border border-blue-500';
+    default:
+      return 'bg-gray-500/20 text-gray-300 border border-gray-500';
+  }
+}
+
+function getParticipantStatusColor(status: string): string {
+    switch (status) {
+        case 'ACTIVE': return 'bg-green-500/20 text-green-400';
+        case 'ELIMINATED': return 'bg-red-500/20 text-red-400';
+        case 'WINNER': return 'bg-yellow-500/20 text-yellow-400';
+        default: return 'bg-gray-500/20 text-gray-400';
+    }
+}
+
+// NEW: Function to simulate an AI vs AI match
+async function simulateAIvsAIMatch(container: HTMLElement, tournament: any, matchInfo: any) {
+    console.log('[TournamentDetail] Simulating AI vs AI match:', matchInfo.id);
+    const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+
+    // Instantly simulate the match and get the result
+    const result = await simulateMatch(matchInfo);
+    console.log('[TournamentDetail] AI vs AI match result:', result);
+
+    // Show brief result message
+    gameCanvasContainer.innerHTML = `
+        <div class="flex items-center justify-center h-full text-white">
+            <div class="text-center">
+                <div class="text-xl mb-4">🤖 AI vs AI Match Complete</div>
+                <div class="text-lg mb-2">${matchInfo.player1?.displayName} vs ${matchInfo.player2?.displayName}</div>
+                <div class="text-lg mb-2">Winner: ${result.winnerId === matchInfo.player1?.id ? matchInfo.player1?.displayName : matchInfo.player2?.displayName}</div>
+                <div class="text-lg mb-4">Score: ${result.scorePlayer1} - ${result.scorePlayer2}</div>
+                <div class="text-sm opacity-75">Processing next round...</div>
+                <div class="animate-pulse">
+                    <div class="w-8 h-8 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Submit the result to the backend immediately
+    try {
+        await tournamentApi.submitMatchResult(
+            matchInfo.id, 
+            result
+        );
+
+        showNotification('AI vs AI match completed!', 'success');
+        
+        // Temporarily stop auto-refresh to prevent interference
+        stopTournamentAutoRefresh();
+        
+        // Use the enhanced refresh mechanism with retry logic
+        await refreshTournamentWithRetry(container, tournament.id, 3);
+
+        // Show completion message for 2 seconds, then restart auto-refresh
+        setTimeout(() => {
+            console.log('[TournamentDetail] Restarting auto-refresh after AI match completion');
+            startTournamentAutoRefresh(container, tournament.id);
+        }, 2000);
+
+    } catch (error) {
+        console.error('[TournamentDetail] Failed to submit AI vs AI match result:', error);
+        showNotification(`Error submitting AI vs AI match result: ${error.message}`, 'error');
+    }
+}
+
+// NEW: Function to simulate a match between two AI players
+async function simulateMatch(matchInfo: any): Promise<{ winnerId: string; scorePlayer1: number; scorePlayer2: number }> {
+    // Simulate the match here...
+    // For demonstration purposes, just return a random result
+    let scorePlayer1 = Math.floor(Math.random() * 6);
+    let scorePlayer2 = Math.floor(Math.random() * 6);
+
+    // Ensure one player wins and meets target score
+    if (scorePlayer1 === scorePlayer2) {
+        scorePlayer1 = 5; // Force a winner
+        scorePlayer2 = Math.floor(Math.random() * 5);
+    } else {
+        if (Math.max(scorePlayer1, scorePlayer2) < 5) {
+            if (scorePlayer1 > scorePlayer2) scorePlayer1 = 5;
+            else scorePlayer2 = 5;
+        }
+    }
+
+    const winnerIsPlayer1 = scorePlayer1 > scorePlayer2;
+    const winnerId = winnerIsPlayer1 ? (matchInfo.player1?.id || matchInfo.player1Id) : (matchInfo.player2?.id || matchInfo.player2Id);
+
+    const result = {
+        winnerId,
+        scorePlayer1,
+        scorePlayer2,
+    };
+
+    console.log('[TournamentDetail] AI vs AI match result:', result);
+    return result;
+}
+
+// NEW: Function to show a waiting screen for human matches
+function showHumanMatchWaitingScreen(container: HTMLElement, tournament: any, matchInfo: any) {
+    console.log('[TournamentDetail] Showing waiting screen for human match:', matchInfo.id);
+    const gameCanvasContainer = container.querySelector('#canvasContainer') as HTMLElement;
+
+    // Check if we're already showing a waiting screen for this match to prevent duplicates
+    if (gameCanvasContainer.innerHTML.includes(`match-${matchInfo.id}`)) {
+        console.log('[TournamentDetail] Waiting screen already shown for this match, skipping...');
+        return;
+    }
+
+    const player1Type = matchInfo.player1?.participantType || 'UNKNOWN';
+    const player2Type = matchInfo.player2?.participantType || 'UNKNOWN';
+
+    gameCanvasContainer.innerHTML = `
+        <div class="flex items-center justify-center h-full text-white bg-gradient-to-br from-neon-cyan/5 to-neon-pink/5" data-match-id="match-${matchInfo.id}">
+            <div class="text-center max-w-md mx-auto p-8 bg-gray-900/80 rounded-lg border border-neon-cyan/30">
+                <div class="text-3xl mb-6">👥 Human Match Ready</div>
+                
+                <div class="mb-6">
+                    <div class="text-xl font-semibold mb-2">Round ${matchInfo.round} - Match ${matchInfo.matchNumber}</div>
+                    <div class="text-lg text-neon-cyan">Local Multiplayer Match</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="text-center p-4 bg-neon-pink/10 rounded-lg border border-neon-pink/30">
+                        <div class="text-lg font-semibold text-white mb-2">${matchInfo.player1?.displayName}</div>
+                        <div class="text-sm ${player1Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono mb-2">
+                            ${player1Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        <div class="text-xs text-neon-pink/80 font-mono">
+                            ${player1Type === 'HUMAN' ? 'W/S Keys' : 'Auto-controlled'}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">Left Side</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-neon-cyan/10 rounded-lg border border-neon-cyan/30">
+                        <div class="text-lg font-semibold text-white mb-2">${matchInfo.player2?.displayName}</div>
+                        <div class="text-sm ${player2Type === 'HUMAN' ? 'text-neon-pink' : 'text-neon-cyan'} font-mono mb-2">
+                            ${player2Type === 'HUMAN' ? '👤 HUMAN' : '🤖 AI'}
+                        </div>
+                        <div class="text-xs text-neon-cyan/80 font-mono">
+                            ${player2Type === 'HUMAN' ? 'I/K Keys' : 'Auto-controlled'}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">Right Side</div>
+                    </div>
+                </div>
+                
+                <div class="text-sm text-gray-300 mb-6">
+                    ${player1Type === 'HUMAN' && player2Type === 'HUMAN' 
+                        ? '🎮 Both players should be at the host\'s keyboard' 
+                        : '🎮 Human player should be at the host\'s keyboard'
+                    }
+                </div>
+                
+                <button id="start-match-btn" class="btn btn-primary bg-neon-cyan text-black hover:bg-neon-cyan/80 px-8 py-4 text-lg">
+                    <span class="start-text">START MATCH</span>
+                    <span class="loading-text hidden">
+                        <div class="flex items-center justify-center">
+                            <div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
+                            STARTING...
+                        </div>
+                    </span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    const startMatchBtn = gameCanvasContainer.querySelector('#start-match-btn') as HTMLElement;
+    startMatchBtn?.addEventListener('click', async () => {
+        // Prevent multiple clicks
+        if (startMatchBtn.classList.contains('loading')) return;
+        
+        // Show loading state immediately
+        startMatchBtn.classList.add('loading', 'opacity-75', 'cursor-not-allowed');
+        startMatchBtn.disabled = true;
+        
+        const startText = startMatchBtn.querySelector('.start-text') as HTMLElement;
+        const loadingText = startMatchBtn.querySelector('.loading-text') as HTMLElement;
+        
+        if (startText) startText.classList.add('hidden');
+        if (loadingText) loadingText.classList.remove('hidden');
+        
+        // Add a small delay to ensure loading state is visible
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        try {
+            await startTournamentMatch(container, tournament, matchInfo);
+        } catch (error) {
+            // Reset button state on error
+            startMatchBtn.classList.remove('loading', 'opacity-75', 'cursor-not-allowed');
+            startMatchBtn.disabled = false;
+            if (startText) startText.classList.remove('hidden');
+            if (loadingText) loadingText.classList.add('hidden');
+            console.error('[TournamentDetail] Failed to start match:', error);
+        }
+    });
+}
+
+// NEW: Function to refresh tournament data with retry logic
+async function refreshTournamentWithRetry(container: HTMLElement, tournamentId: string, retries: number = 3, delay: number = 1000) {
+    console.log(`[TournamentDetail] Starting refresh with retry. Retries left: ${retries}, Delay: ${delay}ms`);
+    try {
+        await loadTournamentData(container, tournamentId);
+        console.log('[TournamentDetail] Tournament data refreshed successfully');
+    } catch (error) {
+        console.error('[TournamentDetail] Failed to refresh tournament data:', error);
+        if (retries > 0) {
+            console.log(`[TournamentDetail] Failed to refresh tournament data. Retrying in ${delay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            await refreshTournamentWithRetry(container, tournamentId, retries - 1, delay * 1.5); // Exponential backoff
+        } else {
+            console.error('[TournamentDetail] Failed to refresh tournament data after all retries');
+            showNotification('Failed to refresh tournament data. Please try again.', 'error');
+        }
+    }
+}
+
+// Auto-refresh functionality for tournament details
+function startTournamentAutoRefresh(container: HTMLElement, tournamentId: string): void {
+  // Clear any existing interval
+  stopTournamentAutoRefresh();
+  
+  console.log('[TournamentDetail] Starting auto-refresh with 5-second interval for waiting room');
+  
+  // More frequent refresh during waiting phase (5 seconds) to catch new participants
+  tournamentRefreshInterval = setInterval(async () => {
+    try {
+      console.log('[TournamentDetail] Auto-refresh triggered - refreshing tournament data...');
+      await loadTournamentData(container, tournamentId);
+    } catch (error) {
+      console.error('[TournamentDetail] Auto-refresh failed:', error);
+    }
+  }, 5000); // Back to 5 seconds for better real-time updates
+}
+
+function stopTournamentAutoRefresh(): void {
+  if (tournamentRefreshInterval) {
+    clearInterval(tournamentRefreshInterval);
+    tournamentRefreshInterval = null;
+  }
+}
+
+// Clean up auto-refresh when page is unloaded
+window.addEventListener('beforeunload', () => {
+  stopTournamentAutoRefresh();
+});
